@@ -28,11 +28,11 @@ export const UserSchema = z.object({
   userId: z.number(),
   username: z.string(),
   password: z.string(),
-  active: z.number(),
+  active: z.boolean(),
   roleId: z.number(),
-  isPasswordResetRequired: z.number(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
+  isPasswordResetRequired: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   role: RoleSchema,
 })
 export type User = z.infer<typeof UserSchema>
@@ -49,9 +49,9 @@ export const departmentSchema = z.object({
   departmentId: z.number().optional(),
   departmentName: z.string(),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateDepartmentType = z.infer<typeof departmentSchema>
 export type GetDepartmentType = z.infer<typeof departmentSchema>
@@ -61,63 +61,201 @@ export const designationSchema = z.object({
   designationId: z.number().optional(),
   designationName: z.string(),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateDesignationType = z.infer<typeof designationSchema>
 export type GetDesignationType = z.infer<typeof designationSchema>
+
+//company type
+export const companySchema = z.object({
+  companyId: z.number().optional(),
+  companyName: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateCompanyType = z.infer<typeof companySchema>
+export type GetCompanyType = z.infer<typeof companySchema>
+
+//work station type
+export const workStationSchema = z.object({
+  workStationId: z.number().optional(),
+  workStationName: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateWorkStationType = z.infer<typeof workStationSchema>
+export type GetWorkStationType = z.infer<typeof workStationSchema>
+
+//division type
+export const divisionSchema = z.object({
+  divisionId: z.number().optional(),
+  divisionName: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateDivisionType = z.infer<typeof divisionSchema>
+export type GetDivisionType = z.infer<typeof divisionSchema>
 
 //employee type
 export const employeeTypeSchema = z.object({
   employeeTypeId: z.number().optional(),
   employeeTypeName: z.string(),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateEmployeeTypeType = z.infer<typeof employeeTypeSchema>
 export type GetEmployeeTypeType = z.infer<typeof employeeTypeSchema>
 
+//cost center type
+export const costCenterSchema = z.object({
+  costCenterId: z.number().optional(),
+  costCenterName: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateCostCenterType = z.infer<typeof costCenterSchema>
+export type GetCostCenterType = z.infer<typeof costCenterSchema>
+
 //employee
 export const employeeSchema = z.object({
+  // Primary Key (auto-generated)
   employeeId: z.number().optional(),
-  empFullName: z.string().min(1, 'Full name is required'),
-  workEmail: z.string().workEmail('Invalid workEmail'),
-  officialPhone: z.string().min(1, 'Official phone is required'),
-  personalPhone: z.string().optional().nullable(),
-  presentAddress: z.string().min(1, 'Present address is required'),
-  permanentAddress: z.string().optional().nullable(),
-  emergencyContactName: z.string().optional().nullable(),
-  emergencyContactPhone: z.string().optional().nullable(),
-  photoUrl: z.string().url().optional().nullable(),
-  cvUrl: z.string().url().optional().nullable(),
+
+  // Basic Information
+  empCode: z.string().min(1, 'Employee code is required').max(10),
+  empFullName: z.string().min(1, 'Full name is required').max(100),
+  empShortName: z.string().max(20).optional().nullable(),
   dob: z.string().min(1, 'Date of birth is required'),
   doj: z.string().min(1, 'Date of joining is required'),
+  doc: z.string().optional().nullable(),
   gender: z.enum(['Male', 'Female']),
+  nationalIdNo: z.string().max(50).optional().nullable(),
+  nationality: z
+    .enum(['Bangladeshi', 'Pakistani', 'Indian', 'British', 'American'])
+    .optional()
+    .nullable(),
+  country: z.string().max(100).optional().nullable(),
+  city: z.string().max(100).optional().nullable(),
+  zipCode: z.string().max(20).optional().nullable(),
+
+  // Contact Information
+  workEmail: z
+    .string()
+    .email('Invalid work email')
+    .max(100)
+    .optional()
+    .nullable(),
+  privateEmail: z
+    .string()
+    .email('Invalid private email')
+    .max(100)
+    .optional()
+    .nullable(),
+  homePhone: z.string().max(20).optional().nullable(),
+  personalPhone: z.string().max(20).optional().nullable(),
+  officialPhone: z.string().min(1, 'Official phone is required').max(20),
+
+  // Address Information
+  presentAddress: z.string().min(1, 'Present address is required').max(255),
+  permanentAddress: z.string().max(255).optional().nullable(),
+
+  // Emergency Contact
+  emergencyContactName: z.string().max(100).optional().nullable(),
+  emergencyContactPhone: z.string().max(20).optional().nullable(),
+  emergencyContactRelation: z.string().max(50).optional().nullable(),
+
+  // Personal Information
+  maritalStatus: z.enum(['Single', 'Married']).optional().nullable(),
+  photoUrl: z.string().url('Invalid photo URL').max(255).optional().nullable(),
+  cvUrl: z.string().url('Invalid CV URL').max(255).optional().nullable(),
+  religion: z.string().max(20).optional().nullable(),
   bloodGroup: z
     .enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
     .optional()
     .nullable(),
-  basicSalary: z.number().positive(),
-  isActive: z.number().int().min(0).max(1),
-  empCode: z.string().min(1, 'Employee code is required'),
-  departmentId: z.number(),
-  designationId: z.number(),
-  employeeTypeId: z.number(),
-  officeTimingId: z.number(),
-  leaveTypeIds: z.array(z.number()),
+
+  // Qualification Information
+  qualification: z.enum(['SSC', 'HSC', 'Graduate', 'Postgraduate']),
+  instituteName: z.string().max(255).optional().nullable(),
+  subjectName: z.string().max(255).optional().nullable(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  result: z.string().max(50).optional().nullable(),
+  certificateUrl: z
+    .string()
+    .url('Invalid certificate URL')
+    .max(255)
+    .optional()
+    .nullable(),
+
+  // Employment Information
+  basicSalary: z.number().positive('Basic salary must be positive'),
+  isActive: z.boolean().default(true),
+
+  // Dependents Information
+  dependentsName: z.string().max(255).optional().nullable(),
+  dependentRelation: z.string().max(50).optional().nullable(),
+
+  // Foreign Keys (IDs)
+  departmentId: z.number().int(),
+  designationId: z.number().int(),
+  employeeTypeId: z.number().int(),
+  officeTimingId: z.number().int(),
+  companyId: z.number().int(),
+  workStationId: z.number().int(),
+  divisionId: z.number().int(),
+  costCenterId: z.number().int(),
+  reportingAuthorityId: z.number().int(),
+
+  // Additional fields from your service (not in original schema)
+  officeTiming: z.string().optional(), // This might be a string representation
+
+  // For creating employee with leave types
+  leaveTypeIds: z.array(z.number()).optional(),
+
+  // Audit Fields
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
-export type CreateEmployeeType = z.infer<typeof employeeSchema>
+
+// For Create operations (without auto-generated and audit fields)
+export const createEmployeeSchema = employeeSchema.omit({
+  employeeId: true,
+  createdAt: true,
+  updatedAt: true,
+})
+
+// For Update operations (all fields optional except ID)
+export const updateEmployeeSchema = employeeSchema.partial().extend({
+  employeeId: z.number().int().positive('Employee ID is required'),
+})
+
+// Type exports
+export type CreateEmployeeType = z.infer<typeof createEmployeeSchema>
+export type UpdateEmployeeType = z.infer<typeof updateEmployeeSchema>
 export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   departmentName: string
   designationName: string
   employeeTypeName: string
+  companyName: string
+  workStationName: string
+  divisionName: string
+  costCenterName: string
+  reportingAuthorityName: string
   officeTiming: string
   leaveTypes: string[]
 }
@@ -137,9 +275,9 @@ export const officeTimingSchema = z.object({
   endTime: z.string(),
   weekendIds: z.array(z.number()),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateOfficeTimingType = z.infer<typeof officeTimingSchema>
 export type GetOfficeTimingType = z.infer<typeof officeTimingSchema> & {
@@ -155,9 +293,9 @@ export const holidaySchema = z.object({
   noOfDays: z.number(),
   description: z.string().optional().nullable(),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateHolidayType = z.infer<typeof holidaySchema>
 export type GetHolidayType = z.infer<typeof holidaySchema>
@@ -169,9 +307,9 @@ export const leaveTypeSchema = z.object({
   totalLeaves: z.number(),
   yearPeriod: z.number(),
   createdBy: z.number(),
-  createdAt: z.number().optional().nullable(),
-  updatedBy: z.number().optional().nullable(),
-  updatedAt: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateLeaveTypeType = z.infer<typeof leaveTypeSchema>
 export type GetLeaveTypeType = z.infer<typeof leaveTypeSchema>
@@ -200,11 +338,11 @@ export const employeeAttendanceSchema = z.object({
   outTime: z.string().optional(),
   lateInMinutes: z.number().optional(),
   earlyOutMinutes: z.number().optional(),
-  isAbsent: z.number().int().min(0).max(1),
+  isAbsent: z.boolean(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateEmployeeAttendanceType = z.infer<
   typeof employeeAttendanceSchema
@@ -234,13 +372,13 @@ export const otherSalaryComponentSchema = z.object({
   amount: z.number(),
   forDays: z.number(),
   status: z.number(),
-  isAbsentFee: z.number().int().min(0).max(1),
-  isLoneFee: z.number().int().min(0).max(1),
-  isLateEarlyOutFee: z.number().int().min(0).max(1),
+  isAbsentFee: z.boolean(),
+  isLoneFee: z.boolean(),
+  isLateEarlyOutFee: z.boolean(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateOtherSalaryComponentType = z.infer<
   typeof otherSalaryComponentSchema
@@ -264,9 +402,9 @@ export const salarySchema = z.object({
     netSalary: z.number(),
     doj: z.string(),
     createdBy: z.number(),
-    createdAt: z.number().optional(),
-    updatedBy: z.number().optional(),
-    updatedAt: z.number().optional(),
+    createdAt: z.date().optional(),
+    updatedBy: z.number().nullable().optional(),
+    updatedAt: z.date().optional(),
   }),
 
   otherSalary: z.array(
@@ -280,9 +418,9 @@ export const salarySchema = z.object({
       salaryYear: z.number(),
       amount: z.number(),
       createdBy: z.number(),
-      createdAt: z.number().optional(),
-      updatedBy: z.number().optional(),
-      updatedAt: z.number().optional(),
+      createdAt: z.date().optional(),
+      updatedBy: z.number().nullable().optional(),
+      updatedAt: z.date().optional(),
     })
   ),
 })
@@ -299,9 +437,9 @@ export const createSalarySchema = z.object({
   netSalary: z.number(),
   doj: z.string(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateSalaryType = z.infer<typeof createSalarySchema>
 
@@ -316,9 +454,9 @@ export const employeeOtherSalaryComponentSchema = z.object({
   isAuthorized: z.number().int().min(0).max(1),
   isSkipped: z.number().int().min(0).max(1).optional(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateEmployeeOtherSalaryComponentType = z.infer<
   typeof employeeOtherSalaryComponentSchema
@@ -346,9 +484,9 @@ export const employeeLonesSchema = z.object({
   perMonth: z.number(),
   description: z.string().optional(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateEmployeeLoneType = z.infer<typeof employeeLonesSchema>
 export type GetEmployeeLoneType = z.infer<typeof employeeLonesSchema> & {
@@ -367,9 +505,9 @@ export const employeeLeaveSchema = z.object({
   leaveTypeId: z.number(),
   description: z.string().optional(),
   createdBy: z.number(),
-  createdAt: z.number().optional(),
-  updatedBy: z.number().optional(),
-  updatedAt: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
 })
 export type CreateEmployeeLeaveType = z.infer<typeof employeeLeaveSchema>
 export type GetEmployeeLeaveType = z.infer<typeof employeeLeaveSchema> & {
@@ -408,7 +546,7 @@ export const loneReportSchema = z.array(
         isAuthorized: z.number(),
         isSkipped: z.number(),
         isSalaryGiven: z.number(),
-        createdAt: z.number(),
+        createdAt: z.date(),
       })
     ),
   })

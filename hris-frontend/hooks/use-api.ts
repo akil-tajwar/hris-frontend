@@ -4,8 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
   assignLeaveType,
+  createCompany,
+  createCostCenter,
   createDepartment,
   createDesignation,
+  createDivision,
   createEmployee,
   createEmployeeAttendance,
   createEmployeeLeave,
@@ -17,8 +20,12 @@ import {
   createOfficeTimingWeekend,
   createOtherSalaryComponent,
   createSalary,
+  createWorkStation,
+  deleteCompany,
+  deleteCostCenter,
   deleteDepartment,
   deleteDesignation,
+  deleteDivision,
   deleteEmployee,
   deleteEmployeeAttendance,
   deleteEmployeeLeave,
@@ -30,8 +37,12 @@ import {
   deleteOfficeTimingWeekend,
   deleteOtherSalaryComponent,
   deleteSalary,
+  deleteWorkStation,
+  editCompany,
+  editCostCenter,
   editDepartment,
   editDesignation,
+  editDivision,
   editEmployee,
   editEmployeeAttendance,
   editEmployeeLeave,
@@ -43,8 +54,12 @@ import {
   editOfficeTimingWeekend,
   editOtherSalaryComponent,
   editSalary,
+  editWorkStation,
+  getAllCompanies,
+  getAllCostCenters,
   getAllDepartments,
   getAllDesignations,
+  getAllDivisions,
   getAllEmployeeAttendances,
   getAllEmployeeLeaves,
   getAllEmployeeLeaveTypes,
@@ -58,6 +73,7 @@ import {
   getAllOtherSalaryComponents,
   getAllSalaries,
   getAllWeekends,
+  getAllWorkStations,
   getAttendanceReport,
   getEmployeeAttendanceSummary,
   getEmployeeById,
@@ -84,6 +100,10 @@ import {
   GetEmployeeLeaveType,
   GetEmployeeLoneType,
   GetOfficeTimingType,
+  CreateCompanyType,
+  CreateWorkStationType,
+  CreateDivisionType,
+  CreateCostCenterType,
 } from '@/utils/type'
 
 //departments
@@ -208,6 +228,542 @@ export const useDeleteDepartment = ({
         description: 'department is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['departments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+// Companies Hooks
+export const useGetCompanies = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['companies'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllCompanies(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddCompany = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateCompanyType) => {
+      const res = await createCompany(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create company',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Company created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding company:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCompany = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateCompanyType }) => {
+      return editCompany(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Company edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing company:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteCompany = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteCompany(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Company is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+// Work Stations Hooks
+export const useGetWorkStations = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['workstations'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllWorkStations(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddWorkStation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateWorkStationType) => {
+      const res = await createWorkStation(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create work station',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Work station created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['workstations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding work station:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateWorkStation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateWorkStationType }) => {
+      return editWorkStation(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Work station edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['workstations'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing work station:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteWorkStation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteWorkStation(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Work station is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['workstations'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+// Divisions Hooks
+export const useGetDivisions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['divisions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllDivisions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateDivisionType) => {
+      const res = await createDivision(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create division',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Division created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding division:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateDivisionType }) => {
+      return editDivision(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Division edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing division:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteDivision = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteDivision(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Division is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['divisions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+// Cost Centers Hooks
+export const useGetCostCenters = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['costcenters'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllCostCenters(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddCostCenter = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateCostCenterType) => {
+      const res = await createCostCenter(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create cost center',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Cost center created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['costcenters'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding cost center:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCostCenter = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateCostCenterType }) => {
+      return editCostCenter(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Cost center edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['costcenters'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing cost center:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteCostCenter = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteCostCenter(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Cost center is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['costcenters'] })
 
       reset()
       onClose()

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { User } from 'lucide-react'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter, useParams } from 'next/navigation'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -25,6 +25,11 @@ import {
   useGetLeaveTypes,
   useGetOfficeTimingWeekends,
   useGetEmployeeById,
+  useGetCompanies,
+  useGetWorkStations,
+  useGetDivisions,
+  useGetCostCenters,
+  useGetAllEmployees,
 } from '@/hooks/use-api'
 import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
@@ -40,16 +45,19 @@ const EditEmployee = () => {
   const { data: employee } = useGetEmployeeById(
     employeeId ? Number(employeeId) : 0
   )
-  console.log('🚀 ~ EditEmployee ~ employee:', employee)
 
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
   const { data: employeeTypes } = useGetEmployeeTypes()
   const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
   const { data: leaveTypes } = useGetLeaveTypes()
+  const { data: companies } = useGetCompanies()
+  const { data: workStations } = useGetWorkStations()
+  const { data: divisions } = useGetDivisions()
+  const { data: costCenters } = useGetCostCenters()
+  const { data: employees } = useGetAllEmployees()
 
   const currentYear = new Date().getFullYear()
-
   const currentYearLeaveTypes = leaveTypes?.data?.filter(
     (item) => item.yearPeriod === currentYear
   )
@@ -58,8 +66,12 @@ const EditEmployee = () => {
   const [loading, setLoading] = useState(true)
   const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null)
   const [cvFile, setCvFile] = useState<File | null>(null)
+  const [certificateFile, setCertificateFile] = useState<File | null>(null)
   const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null)
   const [existingCvUrl, setExistingCvUrl] = useState<string | null>(null)
+  const [existingCertificateUrl, setExistingCertificateUrl] = useState<
+    string | null
+  >(null)
 
   const [formData, setFormData] = useState<
     Omit<
@@ -67,83 +79,143 @@ const EditEmployee = () => {
       'employeeId' | 'createdAt' | 'updatedAt' | 'createdBy'
     >
   >({
+    // Personal
     empFullName: '',
-    workEmail: '',
-    officialPhone: '',
-    personalPhone: null,
-    presentAddress: '',
-    permanentAddress: null,
-    emergencyContactName: null,
-    emergencyContactPhone: null,
+    empShortName: null,
+    dob: '',
+    gender: 'Male',
+    nationality: null,
+    nationalIdNo: null,
+    maritalStatus: null,
+    religion: null,
+    bloodGroup: null,
     photoUrl: null,
     cvUrl: null,
-    dob: '',
-    doj: new Date().toISOString().split('T')[0],
-    gender: 'Male',
-    bloodGroup: null,
-    basicSalary: 0,
-    isActive: 1,
+
+    // Contact
+    workEmail: '',
+    privateEmail: null,
+    homePhone: null,
+    personalPhone: null,
+    officialPhone: '',
+
+    // Address
+    presentAddress: '',
+    permanentAddress: null,
+    country: null,
+    city: null,
+    zipCode: null,
+
+    // Emergency Contact
+    emergencyContactName: null,
+    emergencyContactPhone: null,
+    emergencyContactRelation: null,
+
+    // Education
+    qualification: 'Graduate',
+    instituteName: null,
+    subjectName: null,
+    startDate: null,
+    endDate: null,
+    result: null,
+    certificateUrl: null,
+
+    // Dependent
+    dependentsName: null,
+    dependentRelation: null,
+
+    // Official
     empCode: '',
+    doj: new Date().toISOString().split('T')[0],
+    doc: null,
+    basicSalary: 0,
+    isActive: true,
     departmentId: 0,
     designationId: 0,
     employeeTypeId: 0,
-    leaveTypeIds: [],
     officeTimingId: 0,
+    companyId: 0,
+    workStationId: 0,
+    divisionId: 0,
+    costCenterId: 0,
+    reportingAuthorityId: 0,
+    leaveTypeIds: [],
     updatedBy: userData?.userId || 0,
   })
 
-  // Load employee data
+  // ── Load employee data ──────────────────────────────────────────────────────
   useEffect(() => {
     if (employee?.data) {
       const emp = employee.data
 
       setFormData({
         empFullName: emp.empFullName || '',
-        workEmail: emp.workEmail || '',
-        officialPhone: emp.officialPhone || '',
-        personalPhone: emp.personalPhone || null,
-        presentAddress: emp.presentAddress || '',
-        permanentAddress: emp.permanentAddress || null,
-        emergencyContactName: emp.emergencyContactName || null,
-        emergencyContactPhone: emp.emergencyContactPhone || null,
+        empShortName: emp.empShortName || null,
+        dob: emp.dob || '',
+        gender: emp.gender || 'Male',
+        nationality: emp.nationality || null,
+        nationalIdNo: emp.nationalIdNo || null,
+        maritalStatus: emp.maritalStatus || null,
+        religion: emp.religion || null,
+        bloodGroup: emp.bloodGroup || null,
         photoUrl: emp.photoUrl || null,
         cvUrl: emp.cvUrl || null,
-        dob: emp.dob || '',
-        doj: emp.doj || new Date().toISOString().split('T')[0],
-        gender: emp.gender || 'Male',
-        bloodGroup: emp.bloodGroup || null,
-        basicSalary: emp.basicSalary || 0,
-        isActive: emp.isActive ?? 1,
+        workEmail: emp.workEmail || '',
+        privateEmail: emp.privateEmail || null,
+        homePhone: emp.homePhone || null,
+        personalPhone: emp.personalPhone || null,
+        officialPhone: emp.officialPhone || '',
+        presentAddress: emp.presentAddress || '',
+        permanentAddress: emp.permanentAddress || null,
+        country: emp.country || null,
+        city: emp.city || null,
+        zipCode: emp.zipCode || null,
+        emergencyContactName: emp.emergencyContactName || null,
+        emergencyContactPhone: emp.emergencyContactPhone || null,
+        emergencyContactRelation: emp.emergencyContactRelation || null,
+        qualification: emp.qualification || 'Graduate',
+        instituteName: emp.instituteName || null,
+        subjectName: emp.subjectName || null,
+        startDate: emp.startDate || null,
+        endDate: emp.endDate || null,
+        result: emp.result || null,
+        certificateUrl: emp.certificateUrl || null,
+        dependentsName: emp.dependentsName || null,
+        dependentRelation: emp.dependentRelation || null,
         empCode: emp.empCode || '',
+        doj: emp.doj || new Date().toISOString().split('T')[0],
+        doc: emp.doc || null,
+        basicSalary: emp.basicSalary || 0,
+        isActive: emp.isActive ?? true,
         departmentId: emp.departmentId || 0,
         designationId: emp.designationId || 0,
         employeeTypeId: emp.employeeTypeId || 0,
-        leaveTypeIds: emp.leaveTypeIds || [],
         officeTimingId: emp.officeTimingId || 0,
-        updatedBy: emp.updatedBy || userData?.userId || 0,
+        companyId: emp.companyId || 0,
+        workStationId: emp.workStationId || 0,
+        divisionId: emp.divisionId || 0,
+        costCenterId: emp.costCenterId || 0,
+        reportingAuthorityId: emp.reportingAuthorityId || 0,
+        leaveTypeIds: emp.leaveTypeIds || [],
+        updatedBy: userData?.userId || 0,
       })
 
       setExistingPhotoUrl(emp.photoUrl || null)
       setExistingCvUrl(emp.cvUrl || null)
+      setExistingCertificateUrl(emp.certificateUrl || null)
       setLoading(false)
     }
   }, [employee, userData])
 
+  // ── Input handlers ──────────────────────────────────────────────────────────
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target as HTMLInputElement
-
     if (type === 'number') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value ? Number(value) : null,
-      }))
+      setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value || null,
-      }))
+      setFormData((prev) => ({ ...prev, [name]: value === '' ? null : value }))
     }
   }
 
@@ -151,9 +223,7 @@ const EditEmployee = () => {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setEmployeePhotoFile(file)
-    }
+    if (file) setEmployeePhotoFile(file)
   }
 
   const handleCvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,26 +238,35 @@ const EditEmployee = () => {
     }
   }
 
+  const handleCertificateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCertificateFile(file)
+      setError(null)
+    }
+  }
+
   const handleLeaveTypeToggle = (leaveTypeId: number) => {
     setFormData((prev) => ({
       ...prev,
-      leaveTypeIds: prev.leaveTypeIds.includes(leaveTypeId)
-        ? prev.leaveTypeIds.filter((id) => id !== leaveTypeId)
-        : [...prev.leaveTypeIds, leaveTypeId],
+      leaveTypeIds: (prev.leaveTypeIds ?? []).includes(leaveTypeId)
+        ? (prev.leaveTypeIds ?? []).filter((id) => id !== leaveTypeId)
+        : [...(prev.leaveTypeIds ?? []), leaveTypeId],
     }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    if (name === 'gender' || name === 'bloodGroup') {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value || null,
-      }))
+    const stringFields = [
+      'gender',
+      'bloodGroup',
+      'nationality',
+      'maritalStatus',
+      'qualification',
+    ]
+    if (stringFields.includes(name)) {
+      setFormData((prev) => ({ ...prev, [name]: value || null }))
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value ? Number(value) : null,
-      }))
+      setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     }
   }
 
@@ -205,19 +284,12 @@ const EditEmployee = () => {
     reset: resetForm,
   })
 
+  // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (!employeeId) {
-      setError('Employee ID is missing')
-      return
-    }
-
-    console.log('=== FORM SUBMISSION START ===')
-    console.log('📋 Employee Details:', formData)
-
-    // Validations
+    if (!employeeId) return setError('Employee ID is missing')
     if (!formData.empFullName.trim()) return setError('Please enter full name')
     if (!formData.officialPhone.trim())
       return setError('Please enter official phone')
@@ -234,61 +306,52 @@ const EditEmployee = () => {
       return setError('Please select designation')
     if (!formData.employeeTypeId || formData.employeeTypeId <= 0)
       return setError('Please select employee type')
+    if (!formData.companyId || formData.companyId <= 0)
+      return setError('Please select company')
+    if (!formData.workStationId || formData.workStationId <= 0)
+      return setError('Please select work station')
+    if (!formData.divisionId || formData.divisionId <= 0)
+      return setError('Please select division')
+    if (!formData.costCenterId || formData.costCenterId <= 0)
+      return setError('Please select cost center')
+    if (!formData.reportingAuthorityId || formData.reportingAuthorityId <= 0)
+      return setError('Please select reporting authority')
 
     const form = new FormData()
+    form.append(
+      'employeeDetails',
+      JSON.stringify({
+        ...formData,
+        photoUrl: existingPhotoUrl,
+        cvUrl: existingCvUrl,
+        certificateUrl: existingCertificateUrl,
+        updatedBy: userData?.userId || 0,
+      })
+    )
 
-    const employeeDetailsPayload = {
-      ...formData,
-      photoUrl: existingPhotoUrl,
-      cvUrl: existingCvUrl,
-      //   updatedBy: formData.updatedBy,
-      updatedBy: userData?.userId || 0,
-    }
-    console.log('📦 Employee Details Payload:', employeeDetailsPayload)
-    form.append('employeeDetails', JSON.stringify(employeeDetailsPayload))
-
-    if (employeePhotoFile) {
-      form.append('photoUrl', employeePhotoFile)
-      console.log(`✅ Appended new photoUrl to FormData`)
-    }
-
-    if (cvFile) {
-      form.append('cvUrl', cvFile)
-      console.log(`✅ Appended new cvUrl to FormData`)
-    }
-
-    console.log('📤 FormData contents:')
-    for (const pair of form.entries()) {
-      if (pair[1] instanceof File) {
-        console.log(
-          `  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`
-        )
-      } else {
-        console.log(`  ${pair[0]}: ${pair[1]}`)
-      }
-    }
-    console.log('=== FORM SUBMISSION END ===')
+    if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
+    if (cvFile) form.append('cvUrl', cvFile)
+    if (certificateFile) form.append('certificateUrl', certificateFile)
 
     try {
       await updateMutation.mutateAsync({
         id: Number(employeeId),
         data: form as any,
       })
-      console.log('✅ Employee updated successfully!')
       toast({
         title: 'Success!',
         description: 'Employee updated successfully.',
       })
     } catch (err) {
       setError('Failed to update employee')
-      console.error('❌ Error updating employee:', err)
+      console.error('Error updating employee:', err)
     }
   }
 
   useEffect(() => {
     if (updateMutation.error) {
       setError('Error updating employee')
-      console.error('❌ Mutation error:', updateMutation.error)
+      console.error('Mutation error:', updateMutation.error)
     }
   }, [updateMutation.error])
 
@@ -308,6 +371,7 @@ const EditEmployee = () => {
     )
   }
 
+  // ── JSX ─────────────────────────────────────────────────────────────────────
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -318,10 +382,13 @@ const EditEmployee = () => {
           <h2 className="text-lg font-semibold">Edit Employee</h2>
         </div>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
-        {/* Personal Information */}
+        {/* ── 1. Employee Personal Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Personal Information</h3>
+          <h3 className="text-md font-semibold mb-4">
+            Employee Personal Information
+          </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="empFullName">
@@ -331,71 +398,37 @@ const EditEmployee = () => {
                 id="empFullName"
                 name="empFullName"
                 type="text"
-                value={formData.empFullName}
+                value={formData.empFullName ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employeePhoto" className="text-sm">
-                Employee Photo
-              </Label>
+              <Label htmlFor="empShortName">Short Name</Label>
               <Input
-                id="employeePhoto"
-                type="file"
-                accept="image/*"
-                onChange={handleEmployeePhotoChange}
-                className="text-sm"
-              />
-              {employeePhotoFile && (
-                <p className="text-xs text-green-600">
-                  ✓ New photo selected: {employeePhotoFile.name}
-                </p>
-              )}
-              {!employeePhotoFile && existingPhotoUrl && (
-                <p className="text-xs text-blue-600">
-                  Current photo: {existingPhotoUrl}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Address */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Address</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="presentAddress">
-                Present Address <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="presentAddress"
-                name="presentAddress"
+                id="empShortName"
+                name="empShortName"
                 type="text"
-                value={formData.presentAddress}
+                value={formData.empShortName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dob">
+                Date of Birth <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="dob"
+                name="dob"
+                type="date"
+                value={formData.dob ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="permanentAddress">Permanent Address</Label>
-              <Input
-                id="permanentAddress"
-                name="permanentAddress"
-                type="text"
-                value={formData.permanentAddress || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Physical Details */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Physical Details</h3>
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="gender">
                 Gender <span className="text-red-500">*</span>
@@ -413,6 +446,68 @@ const EditEmployee = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationality</Label>
+              <Select
+                value={formData.nationality || ''}
+                onValueChange={(value) =>
+                  handleSelectChange('nationality', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select nationality" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bangladeshi">Bangladeshi</SelectItem>
+                  <SelectItem value="Pakistani">Pakistani</SelectItem>
+                  <SelectItem value="Indian">Indian</SelectItem>
+                  <SelectItem value="British">British</SelectItem>
+                  <SelectItem value="American">American</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationalIdNo">National ID No</Label>
+              <Input
+                id="nationalIdNo"
+                name="nationalIdNo"
+                type="text"
+                value={formData.nationalIdNo || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maritalStatus">Marital Status</Label>
+              <Select
+                value={formData.maritalStatus || ''}
+                onValueChange={(value) =>
+                  handleSelectChange('maritalStatus', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="religion">Religion</Label>
+              <Input
+                id="religion"
+                name="religion"
+                type="text"
+                value={formData.religion || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="bloodGroup">Blood Group</Label>
               <Select
@@ -436,83 +531,35 @@ const EditEmployee = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </div>
 
-        {/* Emergency Contact */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Emergency Contact</h3>
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="emergencyContactName">
-                Emergency Contact Name
-              </Label>
+              <Label htmlFor="employeePhoto">Employee Photo</Label>
               <Input
-                id="emergencyContactName"
-                name="emergencyContactName"
-                type="text"
-                value={formData.emergencyContactName || ''}
-                onChange={handleInputChange}
+                id="employeePhoto"
+                type="file"
+                accept="image/*"
+                onChange={handleEmployeePhotoChange}
+                className="text-sm"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactPhone">
-                Emergency Contact Phone
-              </Label>
-              <Input
-                id="emergencyContactPhone"
-                name="emergencyContactPhone"
-                type="tel"
-                value={formData.emergencyContactPhone || ''}
-                onChange={handleInputChange}
-              />
+              {employeePhotoFile && (
+                <p className="text-xs text-green-600">
+                  ✓ New photo selected: {employeePhotoFile.name}
+                </p>
+              )}
+              {!employeePhotoFile && existingPhotoUrl && (
+                <p className="text-xs text-blue-600">
+                  Current photo: {existingPhotoUrl}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Contact Info */}
+        {/* ── 2. Employee Official Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Contact Info</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="workEmail">workEmail</Label>
-              <Input
-                id="workEmail"
-                name="workEmail"
-                type="email"
-                value={formData.workEmail}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="officialPhone">
-                Official Phone <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="officialPhone"
-                name="officialPhone"
-                type="tel"
-                value={formData.officialPhone}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personalPhone">Personal Phone</Label>
-              <Input
-                id="personalPhone"
-                name="personalPhone"
-                type="tel"
-                value={formData.personalPhone || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Official Details */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Official</h3>
+          <h3 className="text-md font-semibold mb-4">
+            Employee Official Information
+          </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="empCode">
@@ -522,11 +569,37 @@ const EditEmployee = () => {
                 id="empCode"
                 name="empCode"
                 type="text"
-                value={formData.empCode}
+                value={formData.empCode ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doj">
+                Date of Joining <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="doj"
+                name="doj"
+                type="date"
+                value={formData.doj ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc">Date of Confirmation</Label>
+              <Input
+                id="doc"
+                name="doc"
+                type="date"
+                value={formData.doc || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="departmentId">
                 Department <span className="text-red-500">*</span>
@@ -558,6 +631,7 @@ const EditEmployee = () => {
                 placeholder="Select department"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="designationId">
                 Designation <span className="text-red-500">*</span>
@@ -589,6 +663,7 @@ const EditEmployee = () => {
                 placeholder="Select designation"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="employeeTypeId">
                 Employee Type <span className="text-red-500">*</span>
@@ -622,31 +697,168 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dob">
-                Date of Birth <span className="text-red-500">*</span>
+              <Label htmlFor="companyId">
+                Company <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="dob"
-                name="dob"
-                type="date"
-                value={formData.dob}
-                onChange={handleInputChange}
-                required
+              <CustomCombobox
+                items={
+                  companies?.data?.map((c) => ({
+                    id: c?.companyId?.toString() || '0',
+                    name: c.companyName || 'Unnamed company',
+                  })) || []
+                }
+                value={
+                  formData.companyId
+                    ? {
+                        id: formData.companyId.toString(),
+                        name:
+                          companies?.data?.find(
+                            (c) => c.companyId === formData.companyId
+                          )?.companyName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'companyId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select company"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="doj">
-                Date of Joining <span className="text-red-500">*</span>
+              <Label htmlFor="workStationId">
+                Work Station <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="doj"
-                name="doj"
-                type="date"
-                value={formData.doj}
-                onChange={handleInputChange}
-                required
+              <CustomCombobox
+                items={
+                  workStations?.data?.map((ws) => ({
+                    id: ws?.workStationId?.toString() || '0',
+                    name: ws.workStationName || 'Unnamed work station',
+                  })) || []
+                }
+                value={
+                  formData.workStationId
+                    ? {
+                        id: formData.workStationId.toString(),
+                        name:
+                          workStations?.data?.find(
+                            (ws) => ws.workStationId === formData.workStationId
+                          )?.workStationName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'workStationId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select work station"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="divisionId">
+                Division <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  divisions?.data?.map((div) => ({
+                    id: div?.divisionId?.toString() || '0',
+                    name: div.divisionName || 'Unnamed division',
+                  })) || []
+                }
+                value={
+                  formData.divisionId
+                    ? {
+                        id: formData.divisionId.toString(),
+                        name:
+                          divisions?.data?.find(
+                            (d) => d.divisionId === formData.divisionId
+                          )?.divisionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'divisionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select division"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="costCenterId">
+                Cost Center <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  costCenters?.data?.map((cc) => ({
+                    id: cc?.costCenterId?.toString() || '0',
+                    name: cc.costCenterName || 'Unnamed cost center',
+                  })) || []
+                }
+                value={
+                  formData.costCenterId
+                    ? {
+                        id: formData.costCenterId.toString(),
+                        name:
+                          costCenters?.data?.find(
+                            (cc) => cc.costCenterId === formData.costCenterId
+                          )?.costCenterName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'costCenterId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select cost center"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reportingAuthorityId">
+                Reporting Authority <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  employees?.data
+                    ?.filter((e) => e.employeeId !== Number(employeeId))
+                    .map((emp) => ({
+                      id: emp?.employeeId?.toString() || '0',
+                      name: emp.empFullName || 'Unnamed employee',
+                    })) || []
+                }
+                value={
+                  formData.reportingAuthorityId
+                    ? {
+                        id: formData.reportingAuthorityId.toString(),
+                        name:
+                          employees?.data?.find(
+                            (e) =>
+                              e.employeeId === formData.reportingAuthorityId
+                          )?.empFullName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'reportingAuthorityId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select reporting authority"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="officeTimingId">
                 Office Timing <span className="text-red-500">*</span>
@@ -655,11 +867,7 @@ const EditEmployee = () => {
                 items={
                   officeTimingWeekends?.data?.map((timing) => ({
                     id: timing.officeTimingId?.toString() || '0',
-                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${
-                      timing.weekends?.length
-                        ? ` (Off: ${timing.weekends.join(', ')})`
-                        : ''
-                    }`,
+                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekends?.length ? ` (Off: ${timing.weekends.join(', ')})` : ''}`,
                   })) || []
                 }
                 value={
@@ -671,11 +879,7 @@ const EditEmployee = () => {
                             (t) => t.officeTimingId === formData.officeTimingId
                           )
                           return t
-                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${
-                                t.weekends?.length
-                                  ? ` (Off: ${t.weekends.join(', ')})`
-                                  : ''
-                              }`
+                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''}`
                             : ''
                         })(),
                       }
@@ -690,6 +894,7 @@ const EditEmployee = () => {
                 placeholder="Select office timing"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="basicSalary">
                 Basic Salary <span className="text-red-500">*</span>
@@ -704,10 +909,30 @@ const EditEmployee = () => {
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="cvUrl" className="text-sm">
-                Upload CV (PDF only)
-              </Label>
+              <Label htmlFor="isActive">Status</Label>
+              <Select
+                value={formData.isActive ? 'true' : 'false'}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isActive: value === 'true',
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cvUrl">Upload CV (PDF only)</Label>
               <Input
                 id="cvUrl"
                 type="file"
@@ -729,7 +954,308 @@ const EditEmployee = () => {
           </div>
         </div>
 
-        {/* Leave Types — multi-select checkboxes */}
+        {/* ── 3. Employee Education Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Education Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="qualification">
+                Qualification <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.qualification}
+                onValueChange={(value) =>
+                  handleSelectChange('qualification', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SSC">SSC</SelectItem>
+                  <SelectItem value="HSC">HSC</SelectItem>
+                  <SelectItem value="Graduate">Graduate</SelectItem>
+                  <SelectItem value="Postgraduate">Postgraduate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instituteName">Institute Name</Label>
+              <Input
+                id="instituteName"
+                name="instituteName"
+                type="text"
+                value={formData.instituteName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subjectName">Subject / Major</Label>
+              <Input
+                id="subjectName"
+                name="subjectName"
+                type="text"
+                value={formData.subjectName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="result">Result / GPA</Label>
+              <Input
+                id="result"
+                name="result"
+                type="text"
+                value={formData.result || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                name="startDate"
+                type="date"
+                value={formData.startDate || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                name="endDate"
+                type="date"
+                value={formData.endDate || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="certificateFile">Upload Certificate</Label>
+              <Input
+                id="certificateFile"
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleCertificateChange}
+                className="text-sm"
+              />
+              {certificateFile && (
+                <p className="text-xs text-green-600">
+                  ✓ New certificate selected: {certificateFile.name}
+                </p>
+              )}
+              {!certificateFile && existingCertificateUrl && (
+                <p className="text-xs text-blue-600">
+                  Current certificate: {existingCertificateUrl}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4. Employee Dependent Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Dependent Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="dependentsName">Dependent Name</Label>
+              <Input
+                id="dependentsName"
+                name="dependentsName"
+                type="text"
+                value={formData.dependentsName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dependentRelation">Relation</Label>
+              <Input
+                id="dependentRelation"
+                name="dependentRelation"
+                type="text"
+                value={formData.dependentRelation || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── 5. Employee Emergency Contact Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Emergency Contact Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactName">Contact Name</Label>
+              <Input
+                id="emergencyContactName"
+                name="emergencyContactName"
+                type="text"
+                value={formData.emergencyContactName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+              <Input
+                id="emergencyContactPhone"
+                name="emergencyContactPhone"
+                type="tel"
+                value={formData.emergencyContactPhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactRelation">Relation</Label>
+              <Input
+                id="emergencyContactRelation"
+                name="emergencyContactRelation"
+                type="text"
+                value={formData.emergencyContactRelation || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Contact & Address Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Contact &amp; Address Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="workEmail">Work Email</Label>
+              <Input
+                id="workEmail"
+                name="workEmail"
+                type="email"
+                value={formData.workEmail ?? ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="privateEmail">Private Email</Label>
+              <Input
+                id="privateEmail"
+                name="privateEmail"
+                type="email"
+                value={formData.privateEmail || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officialPhone">
+                Official Phone <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="officialPhone"
+                name="officialPhone"
+                type="tel"
+                value={formData.officialPhone ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="personalPhone">Personal Phone</Label>
+              <Input
+                id="personalPhone"
+                name="personalPhone"
+                type="tel"
+                value={formData.personalPhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="homePhone">Home Phone</Label>
+              <Input
+                id="homePhone"
+                name="homePhone"
+                type="tel"
+                value={formData.homePhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="presentAddress">
+                Present Address <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="presentAddress"
+                name="presentAddress"
+                type="text"
+                value={formData.presentAddress ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="permanentAddress">Permanent Address</Label>
+              <Input
+                id="permanentAddress"
+                name="permanentAddress"
+                type="text"
+                value={formData.permanentAddress || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                name="country"
+                type="text"
+                value={formData.country || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                name="city"
+                type="text"
+                value={formData.city || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zipCode">Zip Code</Label>
+              <Input
+                id="zipCode"
+                name="zipCode"
+                type="text"
+                value={formData.zipCode || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Leave Types ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">
             Leave Types ({currentYear})
@@ -746,7 +1272,7 @@ const EditEmployee = () => {
                     id={`leave-${leave.leaveTypeId}`}
                     checked={
                       leave.leaveTypeId !== undefined &&
-                      formData.leaveTypeIds.includes(leave.leaveTypeId)
+                      (formData.leaveTypeIds ?? []).includes(leave.leaveTypeId)
                     }
                     onCheckedChange={() =>
                       leave.leaveTypeId !== undefined &&
@@ -766,9 +1292,9 @@ const EditEmployee = () => {
                 </div>
               ))}
             </div>
-            {formData.leaveTypeIds.length > 0 && (
+            {(formData.leaveTypeIds ?? []).length > 0 && (
               <p className="text-xs text-green-600">
-                ✓ {formData.leaveTypeIds.length} leave type(s) selected
+                ✓ {(formData.leaveTypeIds ?? []).length} leave type(s) selected
               </p>
             )}
           </div>
@@ -779,6 +1305,7 @@ const EditEmployee = () => {
             {error}
           </div>
         )}
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={resetForm}>
             Cancel

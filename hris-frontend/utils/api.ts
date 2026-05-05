@@ -35,6 +35,14 @@ import {
   GetLoneReportType,
   GetEmployeeLeaveSummaryType,
   GetEmployeeAttendanceSummaryType,
+  GetCostCenterType,
+  CreateCostCenterType,
+  GetDivisionType,
+  CreateDivisionType,
+  GetCompanyType,
+  CreateCompanyType,
+  GetWorkStationType,
+  CreateWorkStationType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -146,6 +154,223 @@ export async function editDesignation(
 export async function deleteDesignation(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/designations/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// Company API Functions
+export async function getAllCompanies(token: string) {
+  return fetchApi<GetCompanyType[]>({
+    url: 'api/companies/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createCompany(
+  data: CreateCompanyType,
+  token: string
+) {
+  return fetchApi<CreateCompanyType>({
+    url: 'api/companies/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editCompany(
+  id: number,
+  data: GetCompanyType,
+  token: string
+) {
+  return fetchApi<GetCompanyType>({
+    url: `api/companies/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteCompany(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/companies/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// Work Station API Functions
+export async function getAllWorkStations(token: string) {
+  return fetchApi<GetWorkStationType[]>({
+    url: 'api/workstations/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createWorkStation(
+  data: CreateWorkStationType,
+  token: string
+) {
+  return fetchApi<CreateWorkStationType>({
+    url: 'api/workstations/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editWorkStation(
+  id: number,
+  data: GetWorkStationType,
+  token: string
+) {
+  return fetchApi<GetWorkStationType>({
+    url: `api/workstations/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteWorkStation(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/workstations/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// Division API Functions
+export async function getAllDivisions(token: string) {
+  return fetchApi<GetDivisionType[]>({
+    url: 'api/divisions/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// Division API Functions
+export async function createDivision(
+  data: CreateDivisionType,
+  token: string
+) {
+  return fetchApi<CreateDivisionType>({
+    url: 'api/divisions/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editDivision(
+  id: number,
+  data: GetDivisionType,
+  token: string
+) {
+  return fetchApi<GetDivisionType>({
+    url: `api/divisions/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteDivision(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/divisions/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// Cost Center API Functions
+export async function getAllCostCenters(token: string) {
+  return fetchApi<GetCostCenterType[]>({
+    url: 'api/costcenters/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createCostCenter(
+  data: CreateCostCenterType,
+  token: string
+) {
+  return fetchApi<CreateCostCenterType>({
+    url: 'api/costcenters/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editCostCenter(
+  id: number,
+  data: GetCostCenterType,
+  token: string
+) {
+  return fetchApi<GetCostCenterType>({
+    url: `api/costcenters/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteCostCenter(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/costcenters/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

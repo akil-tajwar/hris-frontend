@@ -24,6 +24,11 @@ import {
   useGetEmployeeTypes,
   useGetLeaveTypes,
   useGetOfficeTimingWeekends,
+  useGetCompanies,
+  useGetWorkStations,
+  useGetDivisions,
+  useGetCostCenters,
+  useGetAllEmployees,
 } from '@/hooks/use-api'
 import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
@@ -34,57 +39,56 @@ import { formatTime } from '@/utils/conversions'
 
 // ── Static column definitions ─────────────────────────────────────────────────
 const STATIC_COLUMNS = [
-  { header: 'Full Name', key: 'empFullName', width: 24, required: true }, // A 1
-  { header: 'workEmail', key: 'workEmail', width: 28, required: false }, // B 2
-  { header: 'Official Phone', key: 'officialPhone', width: 18, required: true }, // C 3
+  { header: 'Full Name', key: 'empFullName', width: 24, required: true },
+  { header: 'workEmail', key: 'workEmail', width: 28, required: false },
+  { header: 'Official Phone', key: 'officialPhone', width: 18, required: true },
   {
     header: 'Personal Phone',
     key: 'personalPhone',
     width: 18,
     required: false,
-  }, // D 4
+  },
   {
     header: 'Present Address',
     key: 'presentAddress',
     width: 30,
     required: true,
-  }, // E 5
+  },
   {
     header: 'Permanent Address',
     key: 'permanentAddress',
     width: 30,
     required: false,
-  }, // F 6
+  },
   {
     header: 'Emergency Contact Name',
     key: 'emergencyContactName',
     width: 24,
     required: false,
-  }, // G 7
+  },
   {
     header: 'Emergency Contact Phone',
     key: 'emergencyContactPhone',
     width: 22,
     required: false,
-  }, // H 8
-  { header: 'Date of Birth', key: 'dob', width: 14, required: true }, // I 9
-  { header: 'Date of Joining', key: 'doj', width: 14, required: true }, // J 10
-  { header: 'Gender', key: 'gender', width: 10, required: true }, // K 11
-  { header: 'Blood Group', key: 'bloodGroup', width: 12, required: false }, // L 12
-  { header: 'Basic Salary', key: 'basicSalary', width: 14, required: false }, // M 13
-  { header: 'Gross Salary', key: 'grossSalary', width: 14, required: true }, // N 14
-  { header: 'Employee Code', key: 'empCode', width: 16, required: true }, // O 15
-  { header: 'Department', key: 'departmentId', width: 30, required: true }, // P 16
-  { header: 'Designation', key: 'designationId', width: 30, required: true }, // Q 17
-  { header: 'Employee Type', key: 'employeeTypeId', width: 24, required: true }, // R 18
+  },
+  { header: 'Date of Birth', key: 'dob', width: 14, required: true },
+  { header: 'Date of Joining', key: 'doj', width: 14, required: true },
+  { header: 'Gender', key: 'gender', width: 10, required: true },
+  { header: 'Blood Group', key: 'bloodGroup', width: 12, required: false },
+  { header: 'Basic Salary', key: 'basicSalary', width: 14, required: false },
+  { header: 'Gross Salary', key: 'grossSalary', width: 14, required: true },
+  { header: 'Employee Code', key: 'empCode', width: 16, required: true },
+  { header: 'Department', key: 'departmentId', width: 30, required: true },
+  { header: 'Designation', key: 'designationId', width: 30, required: true },
+  { header: 'Employee Type', key: 'employeeTypeId', width: 24, required: true },
   {
     header: 'Office Timing',
     key: 'officeTimingId',
     width: 36,
     required: false,
-  }, // S 19
+  },
 ]
-// Leave-type columns appended dynamically starting at col 20
 
 const CreateEmployee = () => {
   useInitializeUser()
@@ -96,6 +100,11 @@ const CreateEmployee = () => {
   const { data: employeeTypes } = useGetEmployeeTypes()
   const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
   const { data: leaveTypes } = useGetLeaveTypes()
+  const { data: companies } = useGetCompanies()
+  const { data: workStations } = useGetWorkStations()
+  const { data: divisions } = useGetDivisions()
+  const { data: costCenters } = useGetCostCenters()
+  const { data: employees } = useGetAllEmployees() // for reporting authority
 
   const currentYear = new Date().getFullYear()
   const currentYearLeaveTypes = leaveTypes?.data?.filter(
@@ -108,6 +117,7 @@ const CreateEmployee = () => {
 
   const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null)
   const [cvUrl, setCvFile] = useState<File | null>(null)
+  const [certificateFile, setCertificateFile] = useState<File | null>(null)
 
   const [formData, setFormData] = useState<
     Omit<
@@ -115,28 +125,67 @@ const CreateEmployee = () => {
       'employeeId' | 'createdAt' | 'updatedAt' | 'updatedBy'
     >
   >({
+    // Personal
     empFullName: '',
-    workEmail: '',
-    officialPhone: '',
-    personalPhone: null,
-    presentAddress: '',
-    permanentAddress: null,
-    emergencyContactName: null,
-    emergencyContactPhone: null,
+    empShortName: null,
+    dob: '',
+    gender: 'Male',
+    nationality: null,
+    nationalIdNo: null,
+    maritalStatus: null,
+    religion: null,
+    bloodGroup: null,
     photoUrl: null,
     cvUrl: null,
-    dob: '',
-    doj: new Date().toISOString().split('T')[0],
-    gender: 'Male',
-    bloodGroup: null,
-    basicSalary: 0,
-    isActive: 1,
+
+    // Contact
+    workEmail: '',
+    privateEmail: null,
+    homePhone: null,
+    personalPhone: null,
+    officialPhone: '',
+
+    // Address
+    presentAddress: '',
+    permanentAddress: null,
+    country: null,
+    city: null,
+    zipCode: null,
+
+    // Emergency Contact
+    emergencyContactName: null,
+    emergencyContactPhone: null,
+    emergencyContactRelation: null,
+
+    // Education
+    qualification: 'Graduate',
+    instituteName: null,
+    subjectName: null,
+    startDate: null,
+    endDate: null,
+    result: null,
+    certificateUrl: null,
+
+    // Dependent
+    dependentsName: null,
+    dependentRelation: null,
+
+    // Official
     empCode: '',
+    doj: new Date().toISOString().split('T')[0],
+    doc: null,
+    basicSalary: 0,
+    isActive: true,
     departmentId: 0,
     designationId: 0,
     employeeTypeId: 0,
-    leaveTypeIds: [],
     officeTimingId: 0,
+    companyId: 0,
+    workStationId: 0,
+    divisionId: 0,
+    costCenterId: 0,
+    reportingAuthorityId: 0,
+    leaveTypeIds: [],
     createdBy: userData?.userId || 0,
   })
 
@@ -148,7 +197,8 @@ const CreateEmployee = () => {
     if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value || null }))
+      // Store empty string as null in state but Input value will always be string
+      setFormData((prev) => ({ ...prev, [name]: value === '' ? null : value }))
     }
   }
 
@@ -171,17 +221,32 @@ const CreateEmployee = () => {
     }
   }
 
+  const handleCertificateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCertificateFile(file)
+      setError(null)
+    }
+  }
+
   const handleLeaveTypeToggle = (leaveTypeId: number) => {
     setFormData((prev) => ({
       ...prev,
-      leaveTypeIds: prev.leaveTypeIds.includes(leaveTypeId)
-        ? prev.leaveTypeIds.filter((id) => id !== leaveTypeId)
-        : [...prev.leaveTypeIds, leaveTypeId],
+      leaveTypeIds: (prev.leaveTypeIds ?? []).includes(leaveTypeId)
+        ? (prev.leaveTypeIds ?? []).filter((id) => id !== leaveTypeId)
+        : [...(prev.leaveTypeIds ?? []), leaveTypeId],
     }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    if (name === 'gender' || name === 'bloodGroup') {
+    const stringFields = [
+      'gender',
+      'bloodGroup',
+      'nationality',
+      'maritalStatus',
+      'qualification',
+    ]
+    if (stringFields.includes(name)) {
       setFormData((prev) => ({ ...prev, [name]: value || null }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
@@ -192,31 +257,58 @@ const CreateEmployee = () => {
   const resetForm = () => {
     setFormData({
       empFullName: '',
-      workEmail: '',
-      officialPhone: '',
-      personalPhone: null,
-      presentAddress: '',
-      permanentAddress: null,
-      emergencyContactName: null,
-      emergencyContactPhone: null,
+      empShortName: null,
+      dob: '',
+      gender: 'Male',
+      nationality: null,
+      nationalIdNo: null,
+      maritalStatus: null,
+      religion: null,
+      bloodGroup: null,
       photoUrl: null,
       cvUrl: null,
-      dob: '',
-      doj: new Date().toISOString().split('T')[0],
-      gender: 'Male',
-      bloodGroup: null,
-      basicSalary: 0,
-      isActive: 1,
+      workEmail: '',
+      privateEmail: null,
+      homePhone: null,
+      personalPhone: null,
+      officialPhone: '',
+      presentAddress: '',
+      permanentAddress: null,
+      country: null,
+      city: null,
+      zipCode: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
+      emergencyContactRelation: null,
+      qualification: 'Graduate',
+      instituteName: null,
+      subjectName: null,
+      startDate: null,
+      endDate: null,
+      result: null,
+      certificateUrl: null,
+      dependentsName: null,
+      dependentRelation: null,
       empCode: '',
+      doj: new Date().toISOString().split('T')[0],
+      doc: null,
+      basicSalary: 0,
+      isActive: true,
       departmentId: 0,
       designationId: 0,
       employeeTypeId: 0,
-      leaveTypeIds: [],
       officeTimingId: 0,
+      companyId: 0,
+      workStationId: 0,
+      divisionId: 0,
+      costCenterId: 0,
+      reportingAuthorityId: 0,
+      leaveTypeIds: [],
       createdBy: userData?.userId || 0,
     })
     setEmployeePhotoFile(null)
     setCvFile(null)
+    setCertificateFile(null)
     setIsPopupOpen(false)
     setError(null)
     router.push('/dashboard/employee-management/employees')
@@ -251,6 +343,16 @@ const CreateEmployee = () => {
       return setError('Please select designation')
     if (!formData.employeeTypeId || formData.employeeTypeId <= 0)
       return setError('Please select employee type')
+    if (!formData.companyId || formData.companyId <= 0)
+      return setError('Please select company')
+    if (!formData.workStationId || formData.workStationId <= 0)
+      return setError('Please select work station')
+    if (!formData.divisionId || formData.divisionId <= 0)
+      return setError('Please select division')
+    if (!formData.costCenterId || formData.costCenterId <= 0)
+      return setError('Please select cost center')
+    if (!formData.reportingAuthorityId || formData.reportingAuthorityId <= 0)
+      return setError('Please select reporting authority')
 
     const form = new FormData()
     form.append(
@@ -259,11 +361,13 @@ const CreateEmployee = () => {
         ...formData,
         photoUrl: null,
         cvUrl: null,
+        certificateUrl: null,
         createdBy: userData?.userId || 0,
       })
     )
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
     if (cvUrl) form.append('cvUrl', cvUrl)
+    if (certificateFile) form.append('certificateUrl', certificateFile)
 
     try {
       await addMutation.mutateAsync(form as any)
@@ -277,12 +381,10 @@ const CreateEmployee = () => {
     }
   }
 
-  // ── Download Template (ExcelJS — mirrors create-student pattern) ────────────
+  // ── Download Template ────────────────────────────────────────────────────────
   const handleDownloadTemplate = async () => {
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
-
-    // ── 1. Build lookup lists ─────────────────────────────────────────────────
     const allLeaves = currentYearLeaveTypes ?? []
 
     const departmentLabels = (departments?.data ?? []).map(
@@ -296,25 +398,18 @@ const CreateEmployee = () => {
     )
     const officeTimingLabels = (officeTimingWeekends?.data ?? []).map(
       (t) =>
-        `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${
-          t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''
-        } | ${t.officeTimingId}`
+        `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''} | ${t.officeTimingId}`
     )
     const genderLabels = ['Male', 'Female']
     const bloodGroupLabels = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
 
-    // ── 2. Main sheet FIRST — SheetJS (used by ExcelFileInput) reads sheet[0] ──
-    // Lookup must come AFTER so the xlsx parser sees "Create Employees" first.
     const sheet = workbook.addWorksheet('Create Employees')
-
     sheet.columns = STATIC_COLUMNS.map(({ header, key, width }) => ({
       header,
       key,
       width,
     }))
 
-    // Dynamic leave-type columns (one per leave type)
-    // Header format: "Leave Type Name | Year (leaveTypeId)"
     allLeaves.forEach((leave, idx) => {
       const colHeader = `${leave.leaveTypeName} | ${leave.yearPeriod} (${leave.leaveTypeId})`
       const colIdx = STATIC_COLUMNS.length + 1 + idx
@@ -322,9 +417,7 @@ const CreateEmployee = () => {
       sheet.getColumn(colIdx).header = colHeader
     })
 
-    // ── 4. Style header row ───────────────────────────────────────────────────
     const headerRow = sheet.getRow(1)
-
     STATIC_COLUMNS.forEach(({ header, required }, idx) => {
       const cell = headerRow.getCell(idx + 1)
       cell.value = required
@@ -375,7 +468,7 @@ const CreateEmployee = () => {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'FFD1FAE5' },
-      } // light green for leave columns
+      }
       cell.alignment = {
         vertical: 'middle',
         horizontal: 'center',
@@ -391,9 +484,7 @@ const CreateEmployee = () => {
 
     headerRow.height = 36
 
-    // ── 5. Hint row (row 2) ───────────────────────────────────────────────────
     const hintRow = sheet.getRow(2)
-
     STATIC_COLUMNS.forEach((_, idx) => {
       const cell = hintRow.getCell(idx + 1)
       cell.fill = {
@@ -426,8 +517,6 @@ const CreateEmployee = () => {
         bottom: { style: 'thin' },
         right: { style: 'thin' },
       }
-
-      // Yes/No dropdown validation on data rows
       for (let row = 3; row <= 201; row++) {
         sheet.getCell(row, colIdx).dataValidation = {
           type: 'list',
@@ -439,9 +528,7 @@ const CreateEmployee = () => {
 
     hintRow.height = 14
 
-    // ── 6. Per-row dropdowns (data rows start at 3) ───────────────────────────
     for (let row = 3; row <= 201; row++) {
-      // P: Department
       sheet.getCell(`P${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -451,7 +538,6 @@ const CreateEmployee = () => {
         error: 'Please select a department from the dropdown.',
         formulae: ['DepartmentList'],
       }
-      // Q: Designation
       sheet.getCell(`Q${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -461,7 +547,6 @@ const CreateEmployee = () => {
         error: 'Please select a designation from the dropdown.',
         formulae: ['DesignationList'],
       }
-      // R: Employee Type
       sheet.getCell(`R${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -471,13 +556,11 @@ const CreateEmployee = () => {
         error: 'Please select an employee type from the dropdown.',
         formulae: ['EmployeeTypeList'],
       }
-      // S: Office Timing
       sheet.getCell(`S${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
         formulae: ['OfficeTimingList'],
       }
-      // K: Gender
       sheet.getCell(`K${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -487,7 +570,6 @@ const CreateEmployee = () => {
         error: 'Please select Male or Female.',
         formulae: ['GenderList'],
       }
-      // L: Blood Group
       sheet.getCell(`L${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
@@ -499,13 +581,9 @@ const CreateEmployee = () => {
       }
     }
 
-    // ── 7. Freeze top 2 rows + col A ─────────────────────────────────────────
-    // ── 7. Hidden Lookup sheet — created AFTER main sheet so SheetJS reads
-    // sheet index 0 ("Create Employees") and not this one when importing.
     const lookupSheet = workbook.addWorksheet('Lookup')
     lookupSheet.state = 'veryHidden'
 
-    // Col A — departments
     departmentLabels.forEach((label, i) => {
       lookupSheet.getCell(`A${i + 1}`).value = label
     })
@@ -515,7 +593,6 @@ const CreateEmployee = () => {
         'DepartmentList'
       )
 
-    // Col B — designations
     designationLabels.forEach((label, i) => {
       lookupSheet.getCell(`B${i + 1}`).value = label
     })
@@ -525,7 +602,6 @@ const CreateEmployee = () => {
         'DesignationList'
       )
 
-    // Col C — employee types
     employeeTypeLabels.forEach((label, i) => {
       lookupSheet.getCell(`C${i + 1}`).value = label
     })
@@ -535,7 +611,6 @@ const CreateEmployee = () => {
         'EmployeeTypeList'
       )
 
-    // Col D — office timings
     officeTimingLabels.forEach((label, i) => {
       lookupSheet.getCell(`D${i + 1}`).value = label
     })
@@ -545,19 +620,16 @@ const CreateEmployee = () => {
         'OfficeTimingList'
       )
 
-    // Col E — genders
     genderLabels.forEach((g, i) => {
       lookupSheet.getCell(`E${i + 1}`).value = g
     })
     workbook.definedNames.add('Lookup!$E$1:$E$2', 'GenderList')
 
-    // Col F — blood groups
     bloodGroupLabels.forEach((bg, i) => {
       lookupSheet.getCell(`F${i + 1}`).value = bg
     })
     workbook.definedNames.add('Lookup!$F$1:$F$8', 'BloodGroupList')
 
-    // ── 8. Freeze top 2 rows + col A
     sheet.views = [{ state: 'frozen', xSplit: 1, ySplit: 2 }]
 
     const buffer = await workbook.xlsx.writeBuffer()
@@ -567,7 +639,6 @@ const CreateEmployee = () => {
     saveAs(blob, 'create-employees-template.xlsx')
   }
 
-  // ── Parse & submit Excel data ───────────────────────────────────────────────
   const handleExcelDataParsed = (data: any[]) => {
     console.log('Excel data parsed:', data)
   }
@@ -575,23 +646,17 @@ const CreateEmployee = () => {
   const handleExcelSubmit = async (data: any[]) => {
     try {
       const allLeaves = currentYearLeaveTypes ?? []
-
-      // Strip trailing " *" from richText-concatenated headers
       const normalizeKey = (k: string) => k.trim().replace(/\s*\*$/, '')
 
-      // Filter out hint row and empty rows
       const validRows = data.filter((row) => {
         const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
         if (keys.length === 0) return false
-
         const allHint = keys.every((k) =>
           String(row[k] ?? '')
             .trim()
             .startsWith('Yes = include')
         )
         if (allHint) return false
-
-        // Must have a non-empty Full Name or Employee Code
         const nameKey = keys.find((k) => normalizeKey(k) === 'Full Name')
         const codeKey = keys.find((k) => normalizeKey(k) === 'Employee Code')
         return (
@@ -602,60 +667,31 @@ const CreateEmployee = () => {
 
       const employeesToCreate = validRows.map((row) => {
         const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
-
         const get = (colHeader: string) => {
           const key = keys.find((k) => normalizeKey(k) === colHeader.trim())
           return key ? row[key] : undefined
         }
 
-        // ── Parse Department label: "Name | id" ──────────────────────────────
-        const deptLabel = String(get('Department') ?? '')
-        const deptParts = deptLabel.split(' | ')
-        const departmentId =
-          deptParts.length >= 2 ? Number(deptParts[deptParts.length - 1]) : null
+        const parseId = (label: string) => {
+          const parts = String(label ?? '').split(' | ')
+          return parts.length >= 2 ? Number(parts[parts.length - 1]) : null
+        }
 
-        // ── Parse Designation label ───────────────────────────────────────────
-        const desigLabel = String(get('Designation') ?? '')
-        const desigParts = desigLabel.split(' | ')
-        const designationId =
-          desigParts.length >= 2
-            ? Number(desigParts[desigParts.length - 1])
-            : null
-
-        // ── Parse Employee Type label ─────────────────────────────────────────
-        const etLabel = String(get('Employee Type') ?? '')
-        const etParts = etLabel.split(' | ')
-        const employeeTypeId =
-          etParts.length >= 2 ? Number(etParts[etParts.length - 1]) : null
-
-        // ── Parse Office Timing label ─────────────────────────────────────────
-        // Format: "HH:MM - HH:MM (Off: ...) | officeTimingId"
-        const otLabel = String(get('Office Timing') ?? '')
-        const otParts = otLabel.split(' | ')
-        const officeTimingId =
-          otParts.length >= 2 ? Number(otParts[otParts.length - 1]) : null
-
-        // ── Collect selected leave types from per-leave columns ───────────────
-        // Column header format: "Leave Type Name | Year (leaveTypeId)"
         const leaveTypeIds: number[] = []
-
         for (const leave of allLeaves) {
           const colHeader = `${leave.leaveTypeName} | ${leave.yearPeriod} (${leave.leaveTypeId})`
           const matchedKey = keys.find(
             (k) => normalizeKey(k) === colHeader.trim()
           )
-
           if (matchedKey) {
             const cellValue = String(row[matchedKey] ?? '')
               .trim()
               .toLowerCase()
-            if (['yes', 'y', '1', 'true'].includes(cellValue)) {
+            if (['yes', 'y', '1', 'true'].includes(cellValue))
               leaveTypeIds.push(leave.leaveTypeId!)
-            }
           }
         }
 
-        // ── Normalize dates ───────────────────────────────────────────────────
         const normalizeDate = (raw: any): string => {
           if (!raw) return ''
           const s = String(raw)
@@ -691,21 +727,16 @@ const CreateEmployee = () => {
           bloodGroup: get('Blood Group') ? String(get('Blood Group')) : null,
           basicSalary: get('Basic Salary') ? Number(get('Basic Salary')) : 0,
           grossSalary: get('Gross Salary') ? Number(get('Gross Salary')) : 0,
-          isActive: 1,
+          isActive: true,
           empCode: String(get('Employee Code') ?? ''),
-          departmentId: departmentId && !isNaN(departmentId) ? departmentId : 0,
-          designationId:
-            designationId && !isNaN(designationId) ? designationId : 0,
-          employeeTypeId:
-            employeeTypeId && !isNaN(employeeTypeId) ? employeeTypeId : 0,
-          officeTimingId:
-            officeTimingId && !isNaN(officeTimingId) ? officeTimingId : null,
+          departmentId: parseId(get('Department')) ?? 0,
+          designationId: parseId(get('Designation')) ?? 0,
+          employeeTypeId: parseId(get('Employee Type')) ?? 0,
+          officeTimingId: parseId(get('Office Timing')) ?? null,
           leaveTypeIds,
           createdBy: userData?.userId || 0,
         }
       })
-
-      console.log('Employees to create from Excel:', employeesToCreate)
 
       for (const employee of employeesToCreate) {
         const form = new FormData()
@@ -768,9 +799,11 @@ const CreateEmployee = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 py-4">
-        {/* Personal Information */}
+        {/* ── 1. Employee Personal Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Personal Information</h3>
+          <h3 className="text-md font-semibold mb-4">
+            Employee Personal Information
+          </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="empFullName">
@@ -780,65 +813,37 @@ const CreateEmployee = () => {
                 id="empFullName"
                 name="empFullName"
                 type="text"
-                value={formData.empFullName}
+                value={formData.empFullName ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="employeePhoto" className="text-sm">
-                Employee Photo
-              </Label>
-              <Input
-                id="employeePhoto"
-                type="file"
-                accept="image/*"
-                onChange={handleEmployeePhotoChange}
-                className="text-sm"
-              />
-              {employeePhotoFile && (
-                <p className="text-xs text-green-600">
-                  ✓ Photo selected: {employeePhotoFile.name}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Address */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Address</h3>
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="presentAddress">
-                Present Address <span className="text-red-500">*</span>
+              <Label htmlFor="empShortName">Short Name</Label>
+              <Input
+                id="empShortName"
+                name="empShortName"
+                type="text"
+                value={formData.empShortName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dob">
+                Date of Birth <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="presentAddress"
-                name="presentAddress"
-                type="text"
-                value={formData.presentAddress}
+                id="dob"
+                name="dob"
+                type="date"
+                value={formData.dob ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="permanentAddress">Permanent Address</Label>
-              <Input
-                id="permanentAddress"
-                name="permanentAddress"
-                type="text"
-                value={formData.permanentAddress || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Physical Details */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Physical Details</h3>
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="gender">
                 Gender <span className="text-red-500">*</span>
@@ -856,6 +861,68 @@ const CreateEmployee = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationality</Label>
+              <Select
+                value={formData.nationality || ''}
+                onValueChange={(value) =>
+                  handleSelectChange('nationality', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select nationality" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Bangladeshi">Bangladeshi</SelectItem>
+                  <SelectItem value="Pakistani">Pakistani</SelectItem>
+                  <SelectItem value="Indian">Indian</SelectItem>
+                  <SelectItem value="British">British</SelectItem>
+                  <SelectItem value="American">American</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nationalIdNo">National ID No</Label>
+              <Input
+                id="nationalIdNo"
+                name="nationalIdNo"
+                type="text"
+                value={formData.nationalIdNo || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maritalStatus">Marital Status</Label>
+              <Select
+                value={formData.maritalStatus || ''}
+                onValueChange={(value) =>
+                  handleSelectChange('maritalStatus', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="religion">Religion</Label>
+              <Input
+                id="religion"
+                name="religion"
+                type="text"
+                value={formData.religion || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="bloodGroup">Blood Group</Label>
               <Select
@@ -879,83 +946,30 @@ const CreateEmployee = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </div>
 
-        {/* Emergency Contact */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Emergency Contact</h3>
-          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="emergencyContactName">
-                Emergency Contact Name
-              </Label>
+              <Label htmlFor="employeePhoto">Employee Photo</Label>
               <Input
-                id="emergencyContactName"
-                name="emergencyContactName"
-                type="text"
-                value={formData.emergencyContactName || ''}
-                onChange={handleInputChange}
+                id="employeePhoto"
+                type="file"
+                accept="image/*"
+                onChange={handleEmployeePhotoChange}
+                className="text-sm"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emergencyContactPhone">
-                Emergency Contact Phone
-              </Label>
-              <Input
-                id="emergencyContactPhone"
-                name="emergencyContactPhone"
-                type="tel"
-                value={formData.emergencyContactPhone || ''}
-                onChange={handleInputChange}
-              />
+              {employeePhotoFile && (
+                <p className="text-xs text-green-600">
+                  ✓ Photo selected: {employeePhotoFile.name}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Contact Info */}
+        {/* ── 2. Employee Official Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Contact Info</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="workEmail">workEmail</Label>
-              <Input
-                id="workEmail"
-                name="workEmail"
-                type="email"
-                value={formData.workEmail}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="officialPhone">
-                Official Phone <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="officialPhone"
-                name="officialPhone"
-                type="tel"
-                value={formData.officialPhone}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="personalPhone">Personal Phone</Label>
-              <Input
-                id="personalPhone"
-                name="personalPhone"
-                type="tel"
-                value={formData.personalPhone || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Official Details */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">Official</h3>
+          <h3 className="text-md font-semibold mb-4">
+            Employee Official Information
+          </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="empCode">
@@ -965,11 +979,37 @@ const CreateEmployee = () => {
                 id="empCode"
                 name="empCode"
                 type="text"
-                value={formData.empCode}
+                value={formData.empCode ?? ''}
                 onChange={handleInputChange}
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doj">
+                Date of Joining <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="doj"
+                name="doj"
+                type="date"
+                value={formData.doj ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc">Date of Confirmation</Label>
+              <Input
+                id="doc"
+                name="doc"
+                type="date"
+                value={formData.doc || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="departmentId">
                 Department <span className="text-red-500">*</span>
@@ -1001,6 +1041,7 @@ const CreateEmployee = () => {
                 placeholder="Select department"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="designationId">
                 Designation <span className="text-red-500">*</span>
@@ -1032,6 +1073,7 @@ const CreateEmployee = () => {
                 placeholder="Select designation"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="employeeTypeId">
                 Employee Type <span className="text-red-500">*</span>
@@ -1063,32 +1105,168 @@ const CreateEmployee = () => {
                 placeholder="Select employee type"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="dob">
-                Date of Birth <span className="text-red-500">*</span>
+              <Label htmlFor="companyId">
+                Company <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="dob"
-                name="dob"
-                type="date"
-                value={formData.dob}
-                onChange={handleInputChange}
-                required
+              <CustomCombobox
+                items={
+                  companies?.data?.map((c) => ({
+                    id: c?.companyId?.toString() || '0',
+                    name: c.companyName || 'Unnamed company',
+                  })) || []
+                }
+                value={
+                  formData.companyId
+                    ? {
+                        id: formData.companyId.toString(),
+                        name:
+                          companies?.data?.find(
+                            (c) => c.companyId === formData.companyId
+                          )?.companyName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'companyId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select company"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="doj">
-                Date of Joining <span className="text-red-500">*</span>
+              <Label htmlFor="workStationId">
+                Work Station <span className="text-red-500">*</span>
               </Label>
-              <Input
-                id="doj"
-                name="doj"
-                type="date"
-                value={formData.doj}
-                onChange={handleInputChange}
-                required
+              <CustomCombobox
+                items={
+                  workStations?.data?.map((ws) => ({
+                    id: ws?.workStationId?.toString() || '0',
+                    name: ws.workStationName || 'Unnamed work station',
+                  })) || []
+                }
+                value={
+                  formData.workStationId
+                    ? {
+                        id: formData.workStationId.toString(),
+                        name:
+                          workStations?.data?.find(
+                            (ws) => ws.workStationId === formData.workStationId
+                          )?.workStationName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'workStationId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select work station"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="divisionId">
+                Division <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  divisions?.data?.map((div) => ({
+                    id: div?.divisionId?.toString() || '0',
+                    name: div.divisionName || 'Unnamed division',
+                  })) || []
+                }
+                value={
+                  formData.divisionId
+                    ? {
+                        id: formData.divisionId.toString(),
+                        name:
+                          divisions?.data?.find(
+                            (d) => d.divisionId === formData.divisionId
+                          )?.divisionName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'divisionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select division"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="costCenterId">
+                Cost Center <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  costCenters?.data?.map((cc) => ({
+                    id: cc?.costCenterId?.toString() || '0',
+                    name: cc.costCenterName || 'Unnamed cost center',
+                  })) || []
+                }
+                value={
+                  formData.costCenterId
+                    ? {
+                        id: formData.costCenterId.toString(),
+                        name:
+                          costCenters?.data?.find(
+                            (cc) => cc.costCenterId === formData.costCenterId
+                          )?.costCenterName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'costCenterId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select cost center"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reportingAuthorityId">
+                Reporting Authority <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  employees?.data?.map((emp) => ({
+                    id: emp?.employeeId?.toString() || '0',
+                    name: emp.empFullName || 'Unnamed employee',
+                  })) || []
+                }
+                value={
+                  formData.reportingAuthorityId
+                    ? {
+                        id: formData.reportingAuthorityId.toString(),
+                        name:
+                          employees?.data?.find(
+                            (e) =>
+                              e.employeeId === formData.reportingAuthorityId
+                          )?.empFullName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'reportingAuthorityId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select reporting authority"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="officeTimingId">
                 Office Timing <span className="text-red-500">*</span>
@@ -1124,6 +1302,7 @@ const CreateEmployee = () => {
                 placeholder="Select office timing"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="basicSalary">
                 Basic Salary <span className="text-red-500">*</span>
@@ -1138,10 +1317,30 @@ const CreateEmployee = () => {
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="cvUrl" className="text-sm">
-                Upload CV (PDF only)
-              </Label>
+              <Label htmlFor="isActive">Status</Label>
+              <Select
+                value={formData.isActive ? 'true' : 'false'}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isActive: value === 'true',
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cvUrl">Upload CV (PDF only)</Label>
               <Input
                 id="cvUrl"
                 type="file"
@@ -1158,7 +1357,303 @@ const CreateEmployee = () => {
           </div>
         </div>
 
-        {/* Leave Types */}
+        {/* ── 3. Employee Education Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Education Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="qualification">
+                Qualification <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.qualification}
+                onValueChange={(value) =>
+                  handleSelectChange('qualification', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SSC">SSC</SelectItem>
+                  <SelectItem value="HSC">HSC</SelectItem>
+                  <SelectItem value="Graduate">Graduate</SelectItem>
+                  <SelectItem value="Postgraduate">Postgraduate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instituteName">Institute Name</Label>
+              <Input
+                id="instituteName"
+                name="instituteName"
+                type="text"
+                value={formData.instituteName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subjectName">Subject / Major</Label>
+              <Input
+                id="subjectName"
+                name="subjectName"
+                type="text"
+                value={formData.subjectName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="result">Result / GPA</Label>
+              <Input
+                id="result"
+                name="result"
+                type="text"
+                value={formData.result || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                name="startDate"
+                type="date"
+                value={formData.startDate || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                name="endDate"
+                type="date"
+                value={formData.endDate || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="certificateFile">Upload Certificate</Label>
+              <Input
+                id="certificateFile"
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleCertificateChange}
+                className="text-sm"
+              />
+              {certificateFile && (
+                <p className="text-xs text-green-600">
+                  ✓ Certificate selected: {certificateFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── 4. Employee Dependent Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Dependent Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="dependentsName">Dependent Name</Label>
+              <Input
+                id="dependentsName"
+                name="dependentsName"
+                type="text"
+                value={formData.dependentsName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dependentRelation">Relation</Label>
+              <Input
+                id="dependentRelation"
+                name="dependentRelation"
+                type="text"
+                value={formData.dependentRelation || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── 5. Employee Emergency Contact Information ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Employee Emergency Contact Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactName">Contact Name</Label>
+              <Input
+                id="emergencyContactName"
+                name="emergencyContactName"
+                type="text"
+                value={formData.emergencyContactName || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
+              <Input
+                id="emergencyContactPhone"
+                name="emergencyContactPhone"
+                type="tel"
+                value={formData.emergencyContactPhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContactRelation">Relation</Label>
+              <Input
+                id="emergencyContactRelation"
+                name="emergencyContactRelation"
+                type="text"
+                value={formData.emergencyContactRelation || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Contact Info (kept as separate section for address + phones) ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-4">
+            Contact &amp; Address Information
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="workEmail">Work Email</Label>
+              <Input
+                id="workEmail"
+                name="workEmail"
+                type="email"
+                value={formData.workEmail ?? ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="privateEmail">Private Email</Label>
+              <Input
+                id="privateEmail"
+                name="privateEmail"
+                type="email"
+                value={formData.privateEmail || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officialPhone">
+                Official Phone <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="officialPhone"
+                name="officialPhone"
+                type="tel"
+                value={formData.officialPhone ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="personalPhone">Personal Phone</Label>
+              <Input
+                id="personalPhone"
+                name="personalPhone"
+                type="tel"
+                value={formData.personalPhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="homePhone">Home Phone</Label>
+              <Input
+                id="homePhone"
+                name="homePhone"
+                type="tel"
+                value={formData.homePhone || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="presentAddress">
+                Present Address <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="presentAddress"
+                name="presentAddress"
+                type="text"
+                value={formData.presentAddress ?? ''}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="permanentAddress">Permanent Address</Label>
+              <Input
+                id="permanentAddress"
+                name="permanentAddress"
+                type="text"
+                value={formData.permanentAddress || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                name="country"
+                type="text"
+                value={formData.country || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                name="city"
+                type="text"
+                value={formData.city || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="zipCode">Zip Code</Label>
+              <Input
+                id="zipCode"
+                name="zipCode"
+                type="text"
+                value={formData.zipCode || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Leave Types ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">
             Leave Types ({currentYear})
@@ -1175,7 +1670,7 @@ const CreateEmployee = () => {
                     id={`leave-${leave.leaveTypeId}`}
                     checked={
                       leave.leaveTypeId !== undefined &&
-                      formData.leaveTypeIds.includes(leave.leaveTypeId)
+                      (formData.leaveTypeIds ?? []).includes(leave.leaveTypeId)
                     }
                     onCheckedChange={() =>
                       leave.leaveTypeId !== undefined &&
@@ -1195,9 +1690,9 @@ const CreateEmployee = () => {
                 </div>
               ))}
             </div>
-            {formData.leaveTypeIds.length > 0 && (
+            {(formData.leaveTypeIds ?? []).length > 0 && (
               <p className="text-xs text-green-600">
-                ✓ {formData.leaveTypeIds.length} leave type(s) selected
+                ✓ {(formData.leaveTypeIds ?? []).length} leave type(s) selected
               </p>
             )}
           </div>
