@@ -4,7 +4,6 @@ import {
   mysqlTable,
   int,
   text,
-  real,
   timestamp,
   mysqlEnum,
   varchar,
@@ -236,9 +235,9 @@ export const employeeModel = mysqlTable('employees', {
   costCenterId: int('cost_center_id')
     .references(() => costCenterModel.costCenterId)
     .notNull(),
-  reportingAuthorityId: int('reporting_authority_id')
-    .references(() => reportingAuthorityModel.reportingAuthorityId)
-    .notNull(),
+  reportingAuthorityId: int('reporting_authority_id').references(
+    () => reportingAuthorityModel.reportingAuthorityId
+  ),
   createdBy: int('created_by').notNull(),
   createdAt: timestamp('created_at').default(sql`CURRENT_TIMESTAMP`),
   updatedBy: int('updated_by'),
