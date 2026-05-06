@@ -451,7 +451,9 @@ const Employees = () => {
                   <TableCell>{emp.basicSalary}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Link href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}>
+                      <Link
+                        href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}
+                      >
                         <Button
                           variant="ghost"
                           size="sm"

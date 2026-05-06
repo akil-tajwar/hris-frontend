@@ -351,8 +351,6 @@ const CreateEmployee = () => {
       return setError('Please select division')
     if (!formData.costCenterId || formData.costCenterId <= 0)
       return setError('Please select cost center')
-    if (!formData.reportingAuthorityId || formData.reportingAuthorityId <= 0)
-      return setError('Please select reporting authority')
 
     const form = new FormData()
     form.append(
@@ -1236,7 +1234,7 @@ const CreateEmployee = () => {
 
             <div className="space-y-2">
               <Label htmlFor="reportingAuthorityId">
-                Reporting Authority <span className="text-red-500">*</span>
+                Reporting Authority
               </Label>
               <CustomCombobox
                 items={

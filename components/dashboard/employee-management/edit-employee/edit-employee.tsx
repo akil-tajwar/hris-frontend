@@ -33,7 +33,7 @@ import {
 } from '@/hooks/use-api'
 import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
-import { formatTime } from '@/utils/conversions'
+import { formatDateForInput, formatTime } from '@/utils/conversions'
 
 const EditEmployee = () => {
   useInitializeUser()
@@ -91,7 +91,7 @@ const EditEmployee = () => {
     bloodGroup: null,
     photoUrl: null,
     cvUrl: null,
-
+    certificateUrl: null,
     // Contact
     workEmail: '',
     privateEmail: null,
@@ -118,7 +118,6 @@ const EditEmployee = () => {
     startDate: null,
     endDate: null,
     result: null,
-    certificateUrl: null,
 
     // Dependent
     dependentsName: null,
@@ -138,7 +137,7 @@ const EditEmployee = () => {
     workStationId: 0,
     divisionId: 0,
     costCenterId: 0,
-    reportingAuthorityId: 0,
+    reportingAuthorityId: null,
     leaveTypeIds: [],
     updatedBy: userData?.userId || 0,
   })
@@ -151,7 +150,7 @@ const EditEmployee = () => {
       setFormData({
         empFullName: emp.empFullName || '',
         empShortName: emp.empShortName || null,
-        dob: emp.dob || '',
+        dob: formatDateForInput(emp.dob) || '',
         gender: emp.gender || 'Male',
         nationality: emp.nationality || null,
         nationalIdNo: emp.nationalIdNo || null,
@@ -176,15 +175,15 @@ const EditEmployee = () => {
         qualification: emp.qualification || 'Graduate',
         instituteName: emp.instituteName || null,
         subjectName: emp.subjectName || null,
-        startDate: emp.startDate || null,
-        endDate: emp.endDate || null,
+        startDate: formatDateForInput(emp.startDate) || null,
+        endDate: formatDateForInput(emp.endDate) || null,
         result: emp.result || null,
         certificateUrl: emp.certificateUrl || null,
         dependentsName: emp.dependentsName || null,
         dependentRelation: emp.dependentRelation || null,
         empCode: emp.empCode || '',
-        doj: emp.doj || new Date().toISOString().split('T')[0],
-        doc: emp.doc || null,
+        doj: formatDateForInput(emp.doj) || new Date().toISOString().split('T')[0],
+        doc: formatDateForInput(emp.doc) || '',
         basicSalary: emp.basicSalary || 0,
         isActive: emp.isActive ?? true,
         departmentId: emp.departmentId || 0,
@@ -195,7 +194,7 @@ const EditEmployee = () => {
         workStationId: emp.workStationId || 0,
         divisionId: emp.divisionId || 0,
         costCenterId: emp.costCenterId || 0,
-        reportingAuthorityId: emp.reportingAuthorityId || 0,
+        reportingAuthorityId: emp.reportingAuthorityId || null,
         leaveTypeIds: emp.leaveTypeIds || [],
         updatedBy: userData?.userId || 0,
       })
@@ -314,8 +313,6 @@ const EditEmployee = () => {
       return setError('Please select division')
     if (!formData.costCenterId || formData.costCenterId <= 0)
       return setError('Please select cost center')
-    if (!formData.reportingAuthorityId || formData.reportingAuthorityId <= 0)
-      return setError('Please select reporting authority')
 
     const form = new FormData()
     form.append(
@@ -826,7 +823,7 @@ const EditEmployee = () => {
 
             <div className="space-y-2">
               <Label htmlFor="reportingAuthorityId">
-                Reporting Authority <span className="text-red-500">*</span>
+                Reporting Authority
               </Label>
               <CustomCombobox
                 items={

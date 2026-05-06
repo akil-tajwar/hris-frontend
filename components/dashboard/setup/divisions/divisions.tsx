@@ -21,16 +21,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, Calendar, Edit2, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Search, Network, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateHolidayType, GetHolidayType } from '@/utils/type'
+import type { CreateDivisionType, GetDivisionType } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useAddHoliday,
-  useDeleteHoliday,
-  useGetHolidays,
-  useUpdateHoliday,
+  useAddDivision,
+  useDeleteDivision,
+  useGetDivisions,
+  useUpdateDivision,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -41,84 +41,48 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { formatDate } from '@/utils/conversions'
 
-const Holidays = () => {
+const Divisions = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: holidays } = useGetHolidays()
-  console.log('🚀 ~ Holidays ~ holidays:', holidays)
+  const { data: divisions } = useGetDivisions()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [holidaysPerPage] = useState(10)
+  const [divisionsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetHolidayType>('holidayName')
+    useState<keyof GetDivisionType>('divisionName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingHolidayId, setDeletingHolidayId] = useState<number | null>(
+  const [editingDivisionId, setEditingDivisionId] = useState<number | null>(
     null
   )
 
-  const getTodayDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingDivisionId, setDeletingDivisionId] = useState<number | null>(
+    null
+  )
 
-  const [formData, setFormData] = useState<CreateHolidayType>({
-    holidayName: '',
-    startDate: getTodayDate(),
-    endDate: getTodayDate(),
-    noOfDays: 1,
-    description: '',
+  const [formData, setFormData] = useState<CreateDivisionType>({
+    divisionName: '',
     createdBy: userData?.userId || 0,
   })
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'noOfDays' ? Number(value) : value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
-
-  // Calculate number of days when dates change
-  useEffect(() => {
-    if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate)
-      const end = new Date(formData.endDate)
-      const diffTime = end.getTime() - start.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
-
-      if (diffDays > 0) {
-        setFormData((prev) => ({
-          ...prev,
-          noOfDays: diffDays,
-        }))
-      }
-    }
-  }, [formData.startDate, formData.endDate])
 
   const resetForm = useCallback(() => {
     setFormData({
-      holidayName: '',
-      startDate: getTodayDate(),
-      endDate: getTodayDate(),
-      noOfDays: 1,
-      description: '',
+      divisionName: '',
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(null)
+    setEditingDivisionId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
@@ -130,22 +94,17 @@ const Holidays = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddHoliday({
+  const addMutation = useAddDivision({ onClose: closePopup, reset: resetForm })
+  const updateMutation = useUpdateDivision({
+    onClose: closePopup,
+    reset: resetForm,
+  })
+  const deleteMutation = useDeleteDivision({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const updateMutation = useUpdateHoliday({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-
-  const deleteMutation = useDeleteHoliday({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-
-  const handleSort = (column: keyof GetHolidayType) => {
+  const handleSort = (column: keyof GetDivisionType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -154,25 +113,23 @@ const Holidays = () => {
     }
   }
 
-  const filteredHolidays = useMemo(() => {
-    if (!holidays?.data || !Array.isArray(holidays.data)) return []
-    return holidays.data.filter((holiday) =>
-      holiday.holidayName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDivisions = useMemo(() => {
+    if (!divisions?.data || !Array.isArray(divisions.data)) return []
+    return divisions.data.filter((division) =>
+      division.divisionName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [holidays?.data, searchTerm])
+  }, [divisions?.data, searchTerm])
 
-  const sortedHolidays = useMemo(() => {
-    if (!Array.isArray(filteredHolidays)) return []
-    return [...filteredHolidays].sort((a, b) => {
+  const sortedDivisions = useMemo(() => {
+    if (!Array.isArray(filteredDivisions)) return []
+    return [...filteredDivisions].sort((a, b) => {
       const aValue = a[sortColumn] ?? ''
       const bValue = b[sortColumn] ?? ''
-
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue)
       }
-
       return sortDirection === 'asc'
         ? aValue > bValue
           ? 1
@@ -181,56 +138,43 @@ const Holidays = () => {
           ? 1
           : -1
     })
-  }, [filteredHolidays, sortColumn, sortDirection])
+  }, [filteredDivisions, sortColumn, sortDirection])
 
-  const paginatedHolidays = useMemo(() => {
-    const startIndex = (currentPage - 1) * holidaysPerPage
-    return sortedHolidays.slice(startIndex, startIndex + holidaysPerPage)
-  }, [sortedHolidays, currentPage, holidaysPerPage])
+  const paginatedDivisions = useMemo(() => {
+    const startIndex = (currentPage - 1) * divisionsPerPage
+    return sortedDivisions.slice(startIndex, startIndex + divisionsPerPage)
+  }, [sortedDivisions, currentPage, divisionsPerPage])
 
-  const totalPages = Math.ceil(sortedHolidays.length / holidaysPerPage)
+  const totalPages = Math.ceil(sortedDivisions.length / divisionsPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-
       setError(null)
-
       try {
-        const submitData: CreateHolidayType = {
-          holidayName: formData.holidayName,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          noOfDays: formData.noOfDays,
-          description: formData.description,
+        const submitData: CreateDivisionType = {
+          divisionName: formData.divisionName,
           createdBy: formData.createdBy,
         }
-
         if (isEditMode) {
           submitData.updatedBy = userData?.userId || 0
         } else {
           submitData.createdBy = userData?.userId || 0
         }
-
-        if (isEditMode && editingHolidayId) {
-          updateMutation.mutate({
-            id: editingHolidayId,
-            data: submitData,
-          })
-          console.log('update', isEditMode, editingHolidayId)
+        if (isEditMode && editingDivisionId) {
+          updateMutation.mutate({ id: editingDivisionId, data: submitData })
         } else {
           addMutation.mutate(submitData)
-          console.log('create')
         }
       } catch (err) {
-        setError('Failed to save holiday')
+        setError('Failed to save division')
         console.error(err)
       }
     },
     [
       formData,
       isEditMode,
-      editingHolidayId,
+      editingDivisionId,
       addMutation,
       updateMutation,
       userData,
@@ -239,20 +183,16 @@ const Holidays = () => {
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError('Error saving holiday')
+      setError('Error saving division')
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (holiday: any) => {
+  const handleEditClick = (division: any) => {
     setFormData({
-      holidayName: holiday.holidayName,
-      startDate: holiday.startDate,
-      endDate: holiday.endDate,
-      noOfDays: holiday.noOfDays,
-      description: holiday.description || '',
+      divisionName: division.divisionName,
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(holiday.holidayId)
+    setEditingDivisionId(division.divisionId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -262,15 +202,15 @@ const Holidays = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-amber-100 p-2 rounded-md">
-            <Calendar className="text-amber-600" />
+            <Network className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Holidays</h2>
+          <h2 className="text-lg font-semibold">Divisions</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search holidays..."
+              placeholder="Search divisions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -291,70 +231,49 @@ const Holidays = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
-                onClick={() => handleSort('holidayName')}
+                onClick={() => handleSort('divisionName')}
                 className="cursor-pointer"
               >
-                Holiday Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Division Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead
-                onClick={() => handleSort('startDate')}
-                className="cursor-pointer"
-              >
-                Start Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('endDate')}
-                className="cursor-pointer"
-              >
-                End Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('noOfDays')}
-                className="cursor-pointer"
-              >
-                No. of Days <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Description</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!holidays || holidays.data === undefined ? (
+            {!divisions || divisions.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading holidays...
+                <TableCell colSpan={3} className="text-center py-4">
+                  Loading divisions...
                 </TableCell>
               </TableRow>
-            ) : !holidays.data || holidays.data.length === 0 ? (
+            ) : !divisions.data || divisions.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays found
+                <TableCell colSpan={3} className="text-center py-4">
+                  No divisions found
                 </TableCell>
               </TableRow>
-            ) : paginatedHolidays.length === 0 ? (
+            ) : paginatedDivisions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays match your search
+                <TableCell colSpan={3} className="text-center py-4">
+                  No divisions match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedHolidays.map((holiday: any, index) => (
+              paginatedDivisions.map((division: any, index) => (
                 <TableRow key={index}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell className="font-medium">
-                    {holiday.holidayName}
+                  <TableCell>
+                    {(currentPage - 1) * divisionsPerPage + index + 1}
                   </TableCell>
-                  <TableCell>{formatDate(holiday.startDate)}</TableCell>
-                  <TableCell>{formatDate(holiday.endDate)}</TableCell>
-                  <TableCell>{holiday.noOfDays}</TableCell>
-                  <TableCell>{holiday.description || '-'}</TableCell>
+                  <TableCell className="font-medium">
+                    {division.divisionName}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(holiday)}
+                        onClick={() => handleEditClick(division)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -363,7 +282,7 @@ const Holidays = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingHolidayId(holiday.holidayId)
+                          setDeletingDivisionId(division.divisionId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -378,7 +297,7 @@ const Holidays = () => {
         </Table>
       </div>
 
-      {sortedHolidays.length > 0 && (
+      {sortedDivisions.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -392,7 +311,6 @@ const Holidays = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -419,10 +337,8 @@ const Holidays = () => {
                     </PaginationItem>
                   )
                 }
-
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -443,75 +359,21 @@ const Holidays = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? 'Edit Holiday' : 'Add Holiday'}
+        title={isEditMode ? 'Edit Division' : 'Add Division'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="holidayName">
-                Holiday Name <span className="text-red-500">*</span>
+              <Label htmlFor="divisionName">
+                Division Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="holidayName"
-                name="holidayName"
-                value={formData.holidayName}
+                id="divisionName"
+                name="divisionName"
+                value={formData.divisionName}
                 onChange={handleInputChange}
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="startDate">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="endDate">
-                End Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="noOfDays">
-                Number of Days <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="noOfDays"
-                name="noOfDays"
-                type="number"
-                min="1"
-                value={formData.noOfDays}
-                readOnly
-                className="bg-gray-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description || ''}
-                onChange={handleInputChange}
-                rows={3}
               />
             </div>
           </div>
@@ -544,9 +406,9 @@ const Holidays = () => {
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
+            <AlertDialogTitle>Delete Division</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this holiday? This action cannot
+              Are you sure you want to delete this division? This action cannot
               be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -556,8 +418,8 @@ const Holidays = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingHolidayId) {
-                  deleteMutation.mutate({ id: deletingHolidayId })
+                if (deletingDivisionId) {
+                  deleteMutation.mutate({ id: deletingDivisionId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -572,4 +434,4 @@ const Holidays = () => {
   )
 }
 
-export default Holidays
+export default Divisions

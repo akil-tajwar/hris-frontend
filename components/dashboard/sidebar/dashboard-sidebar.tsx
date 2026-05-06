@@ -54,6 +54,22 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/designations',
         },
         {
+          title: 'Companies',
+          href: '/dashboard/setup/company',
+        },
+        {
+            title: 'Divisions',
+            href: '/dashboard/setup/divisions',
+        },
+        {
+          title: 'Work Stations',
+          href: '/dashboard/setup/work-stations',
+        },
+        {
+          title: 'Cost Centers',
+          href: '/dashboard/setup/cost-centers',
+        },
+        {
           title: 'Employee Types',
           href: '/dashboard/setup/employee-types',
         },

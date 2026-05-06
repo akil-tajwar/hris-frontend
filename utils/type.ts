@@ -84,6 +84,7 @@ export type GetCompanyType = z.infer<typeof companySchema>
 export const workStationSchema = z.object({
   workStationId: z.number().optional(),
   workStationName: z.string(),
+  workStationNumber: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -217,7 +218,7 @@ export const employeeSchema = z.object({
   workStationId: z.number().int(),
   divisionId: z.number().int(),
   costCenterId: z.number().int(),
-  reportingAuthorityId: z.number().int(),
+  reportingAuthorityId: z.number().int().nullable(),
 
   // Additional fields from your service (not in original schema)
   officeTiming: z.string().optional(), // This might be a string representation

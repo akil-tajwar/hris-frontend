@@ -165,7 +165,7 @@ export async function deleteDesignation(id: number, token: string) {
 // Company API Functions
 export async function getAllCompanies(token: string) {
   return fetchApi<GetCompanyType[]>({
-    url: 'api/companies/getall',
+    url: 'api/company/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -179,7 +179,7 @@ export async function createCompany(
   token: string
 ) {
   return fetchApi<CreateCompanyType>({
-    url: 'api/companies/create',
+    url: 'api/company/create',
     method: 'POST',
     body: data,
     headers: {
@@ -195,7 +195,7 @@ export async function editCompany(
   token: string
 ) {
   return fetchApi<GetCompanyType>({
-    url: `api/companies/edit/${id}`,
+    url: `api/company/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: {
@@ -207,7 +207,7 @@ export async function editCompany(
 
 export async function deleteCompany(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/companies/delete/${id}`,
+    url: `api/company/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
