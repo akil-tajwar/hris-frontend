@@ -44,6 +44,19 @@ export const SignInResponseSchema = z.object({
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
 
+//tenant
+export const tenantSchema = z.object({
+  tenantId: z.number().optional(),
+  tenantName: z.string().min(1).max(100),
+  status: z.boolean().default(true),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+})
+export type CreateTenantType = z.infer<typeof tenantSchema>
+export type GetTenantType = z.infer<typeof tenantSchema>
+
 //departments
 export const departmentSchema = z.object({
   departmentId: z.number().optional(),
@@ -84,7 +97,7 @@ export const companySchema = z.object({
   timezone: z.string().max(100).default('UTC'),
   currency: z.string().length(3).default('USD'),
   status: z.boolean().default(true),
-  createdBy: z.number(),
+  createdBy: z.number().optional(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),

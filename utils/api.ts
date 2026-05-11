@@ -43,6 +43,8 @@ import {
   CreateCompanyType,
   GetWorkStationType,
   CreateWorkStationType,
+  GetTenantType,
+  CreateTenantType,
 } from '@/utils/type'
 
 export async function signIn(credentials: SignInRequest) {
@@ -54,7 +56,70 @@ export async function signIn(credentials: SignInRequest) {
   })
 }
 
+export async function registerUser(credentials: SignInRequest) {
+  return fetchApi<SignInResponse>({
+    url: 'api/auth/register',
+    method: 'POST',
+    body: credentials,
+    schema: SignInResponseSchema,
+  })
+}
+
 //departments
+export async function getAllTenants(token: string) {
+  return fetchApi<GetTenantType[]>({
+    url: 'api/tenants/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createTenant(
+  data: CreateTenantType,
+  token: string
+) {
+  return fetchApi<CreateTenantType>({
+    url: 'api/tenants/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editTenant(
+  id: number,
+  data: GetTenantType,
+  token: string
+) {
+  return fetchApi<GetTenantType>({
+    url: `api/tenants/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteTenant(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/tenants/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//department
 export async function getAllDepartments(token: string) {
   return fetchApi<GetDepartmentType[]>({
     url: 'api/departments/getall',

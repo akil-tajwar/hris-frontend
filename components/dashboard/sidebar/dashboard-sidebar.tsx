@@ -46,6 +46,10 @@ export function DashboardSidebar() {
       href: '/dashboard/setup',
       subItems: [
         {
+          title: 'Tenants',
+          href: '/dashboard/setup/tenants',
+        },
+        {
           title: 'Departments',
           href: '/dashboard/setup/departments',
         },

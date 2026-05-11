@@ -286,7 +286,8 @@ const Companies = () => {
       timezone: company.timezone || 'UTC',
       currency: company.currency || 'USD',
       status: company.status ?? true,
-      createdBy: userData?.userId || 0,
+      createdBy: company.createdBy || 0,
+      updatedBy: userData?.userId || 0,
     })
     setLogoPreview(company.logoUrl || null)
     setEditingCompanyId(company.companyId)

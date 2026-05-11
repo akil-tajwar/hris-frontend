@@ -20,6 +20,7 @@ import {
   createOfficeTimingWeekend,
   createOtherSalaryComponent,
   createSalary,
+  createTenant,
   createWorkStation,
   deleteCompany,
   deleteCostCenter,
@@ -37,6 +38,7 @@ import {
   deleteOfficeTimingWeekend,
   deleteOtherSalaryComponent,
   deleteSalary,
+  deleteTenant,
   deleteWorkStation,
   editCompany,
   editCostCenter,
@@ -54,6 +56,7 @@ import {
   editOfficeTimingWeekend,
   editOtherSalaryComponent,
   editSalary,
+  editTenant,
   editWorkStation,
   getAllCompanies,
   getAllCostCenters,
@@ -72,6 +75,7 @@ import {
   getAllOfficeTimingWeekends,
   getAllOtherSalaryComponents,
   getAllSalaries,
+  getAllTenants,
   getAllWeekends,
   getAllWorkStations,
   getAttendanceReport,
@@ -104,7 +108,142 @@ import {
   CreateWorkStationType,
   CreateDivisionType,
   CreateCostCenterType,
+  CreateTenantType,
 } from '@/utils/type'
+
+//tenants
+export const useGetTenants = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['departments'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllTenants(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateTenantType) => {
+      const res = await createTenant(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create department',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Tenant created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['departments'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding department:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateTenantType }) => {
+      return editTenant(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'department edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['departments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing department:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteTenant = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteTenant(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'department is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['departments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
 
 //departments
 export const useGetDepartments = () => {
@@ -271,19 +410,19 @@ export const useAddCompany = ({
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log('🚀 ~ useAddCompany ~ formData:', formData)
+      console.log("🚀 ~ useAddCompany ~ formData:", formData)
       const res = await createCompany(formData, token)
       return res
     },
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Company created successfully!',
-      })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
-      reset()
-      onClose()
-    },
+    toast({
+      title: 'Success',
+      description: 'Company created successfully!',
+    })
+    queryClient.invalidateQueries({ queryKey: ['companies'] })
+    reset()
+    onClose()
+  },
     onError: (error: any) => {
       console.error('Error adding company:', error)
       toast({
@@ -313,14 +452,14 @@ export const useUpdateCompany = ({
       return editCompany(id, formData, token)
     },
     onSuccess: () => {
-      toast({
-        title: 'Success!',
-        description: 'Company updated successfully.',
-      })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
-      reset()
-      onClose()
-    },
+    toast({
+      title: 'Success!',
+      description: 'Company updated successfully.',
+    })
+    queryClient.invalidateQueries({ queryKey: ['companies'] })
+    reset()
+    onClose()
+  },
     onError: (error: any) => {
       console.error('Error editing company:', error)
       toast({
