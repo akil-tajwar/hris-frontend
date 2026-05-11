@@ -47,6 +47,8 @@ import {
   CreateTenantType,
   RegisterUserResponse,
   RegisterUserResponseSchema,
+  GetCustomerType,
+  CreateCustomerType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -75,6 +77,57 @@ export async function registerUser(credentials: SignInRequest) {
     method: 'POST',
     body: credentials,
     schema: RegisterUserResponseSchema,
+  })
+}
+
+//customers
+export async function getAllCustomers(token: string) {
+  return fetchApi<GetCustomerType[]>({
+    url: 'api/customers/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createCustomer(data: CreateCustomerType, token: string) {
+  return fetchApi<CreateCustomerType>({
+    url: 'api/customers/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editCustomer(
+  id: number,
+  data: GetCustomerType,
+  token: string
+) {
+  return fetchApi<GetCustomerType>({
+    url: `api/customers/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteCustomer(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/customers/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
   })
 }
 

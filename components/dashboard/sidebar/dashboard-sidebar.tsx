@@ -50,6 +50,10 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/tenants',
         },
         {
+          title: 'Customers',
+          href: '/dashboard/setup/customers',
+        },
+        {
           title: 'Register User',
           href: '/dashboard/setup/register-user',
         },

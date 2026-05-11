@@ -72,6 +72,21 @@ export const RegisterUserSchema = z.object({
 
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
 
+//customer
+export const CustomerSchema = z.object({
+  customerId: z.number().int().positive().optional(),
+  customerName: z.string().min(1).max(100),
+  email: z.string().email().max(50),
+  phone: z.string().max(50).optional().nullable(),
+  address: z.string().optional().nullable(),
+  createdBy: z.number().int(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().optional().nullable(),
+  updatedAt: z.date().optional(),
+})
+export type CreateCustomerType = z.infer<typeof CustomerSchema>
+export type GetCustomerType = z.infer<typeof CustomerSchema>
+
 //tenant
 export const tenantSchema = z.object({
   tenantId: z.number().optional(),

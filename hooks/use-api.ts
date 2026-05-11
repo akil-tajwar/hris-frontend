@@ -6,6 +6,7 @@ import {
   assignLeaveType,
   createCompany,
   createCostCenter,
+  createCustomer,
   createDepartment,
   createDesignation,
   createDivision,
@@ -24,6 +25,7 @@ import {
   createWorkStation,
   deleteCompany,
   deleteCostCenter,
+  deleteCustomer,
   deleteDepartment,
   deleteDesignation,
   deleteDivision,
@@ -42,6 +44,7 @@ import {
   deleteWorkStation,
   editCompany,
   editCostCenter,
+  editCustomer,
   editDepartment,
   editDesignation,
   editDivision,
@@ -60,6 +63,7 @@ import {
   editWorkStation,
   getAllCompanies,
   getAllCostCenters,
+  getAllCustomers,
   getAllDepartments,
   getAllDesignations,
   getAllDivisions,
@@ -110,6 +114,7 @@ import {
   CreateDivisionType,
   CreateCostCenterType,
   CreateTenantType,
+  CreateCustomerType,
 } from '@/utils/type'
 
 //roles
@@ -128,6 +133,140 @@ export const useGetRoles = () => {
     enabled: !!token,
     select: (data) => data,
   })
+}
+
+//customers
+export const useGetCustomers = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['customers'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllCustomers(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddCustomer = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateCustomerType) => {
+      const res = await createCustomer(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create customer',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Customer created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding customer:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCustomer = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateCustomerType }) => {
+      return editCustomer(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Customer edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing customer:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteCustomer = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteCustomer(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Customer is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
 }
 
 //tenants
@@ -179,12 +318,12 @@ export const useAddTenant = ({
         description: 'Tenant created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['departments'] })
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
       reset()
       onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding department:', error)
+      console.error('Error adding tenant:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -215,15 +354,15 @@ export const useUpdateTenant = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'department edited successfully.',
+        description: 'tenant edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['departments'] })
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
 
       reset()
       onClose()
     },
     onError: (error) => {
-      console.error('Error editing department:', error)
+      console.error('Error editing tenant:', error)
     },
   })
 
@@ -249,9 +388,9 @@ export const useDeleteTenant = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'department is deleted successfully.',
+        description: 'tenant is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['departments'] })
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
 
       reset()
       onClose()
