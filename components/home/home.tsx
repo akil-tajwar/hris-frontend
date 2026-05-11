@@ -20,7 +20,7 @@ import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { signIn } from '@/utils/api'
 
-export default function SignIn() {
+export default function Home() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -58,6 +58,7 @@ export default function SignIn() {
         const {
           userId,
           roleId,
+          tenantId,
           // userCompanies,
           // voucherTypes,
           // employeeId,
@@ -66,6 +67,7 @@ export default function SignIn() {
         const userInfo = {
           userId,
           roleId,
+          tenantId,
           // userCompanies,
           // voucherTypes,
           // employeeId,
@@ -89,7 +91,10 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <Link href="/company" className="flex items-center justify-center">
+        <Button className="w-full bg-yellow-400 mt-10 hover:bg-yellow-500 text-black mb-5">Company</Button>
+      </Link>
       <Card className="w-full max-w-md border border-black">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
@@ -100,9 +105,9 @@ export default function SignIn() {
               height={80}
               className=""
             /> */}
-            <h2 className="text-3xl font-bold ">HRIS Software</h2>
+            <h2 className="text-4xl font-bold ">HRIS Software</h2>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-xl font-bold text-center">
             Sign in to your account
           </CardTitle>
           <CardDescription className="text-center">

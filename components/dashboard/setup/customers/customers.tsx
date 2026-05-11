@@ -21,16 +21,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, Calendar, Edit2, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Search, Users, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateHolidayType, GetHolidayType } from '@/utils/type'
+import type { CreateCustomerType, GetCustomerType } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useAddHoliday,
-  useDeleteHoliday,
-  useGetHolidays,
-  useUpdateHoliday,
+  useAddCustomer,
+  useDeleteCustomer,
+  useGetCustomers,
+  useUpdateCustomer,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -41,44 +41,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { formatDate } from '@/utils/conversions'
 
-const Holidays = () => {
+const Customers = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: holidays } = useGetHolidays()
-  console.log('🚀 ~ Holidays ~ holidays:', holidays)
+  const { data: customers } = useGetCustomers()
+  console.log('🚀 ~ Customers ~ customers:', customers)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [holidaysPerPage] = useState(10)
+  const [customersPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetHolidayType>('holidayName')
+    useState<keyof GetCustomerType>('customerName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingHolidayId, setDeletingHolidayId] = useState<number | null>(
+  const [editingCustomerId, setEditingCustomerId] = useState<number | null>(
     null
   )
 
-  const getTodayDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingCustomerId, setDeletingCustomerId] = useState<number | null>(
+    null
+  )
 
-  const [formData, setFormData] = useState<CreateHolidayType>({
-    holidayName: '',
-    startDate: getTodayDate(),
-    endDate: getTodayDate(),
-    noOfDays: 1,
-    description: '',
+  const [formData, setFormData] = useState<CreateCustomerType>({
+    customerName: '',
+    email: '',
+    phone: '',
+    address: '',
     createdBy: userData?.userId || 0,
   })
 
@@ -88,37 +82,19 @@ const Holidays = () => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'noOfDays' ? Number(value) : value,
+      [name]: value,
     }))
   }
 
-  // Calculate number of days when dates change
-  useEffect(() => {
-    if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate)
-      const end = new Date(formData.endDate)
-      const diffTime = end.getTime() - start.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
-
-      if (diffDays > 0) {
-        setFormData((prev) => ({
-          ...prev,
-          noOfDays: diffDays,
-        }))
-      }
-    }
-  }, [formData.startDate, formData.endDate])
-
   const resetForm = useCallback(() => {
     setFormData({
-      holidayName: '',
-      startDate: getTodayDate(),
-      endDate: getTodayDate(),
-      noOfDays: 1,
-      description: '',
+      customerName: '',
+      email: '',
+      phone: '',
+      address: '',
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(null)
+    setEditingCustomerId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
@@ -130,22 +106,22 @@ const Holidays = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddHoliday({
+  const addMutation = useAddCustomer({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const updateMutation = useUpdateHoliday({
+  const updateMutation = useUpdateCustomer({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const deleteMutation = useDeleteHoliday({
+  const deleteMutation = useDeleteCustomer({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const handleSort = (column: keyof GetHolidayType) => {
+  const handleSort = (column: keyof GetCustomerType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -154,41 +130,34 @@ const Holidays = () => {
     }
   }
 
-  const filteredHolidays = useMemo(() => {
-    if (!holidays?.data || !Array.isArray(holidays.data)) return []
-    return holidays.data.filter((holiday) =>
-      holiday.holidayName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCustomers = useMemo(() => {
+    if (!customers?.data) return []
+    return customers.data?.filter(
+      (customer) =>
+        customer.customerName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [holidays?.data, searchTerm])
+  }, [customers?.data, searchTerm])
 
-  const sortedHolidays = useMemo(() => {
-    if (!Array.isArray(filteredHolidays)) return []
-    return [...filteredHolidays].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ''
-      const bValue = b[sortColumn] ?? ''
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-
+  const sortedCustomers = useMemo(() => {
+    return [...filteredCustomers].sort((a, b) => {
+      const aValue = a.customerName ?? ''
+      const bValue = b.customerName ?? ''
       return sortDirection === 'asc'
-        ? aValue > bValue
-          ? 1
-          : -1
-        : bValue > aValue
-          ? 1
-          : -1
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     })
-  }, [filteredHolidays, sortColumn, sortDirection])
+  }, [filteredCustomers, sortDirection])
 
-  const paginatedHolidays = useMemo(() => {
-    const startIndex = (currentPage - 1) * holidaysPerPage
-    return sortedHolidays.slice(startIndex, startIndex + holidaysPerPage)
-  }, [sortedHolidays, currentPage, holidaysPerPage])
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * customersPerPage
+    return sortedCustomers.slice(startIndex, startIndex + customersPerPage)
+  }, [sortedCustomers, currentPage, customersPerPage])
 
-  const totalPages = Math.ceil(sortedHolidays.length / holidaysPerPage)
+  const totalPages = Math.ceil(sortedCustomers.length / customersPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -197,12 +166,11 @@ const Holidays = () => {
       setError(null)
 
       try {
-        const submitData: CreateHolidayType = {
-          holidayName: formData.holidayName,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          noOfDays: formData.noOfDays,
-          description: formData.description,
+        const submitData: CreateCustomerType = {
+          customerName: formData.customerName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
           createdBy: formData.createdBy,
         }
 
@@ -212,25 +180,25 @@ const Holidays = () => {
           submitData.createdBy = userData?.userId || 0
         }
 
-        if (isEditMode && editingHolidayId) {
+        if (isEditMode && editingCustomerId) {
           updateMutation.mutate({
-            id: editingHolidayId,
+            id: editingCustomerId,
             data: submitData,
           })
-          console.log('update', isEditMode, editingHolidayId)
+          console.log('update', isEditMode, editingCustomerId)
         } else {
           addMutation.mutate(submitData)
           console.log('create')
         }
       } catch (err) {
-        setError('Failed to save holiday')
+        setError('Failed to save customer')
         console.error(err)
       }
     },
     [
       formData,
       isEditMode,
-      editingHolidayId,
+      editingCustomerId,
       addMutation,
       updateMutation,
       userData,
@@ -239,20 +207,19 @@ const Holidays = () => {
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError('Error saving holiday')
+      setError('Error saving customer')
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (holiday: any) => {
+  const handleEditClick = (customer: any) => {
     setFormData({
-      holidayName: holiday.holidayName,
-      startDate: holiday.startDate,
-      endDate: holiday.endDate,
-      noOfDays: holiday.noOfDays,
-      description: holiday.description || '',
+      customerName: customer.customerName,
+      email: customer.email,
+      phone: customer.phone ?? '',
+      address: customer.address ?? '',
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(holiday.holidayId)
+    setEditingCustomerId(customer.customerId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -262,15 +229,15 @@ const Holidays = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-amber-100 p-2 rounded-md">
-            <Calendar className="text-amber-600" />
+            <Users className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Holidays</h2>
+          <h2 className="text-lg font-semibold">Customers</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search holidays..."
+              placeholder="Search customers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -291,70 +258,58 @@ const Holidays = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
-                onClick={() => handleSort('holidayName')}
+                onClick={() => handleSort('customerName')}
                 className="cursor-pointer"
               >
-                Holiday Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Customer Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('startDate')}
+                onClick={() => handleSort('email')}
                 className="cursor-pointer"
               >
-                Start Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Email <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead
-                onClick={() => handleSort('endDate')}
-                className="cursor-pointer"
-              >
-                End Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('noOfDays')}
-                className="cursor-pointer"
-              >
-                No. of Days <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Address</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!holidays || holidays.data === undefined ? (
+            {!customers || customers.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading holidays...
+                <TableCell colSpan={6} className="text-center py-4">
+                  Loading customers...
                 </TableCell>
               </TableRow>
-            ) : !holidays.data || holidays.data.length === 0 ? (
+            ) : !customers.data || customers.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays found
+                <TableCell colSpan={6} className="text-center py-4">
+                  No customers found
                 </TableCell>
               </TableRow>
-            ) : paginatedHolidays.length === 0 ? (
+            ) : paginatedCustomers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays match your search
+                <TableCell colSpan={6} className="text-center py-4">
+                  No customers match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedHolidays.map((holiday: any, index) => (
+              paginatedCustomers.map((customer: any, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell className="font-medium">
-                    {holiday.holidayName}
+                    {customer.customerName}
                   </TableCell>
-                  <TableCell>{formatDate(holiday.startDate)}</TableCell>
-                  <TableCell>{formatDate(holiday.endDate)}</TableCell>
-                  <TableCell>{holiday.noOfDays}</TableCell>
-                  <TableCell>{holiday.description || '-'}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.phone ?? '—'}</TableCell>
+                  <TableCell>{customer.address ?? '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(holiday)}
+                        onClick={() => handleEditClick(customer)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -363,7 +318,7 @@ const Holidays = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingHolidayId(holiday.holidayId)
+                          setDeletingCustomerId(customer.customerId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -378,7 +333,7 @@ const Holidays = () => {
         </Table>
       </div>
 
-      {sortedHolidays.length > 0 && (
+      {sortedCustomers.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -443,75 +398,55 @@ const Holidays = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? 'Edit Holiday' : 'Add Holiday'}
+        title={isEditMode ? 'Edit Customer' : 'Add Customer'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="holidayName">
-                Holiday Name <span className="text-red-500">*</span>
+              <Label htmlFor="customerName">
+                Customer Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="holidayName"
-                name="holidayName"
-                value={formData.holidayName}
+                id="customerName"
+                name="customerName"
+                value={formData.customerName}
                 onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startDate">
-                Start Date <span className="text-red-500">*</span>
+              <Label htmlFor="email">
+                Email <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                value={formData.startDate}
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
                 onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">
-                End Date <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="phone">Phone</Label>
               <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                value={formData.endDate}
+                id="phone"
+                name="phone"
+                value={formData.phone ?? ''}
                 onChange={handleInputChange}
-                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="noOfDays">
-                Number of Days <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="address">Address</Label>
               <Input
-                id="noOfDays"
-                name="noOfDays"
-                type="number"
-                min="1"
-                value={formData.noOfDays}
-                readOnly
-                className="bg-gray-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description || ''}
+                id="address"
+                name="address"
+                value={formData.address ?? ''}
                 onChange={handleInputChange}
-                rows={3}
               />
             </div>
           </div>
@@ -544,9 +479,9 @@ const Holidays = () => {
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
+            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this holiday? This action cannot
+              Are you sure you want to delete this customer? This action cannot
               be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -556,8 +491,8 @@ const Holidays = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingHolidayId) {
-                  deleteMutation.mutate({ id: deletingHolidayId })
+                if (deletingCustomerId) {
+                  deleteMutation.mutate({ id: deletingCustomerId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -572,4 +507,4 @@ const Holidays = () => {
   )
 }
 
-export default Holidays
+export default Customers

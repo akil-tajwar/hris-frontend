@@ -21,16 +21,16 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, Calendar, Edit2, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Search, Users, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateHolidayType, GetHolidayType } from '@/utils/type'
+import type { CreateTenantType, GetTenantType } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useAddHoliday,
-  useDeleteHoliday,
-  useGetHolidays,
-  useUpdateHoliday,
+  useAddTenant,
+  useDeleteTenant,
+  useGetTenants,
+  useUpdateTenant,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -41,44 +41,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { formatDate } from '@/utils/conversions'
 
-const Holidays = () => {
+const Tenants = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: holidays } = useGetHolidays()
-  console.log('🚀 ~ Holidays ~ holidays:', holidays)
+  const { data: tenants } = useGetTenants()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [holidaysPerPage] = useState(10)
+  const [tenantsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetHolidayType>('holidayName')
+    useState<keyof GetTenantType>('tenantName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
+  const [editingTenantId, setEditingTenantId] = useState<number | null>(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingHolidayId, setDeletingHolidayId] = useState<number | null>(
-    null
-  )
+  const [deletingTenantId, setDeletingTenantId] = useState<number | null>(null)
 
-  const getTodayDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }
-
-  const [formData, setFormData] = useState<CreateHolidayType>({
-    holidayName: '',
-    startDate: getTodayDate(),
-    endDate: getTodayDate(),
-    noOfDays: 1,
-    description: '',
+  const [formData, setFormData] = useState<CreateTenantType>({
+    tenantName: '',
+    status: true,
     createdBy: userData?.userId || 0,
   })
 
@@ -88,37 +75,21 @@ const Holidays = () => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'noOfDays' ? Number(value) : value,
+      [name]: value,
     }))
   }
 
-  // Calculate number of days when dates change
-  useEffect(() => {
-    if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate)
-      const end = new Date(formData.endDate)
-      const diffTime = end.getTime() - start.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
-
-      if (diffDays > 0) {
-        setFormData((prev) => ({
-          ...prev,
-          noOfDays: diffDays,
-        }))
-      }
-    }
-  }, [formData.startDate, formData.endDate])
+  const handleStatusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, status: e.target.checked }))
+  }
 
   const resetForm = useCallback(() => {
     setFormData({
-      holidayName: '',
-      startDate: getTodayDate(),
-      endDate: getTodayDate(),
-      noOfDays: 1,
-      description: '',
+      tenantName: '',
+      status: true,
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(null)
+    setEditingTenantId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
@@ -130,22 +101,22 @@ const Holidays = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddHoliday({
+  const addMutation = useAddTenant({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const updateMutation = useUpdateHoliday({
+  const updateMutation = useUpdateTenant({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const deleteMutation = useDeleteHoliday({
+  const deleteMutation = useDeleteTenant({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const handleSort = (column: keyof GetHolidayType) => {
+  const handleSort = (column: keyof GetTenantType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -154,41 +125,29 @@ const Holidays = () => {
     }
   }
 
-  const filteredHolidays = useMemo(() => {
-    if (!holidays?.data || !Array.isArray(holidays.data)) return []
-    return holidays.data.filter((holiday) =>
-      holiday.holidayName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTenants = useMemo(() => {
+    if (!tenants?.data) return []
+    return tenants.data?.filter((tenant) =>
+      tenant.tenantName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [holidays?.data, searchTerm])
+  }, [tenants?.data, searchTerm])
 
-  const sortedHolidays = useMemo(() => {
-    if (!Array.isArray(filteredHolidays)) return []
-    return [...filteredHolidays].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ''
-      const bValue = b[sortColumn] ?? ''
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-
+  const sortedTenants = useMemo(() => {
+    return [...filteredTenants].sort((a, b) => {
+      const aValue = a.tenantName ?? ''
+      const bValue = b.tenantName ?? ''
       return sortDirection === 'asc'
-        ? aValue > bValue
-          ? 1
-          : -1
-        : bValue > aValue
-          ? 1
-          : -1
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
     })
-  }, [filteredHolidays, sortColumn, sortDirection])
+  }, [filteredTenants, sortDirection])
 
-  const paginatedHolidays = useMemo(() => {
-    const startIndex = (currentPage - 1) * holidaysPerPage
-    return sortedHolidays.slice(startIndex, startIndex + holidaysPerPage)
-  }, [sortedHolidays, currentPage, holidaysPerPage])
+  const paginatedTenants = useMemo(() => {
+    const startIndex = (currentPage - 1) * tenantsPerPage
+    return sortedTenants.slice(startIndex, startIndex + tenantsPerPage)
+  }, [sortedTenants, currentPage, tenantsPerPage])
 
-  const totalPages = Math.ceil(sortedHolidays.length / holidaysPerPage)
+  const totalPages = Math.ceil(sortedTenants.length / tenantsPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -197,12 +156,9 @@ const Holidays = () => {
       setError(null)
 
       try {
-        const submitData: CreateHolidayType = {
-          holidayName: formData.holidayName,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          noOfDays: formData.noOfDays,
-          description: formData.description,
+        const submitData: CreateTenantType = {
+          tenantName: formData.tenantName,
+          status: formData.status,
           createdBy: formData.createdBy,
         }
 
@@ -212,25 +168,23 @@ const Holidays = () => {
           submitData.createdBy = userData?.userId || 0
         }
 
-        if (isEditMode && editingHolidayId) {
+        if (isEditMode && editingTenantId) {
           updateMutation.mutate({
-            id: editingHolidayId,
+            id: editingTenantId,
             data: submitData,
           })
-          console.log('update', isEditMode, editingHolidayId)
         } else {
           addMutation.mutate(submitData)
-          console.log('create')
         }
       } catch (err) {
-        setError('Failed to save holiday')
+        setError('Failed to save tenant')
         console.error(err)
       }
     },
     [
       formData,
       isEditMode,
-      editingHolidayId,
+      editingTenantId,
       addMutation,
       updateMutation,
       userData,
@@ -239,20 +193,17 @@ const Holidays = () => {
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError('Error saving holiday')
+      setError('Error saving tenant')
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (holiday: any) => {
+  const handleEditClick = (tenant: any) => {
     setFormData({
-      holidayName: holiday.holidayName,
-      startDate: holiday.startDate,
-      endDate: holiday.endDate,
-      noOfDays: holiday.noOfDays,
-      description: holiday.description || '',
+      tenantName: tenant.tenantName,
+      status: tenant.status ?? true,
       createdBy: userData?.userId || 0,
     })
-    setEditingHolidayId(holiday.holidayId)
+    setEditingTenantId(tenant.tenantId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -262,15 +213,15 @@ const Holidays = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-amber-100 p-2 rounded-md">
-            <Calendar className="text-amber-600" />
+            <Users className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Holidays</h2>
+          <h2 className="text-lg font-semibold">Tenants</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search holidays..."
+              placeholder="Search tenants..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -291,70 +242,59 @@ const Holidays = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
-                onClick={() => handleSort('holidayName')}
+                onClick={() => handleSort('tenantName')}
                 className="cursor-pointer"
               >
-                Holiday Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Tenant Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead
-                onClick={() => handleSort('startDate')}
-                className="cursor-pointer"
-              >
-                Start Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('endDate')}
-                className="cursor-pointer"
-              >
-                End Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('noOfDays')}
-                className="cursor-pointer"
-              >
-                No. of Days <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!holidays || holidays.data === undefined ? (
+            {!tenants || tenants.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading holidays...
+                <TableCell colSpan={4} className="text-center py-4">
+                  Loading tenants...
                 </TableCell>
               </TableRow>
-            ) : !holidays.data || holidays.data.length === 0 ? (
+            ) : !tenants.data || tenants.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays found
+                <TableCell colSpan={4} className="text-center py-4">
+                  No tenants found
                 </TableCell>
               </TableRow>
-            ) : paginatedHolidays.length === 0 ? (
+            ) : paginatedTenants.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No holidays match your search
+                <TableCell colSpan={4} className="text-center py-4">
+                  No tenants match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedHolidays.map((holiday: any, index) => (
+              paginatedTenants.map((tenant: any, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell className="font-medium">
-                    {holiday.holidayName}
+                    {tenant.tenantName}
                   </TableCell>
-                  <TableCell>{formatDate(holiday.startDate)}</TableCell>
-                  <TableCell>{formatDate(holiday.endDate)}</TableCell>
-                  <TableCell>{holiday.noOfDays}</TableCell>
-                  <TableCell>{holiday.description || '-'}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tenant.status
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {tenant.status ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(holiday)}
+                        onClick={() => handleEditClick(tenant)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -363,7 +303,7 @@ const Holidays = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingHolidayId(holiday.holidayId)
+                          setDeletingTenantId(tenant.tenantId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -378,7 +318,7 @@ const Holidays = () => {
         </Table>
       </div>
 
-      {sortedHolidays.length > 0 && (
+      {sortedTenants.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -443,76 +383,42 @@ const Holidays = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? 'Edit Holiday' : 'Add Holiday'}
+        title={isEditMode ? 'Edit Tenant' : 'Add Tenant'}
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="holidayName">
-                Holiday Name <span className="text-red-500">*</span>
+              <Label htmlFor="tenantName">
+                Tenant Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="holidayName"
-                name="holidayName"
-                value={formData.holidayName}
+                id="tenantName"
+                name="tenantName"
+                value={formData.tenantName}
                 onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startDate">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="endDate">
-                End Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="noOfDays">
-                Number of Days <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="noOfDays"
-                name="noOfDays"
-                type="number"
-                min="1"
-                value={formData.noOfDays}
-                readOnly
-                className="bg-gray-50 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description || ''}
-                onChange={handleInputChange}
-                rows={3}
-              />
+              <Label>Status</Label>
+              <div className="flex items-center gap-2 h-9">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="status"
+                    checked={formData.status}
+                    onChange={handleStatusChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-black transition-colors" />
+                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
+                </label>
+                <span className="text-sm text-muted-foreground">
+                  {formData.status ? 'Active' : 'Inactive'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -544,10 +450,10 @@ const Holidays = () => {
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this holiday? This action cannot
-              be undone.
+              Are you sure you want to delete this tenant? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -556,8 +462,8 @@ const Holidays = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingHolidayId) {
-                  deleteMutation.mutate({ id: deletingHolidayId })
+                if (deletingTenantId) {
+                  deleteMutation.mutate({ id: deletingTenantId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -572,4 +478,4 @@ const Holidays = () => {
   )
 }
 
-export default Holidays
+export default Tenants

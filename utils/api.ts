@@ -43,7 +43,24 @@ import {
   CreateCompanyType,
   GetWorkStationType,
   CreateWorkStationType,
+  GetTenantType,
+  CreateTenantType,
+  RegisterUserResponse,
+  RegisterUserResponseSchema,
+  GetCustomerType,
+  CreateCustomerType,
 } from '@/utils/type'
+
+export async function getAllRoles(token: string) {
+  return fetchApi<{ roleId: number; roleName: string }[]>({
+    url: 'api/roles/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
 
 export async function signIn(credentials: SignInRequest) {
   return fetchApi<SignInResponse>({
@@ -54,7 +71,118 @@ export async function signIn(credentials: SignInRequest) {
   })
 }
 
+export async function registerUser(credentials: SignInRequest) {
+  return fetchApi<RegisterUserResponse>({
+    url: 'api/auth/register',
+    method: 'POST',
+    body: credentials,
+    schema: RegisterUserResponseSchema,
+  })
+}
+
+//customers
+export async function getAllCustomers(token: string) {
+  return fetchApi<GetCustomerType[]>({
+    url: 'api/customers/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createCustomer(data: CreateCustomerType, token: string) {
+  return fetchApi<CreateCustomerType>({
+    url: 'api/customers/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editCustomer(
+  id: number,
+  data: GetCustomerType,
+  token: string
+) {
+  return fetchApi<GetCustomerType>({
+    url: `api/customers/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteCustomer(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/customers/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //departments
+export async function getAllTenants(token: string) {
+  return fetchApi<GetTenantType[]>({
+    url: 'api/tenants/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createTenant(data: CreateTenantType, token: string) {
+  return fetchApi<CreateTenantType>({
+    url: 'api/tenants/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editTenant(
+  id: number,
+  data: GetTenantType,
+  token: string
+) {
+  return fetchApi<GetTenantType>({
+    url: `api/tenants/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteTenant(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/tenants/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//department
 export async function getAllDepartments(token: string) {
   return fetchApi<GetDepartmentType[]>({
     url: 'api/departments/getall',
@@ -165,7 +293,7 @@ export async function deleteDesignation(id: number, token: string) {
 // Company API Functions
 export async function getAllCompanies(token: string) {
   return fetchApi<GetCompanyType[]>({
-    url: 'api/companies/getall',
+    url: 'api/company/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -174,40 +302,35 @@ export async function getAllCompanies(token: string) {
   })
 }
 
-export async function createCompany(
-  data: CreateCompanyType,
-  token: string
-) {
-  return fetchApi<CreateCompanyType>({
-    url: 'api/companies/create',
+export async function createCompany(formData: FormData, token: string) {
+  return fetchApiWithFile<CreateCompanyType>({
+    url: 'api/company/create',
     method: 'POST',
-    body: data,
+    body: formData,
     headers: {
       Authorization: token,
-      'Content-Type': 'application/json',
     },
   })
 }
 
 export async function editCompany(
   id: number,
-  data: GetCompanyType,
+  formData: FormData,
   token: string
 ) {
-  return fetchApi<GetCompanyType>({
-    url: `api/companies/edit/${id}`,
+  return fetchApiWithFile<GetCompanyType>({
+    url: `api/company/edit/${id}`,
     method: 'PATCH',
-    body: data,
+    body: formData,
     headers: {
       Authorization: `${token}`,
-      'Content-Type': 'application/json',
     },
   })
 }
 
 export async function deleteCompany(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/companies/delete/${id}`,
+    url: `api/company/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
@@ -283,10 +406,7 @@ export async function getAllDivisions(token: string) {
 }
 
 // Division API Functions
-export async function createDivision(
-  data: CreateDivisionType,
-  token: string
-) {
+export async function createDivision(data: CreateDivisionType, token: string) {
   return fetchApi<CreateDivisionType>({
     url: 'api/divisions/create',
     method: 'POST',
@@ -829,7 +949,10 @@ export async function editEmployeeOtherSalaryComponent(
   })
 }
 
-export async function deleteEmployeeOtherSalaryComponent(id: number, token: string) {
+export async function deleteEmployeeOtherSalaryComponent(
+  id: number,
+  token: string
+) {
   return fetchApi<{ id: number }>({
     url: `api/employeeOtherSalaryComponents/delete/${id}`,
     method: 'DELETE',
@@ -903,10 +1026,7 @@ export async function getAllLones(token: string) {
   })
 }
 
-export async function createLone(
-  data: CreateEmployeeLoneType,
-  token: string
-) {
+export async function createLone(data: CreateEmployeeLoneType, token: string) {
   return fetchApi<CreateEmployeeLoneType>({
     url: 'api/employeeLones/create',
     method: 'POST',

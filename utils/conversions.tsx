@@ -17,9 +17,10 @@ export const formatNumber = (value: number | string | null | undefined) => {
   })
 }
 
-export const formatDateForInput = (dateStr: string) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toISOString().split('T')[0]
+export const formatDateForInput = (dateString: string | null | undefined): string => {
+  if (!dateString) return ''
+  // Extract just YYYY-MM-DD from the ISO string
+  return dateString.split('T')[0]
 }
 
 export function formatTime(time: string): string {

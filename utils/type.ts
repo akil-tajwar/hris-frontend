@@ -30,6 +30,8 @@ export const UserSchema = z.object({
   password: z.string(),
   active: z.boolean(),
   roleId: z.number(),
+  tenantId: z.number(),
+  email: z.string().email(),
   isPasswordResetRequired: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -43,6 +45,60 @@ export const SignInResponseSchema = z.object({
 })
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
+
+export const RegisterUserResponseSchema = z.object({
+  status: z.string(),
+  data: z.object({
+    user: z.object({
+      username: z.string(),
+      roleId: z.number(),
+      active: z.boolean(),
+      tenantId: z.number(),
+    }),
+  }),
+})
+
+export type RegisterUserResponse = z.infer<typeof RegisterUserResponseSchema>
+
+export const RegisterUserSchema = z.object({
+  username: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+  roleId: z.number(),
+  tenantId: z.number(),
+  isPasswordResetRequired: z.boolean().default(false),
+})
+
+export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
+
+//customer
+export const CustomerSchema = z.object({
+  customerId: z.number().int().positive().optional(),
+  customerName: z.string().min(1).max(100),
+  email: z.string().email().max(50),
+  phone: z.string().max(50).optional().nullable(),
+  address: z.string().optional().nullable(),
+  createdBy: z.number().int(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().optional().nullable(),
+  updatedAt: z.date().optional(),
+})
+export type CreateCustomerType = z.infer<typeof CustomerSchema>
+export type GetCustomerType = z.infer<typeof CustomerSchema>
+
+//tenant
+export const tenantSchema = z.object({
+  tenantId: z.number().optional(),
+  tenantName: z.string().min(1).max(100),
+  status: z.boolean().default(true),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+})
+export type CreateTenantType = z.infer<typeof tenantSchema>
+export type GetTenantType = z.infer<typeof tenantSchema>
 
 //departments
 export const departmentSchema = z.object({
@@ -71,8 +127,20 @@ export type GetDesignationType = z.infer<typeof designationSchema>
 //company type
 export const companySchema = z.object({
   companyId: z.number().optional(),
-  companyName: z.string(),
-  createdBy: z.number(),
+  code: z.string().max(50).nullable().optional(),
+  companyName: z.string().max(100),
+  shortName: z.string().max(50).nullable().optional(),
+  tradeLicense: z.string().max(100).nullable().optional(),
+  tin: z.string().max(50).nullable().optional(),
+  bin: z.string().max(50).nullable().optional(),
+  email: z.string().max(255).email().nullable().optional(),
+  phone: z.string().max(50).nullable().optional(),
+  address: z.string().nullable().optional(),
+  logoUrl: z.string().max(500).nullable().optional(),
+  timezone: z.string().max(100).default('UTC'),
+  currency: z.string().length(3).default('USD'),
+  status: z.boolean().default(true),
+  createdBy: z.number().optional(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
@@ -84,6 +152,7 @@ export type GetCompanyType = z.infer<typeof companySchema>
 export const workStationSchema = z.object({
   workStationId: z.number().optional(),
   workStationName: z.string(),
+  workStationNumber: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -217,7 +286,7 @@ export const employeeSchema = z.object({
   workStationId: z.number().int(),
   divisionId: z.number().int(),
   costCenterId: z.number().int(),
-  reportingAuthorityId: z.number().int(),
+  reportingAuthorityId: z.number().int().nullable(),
 
   // Additional fields from your service (not in original schema)
   officeTiming: z.string().optional(), // This might be a string representation
