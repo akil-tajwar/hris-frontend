@@ -270,25 +270,16 @@ export const useAddCompany = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateCompanyType) => {
-      const res = await createCompany(data, token)
+    mutationFn: async (formData: FormData) => {
+      console.log('🚀 ~ useAddCompany ~ formData:', formData)
+      const res = await createCompany(formData, token)
       return res
     },
-    onSuccess: (res) => {
-      if (res?.error) {
-        toast({
-          title: 'Error',
-          variant: 'destructive',
-          description: res.error.message || 'Failed to create company',
-        })
-        return
-      }
-
+    onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Company created successfully!',
       })
-
       queryClient.invalidateQueries({ queryKey: ['companies'] })
       reset()
       onClose()
@@ -314,26 +305,29 @@ export const useUpdateCompany = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
   const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateCompanyType }) => {
-      return editCompany(id, data, token)
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
+      return editCompany(id, formData, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'Company edited successfully.',
+        description: 'Company updated successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['companies'] })
-
       reset()
       onClose()
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error editing company:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
     },
   })
 

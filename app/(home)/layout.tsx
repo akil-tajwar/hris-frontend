@@ -1,6 +1,8 @@
 import { Toaster } from '@/components/ui/toaster'
 import '.././globals.css'
 import { Inter } from 'next/font/google'
+import { ReactQueryProvider } from '@/provider/ReactQueryProvider'
+import HomeNavbar from '@/components/shared/home-navbar'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -12,10 +14,11 @@ export default function HomeLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="">
-          <div className="bg-white rounded">{children}</div>
+        <ReactQueryProvider>
+          <HomeNavbar />
+          <main className="p-6 pt-20">{children}</main>
           <Toaster />
-        </div>
+        </ReactQueryProvider>
       </body>
     </html>
   )

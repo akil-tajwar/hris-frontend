@@ -175,32 +175,29 @@ export async function getAllCompanies(token: string) {
 }
 
 export async function createCompany(
-  data: CreateCompanyType,
-  token: string
+  formData: FormData, token: string
 ) {
-  return fetchApi<CreateCompanyType>({
+  return fetchApiWithFile<CreateCompanyType>({
     url: 'api/company/create',
     method: 'POST',
-    body: data,
+    body: formData,
     headers: {
       Authorization: token,
-      'Content-Type': 'application/json',
     },
   })
 }
 
 export async function editCompany(
   id: number,
-  data: GetCompanyType,
+  formData: FormData,
   token: string
 ) {
-  return fetchApi<GetCompanyType>({
+  return fetchApiWithFile<GetCompanyType>({
     url: `api/company/edit/${id}`,
     method: 'PATCH',
-    body: data,
+    body: formData,
     headers: {
       Authorization: `${token}`,
-      'Content-Type': 'application/json',
     },
   })
 }
