@@ -20,7 +20,7 @@ import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { signIn } from '@/utils/api'
 
-export default function SignIn() {
+export default function Home() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -58,6 +58,7 @@ export default function SignIn() {
         const {
           userId,
           roleId,
+          tenantId,
           // userCompanies,
           // voucherTypes,
           // employeeId,
@@ -66,6 +67,7 @@ export default function SignIn() {
         const userInfo = {
           userId,
           roleId,
+          tenantId,
           // userCompanies,
           // voucherTypes,
           // employeeId,

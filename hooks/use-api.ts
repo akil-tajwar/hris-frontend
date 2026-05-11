@@ -74,6 +74,7 @@ import {
   getAllLones,
   getAllOfficeTimingWeekends,
   getAllOtherSalaryComponents,
+  getAllRoles,
   getAllSalaries,
   getAllTenants,
   getAllWeekends,
@@ -111,13 +112,31 @@ import {
   CreateTenantType,
 } from '@/utils/type'
 
+//roles
+export const useGetRoles = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['roles'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllRoles(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
 //tenants
 export const useGetTenants = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['departments'],
+    queryKey: ['tenants'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')

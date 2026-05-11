@@ -30,6 +30,8 @@ export const UserSchema = z.object({
   password: z.string(),
   active: z.boolean(),
   roleId: z.number(),
+  tenantId: z.number(),
+  email: z.string().email(),
   isPasswordResetRequired: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -43,6 +45,32 @@ export const SignInResponseSchema = z.object({
 })
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
+
+export const RegisterUserResponseSchema = z.object({
+  status: z.string(),
+  data: z.object({
+    user: z.object({
+      username: z.string(),
+      roleId: z.number(),
+      active: z.boolean(),
+      tenantId: z.number(),
+    }),
+  }),
+})
+
+export type RegisterUserResponse = z.infer<typeof RegisterUserResponseSchema>
+
+export const RegisterUserSchema = z.object({
+  username: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+  roleId: z.number(),
+  tenantId: z.number(),
+  isPasswordResetRequired: z.boolean().default(false),
+})
+
+export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
 
 //tenant
 export const tenantSchema = z.object({

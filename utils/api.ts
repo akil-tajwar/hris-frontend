@@ -45,7 +45,20 @@ import {
   CreateWorkStationType,
   GetTenantType,
   CreateTenantType,
+  RegisterUserResponse,
+  RegisterUserResponseSchema,
 } from '@/utils/type'
+
+export async function getAllRoles(token: string) {
+  return fetchApi<{ roleId: number; roleName: string }[]>({
+    url: 'api/roles/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
 
 export async function signIn(credentials: SignInRequest) {
   return fetchApi<SignInResponse>({
@@ -57,11 +70,11 @@ export async function signIn(credentials: SignInRequest) {
 }
 
 export async function registerUser(credentials: SignInRequest) {
-  return fetchApi<SignInResponse>({
+  return fetchApi<RegisterUserResponse>({
     url: 'api/auth/register',
     method: 'POST',
     body: credentials,
-    schema: SignInResponseSchema,
+    schema: RegisterUserResponseSchema,
   })
 }
 
@@ -77,10 +90,7 @@ export async function getAllTenants(token: string) {
   })
 }
 
-export async function createTenant(
-  data: CreateTenantType,
-  token: string
-) {
+export async function createTenant(data: CreateTenantType, token: string) {
   return fetchApi<CreateTenantType>({
     url: 'api/tenants/create',
     method: 'POST',
@@ -239,9 +249,7 @@ export async function getAllCompanies(token: string) {
   })
 }
 
-export async function createCompany(
-  formData: FormData, token: string
-) {
+export async function createCompany(formData: FormData, token: string) {
   return fetchApiWithFile<CreateCompanyType>({
     url: 'api/company/create',
     method: 'POST',
@@ -345,10 +353,7 @@ export async function getAllDivisions(token: string) {
 }
 
 // Division API Functions
-export async function createDivision(
-  data: CreateDivisionType,
-  token: string
-) {
+export async function createDivision(data: CreateDivisionType, token: string) {
   return fetchApi<CreateDivisionType>({
     url: 'api/divisions/create',
     method: 'POST',
@@ -891,7 +896,10 @@ export async function editEmployeeOtherSalaryComponent(
   })
 }
 
-export async function deleteEmployeeOtherSalaryComponent(id: number, token: string) {
+export async function deleteEmployeeOtherSalaryComponent(
+  id: number,
+  token: string
+) {
   return fetchApi<{ id: number }>({
     url: `api/employeeOtherSalaryComponents/delete/${id}`,
     method: 'DELETE',
@@ -965,10 +973,7 @@ export async function getAllLones(token: string) {
   })
 }
 
-export async function createLone(
-  data: CreateEmployeeLoneType,
-  token: string
-) {
+export async function createLone(data: CreateEmployeeLoneType, token: string) {
   return fetchApi<CreateEmployeeLoneType>({
     url: 'api/employeeLones/create',
     method: 'POST',
