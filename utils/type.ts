@@ -127,18 +127,34 @@ export type GetBusinessUnitType = z.infer<typeof businessUnitSchema> & {
 export const departmentSchema = z.object({
   departmentId: z.number().optional(),
   departmentName: z.string(),
+  departmentCode: z.string().nullable().optional(),
+  divisionId: z.number().nullable().optional(),
+  parentDepartmentId: z.number().nullable().optional(),
+  costCenterId: z.number().nullable().optional(),
+  headEmployeeId: z.number().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
 export type CreateDepartmentType = z.infer<typeof departmentSchema>
-export type GetDepartmentType = z.infer<typeof departmentSchema>
+export type GetDepartmentType = z.infer<typeof departmentSchema> & {
+  divisionName: string
+  parentDepartmentName: string
+  costCenterName: string
+  headEmployeeName: string
+  headEmployeeCode: string
+}
 
 //designations
 export const designationSchema = z.object({
   designationId: z.number().optional(),
   designationName: z.string(),
+  designationCode: z.string().nullable().optional(),
+  jobLevel: z.number().nullable().optional(),
+  description: z.string().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -188,13 +204,24 @@ export type GetWorkStationType = z.infer<typeof workStationSchema>
 export const divisionSchema = z.object({
   divisionId: z.number().optional(),
   divisionName: z.string(),
+  divisionCode: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  businessUnitId: z.number().nullable().optional(),
+  headEmployeeId: z.number().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
 export type CreateDivisionType = z.infer<typeof divisionSchema>
-export type GetDivisionType = z.infer<typeof divisionSchema>
+export type GetDivisionType = z.infer<typeof divisionSchema> & {
+  businessUnitName: string
+  empCode: string
+  empFullName: string
+  departmentName: string
+  designationName: string
+}
 
 //employee type
 export const employmentTypeSchema = z.object({
@@ -222,7 +249,6 @@ export type GetCostCenterType = z.infer<typeof costCenterSchema>
 
 //employee
 export const employeeSchema = z.object({
-  // Primary Key (auto-generated)
   employeeId: z.number().optional(),
 
   // Basic Information

@@ -121,6 +121,8 @@ import {
   CreateCustomerType,
   CreateBusinessUnitType,
   GetBusinessUnitType,
+  GetDepartmentType,
+  GetDivisionType,
 } from '@/utils/type'
 
 //roles
@@ -622,7 +624,7 @@ export const useUpdateDepartment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateDepartmentType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetDepartmentType }) => {
       return editDepartment(id, data, token)
     },
     onSuccess: () => {
@@ -1018,7 +1020,7 @@ export const useUpdateDivision = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateDivisionType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetDivisionType }) => {
       return editDivision(id, data, token)
     },
     onSuccess: () => {

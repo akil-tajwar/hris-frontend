@@ -41,13 +41,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import CustomSwitch from '@/utils/custom-switch'
 
 const Designations = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
   const { data: designations } = useGetDesignations()
-  console.log('🚀 ~ Designations ~ designations:', designations)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -59,40 +59,51 @@ const Designations = () => {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingDesignationId, setEditingDesignationId] = useState<number | null>(
-    null
-  )
+  const [editingDesignationId, setEditingDesignationId] = useState<
+    number | null
+  >(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingDesignationId, setDeletingDesignationId] = useState<
     number | null
   >(null)
 
-  const [formData, setFormData] = useState<CreateDesignationType>({
-    designationName: '',
-    createdBy: userData?.userId || 0,
-  })
+  const defaultForm = useCallback<any>(
+    () => ({
+      designationName: '',
+      designationCode: null,
+      jobLevel: null,
+      description: null,
+      status: true,
+      createdBy: userData?.userId || 0,
+    }),
+    [userData?.userId]
+  )
+
+  const [formData, setFormData] = useState<CreateDesignationType>(defaultForm)
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: value === '' ? null : Number(value),
     }))
   }
 
   const resetForm = useCallback(() => {
-    setFormData({
-      designationName: '',
-      createdBy: userData?.userId || 0,
-    })
+    setFormData({ ...defaultForm, createdBy: userData?.userId || 0 })
     setEditingDesignationId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }, [userData?.userId])
+  }, [userData?.userId, defaultForm])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
@@ -104,12 +115,10 @@ const Designations = () => {
     onClose: closePopup,
     reset: resetForm,
   })
-
   const updateMutation = useUpdateDesignation({
     onClose: closePopup,
     reset: resetForm,
   })
-
   const deleteMutation = useDeleteDesignation({
     onClose: closePopup,
     reset: resetForm,
@@ -126,8 +135,8 @@ const Designations = () => {
 
   const filteredDesignations = useMemo(() => {
     if (!designations?.data) return []
-    return designations.data?.filter((dept) =>
-      dept.designationName?.toLowerCase().includes(searchTerm.toLowerCase())
+    return designations.data.filter((d) =>
+      d.designationName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [designations?.data, searchTerm])
 
@@ -143,7 +152,10 @@ const Designations = () => {
 
   const paginatedDesignations = useMemo(() => {
     const startIndex = (currentPage - 1) * designationsPerPage
-    return sortedDesignations.slice(startIndex, startIndex + designationsPerPage)
+    return sortedDesignations.slice(
+      startIndex,
+      startIndex + designationsPerPage
+    )
   }, [sortedDesignations, currentPage, designationsPerPage])
 
   const totalPages = Math.ceil(sortedDesignations.length / designationsPerPage)
@@ -151,15 +163,9 @@ const Designations = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-
       setError(null)
-
       try {
-        const submitData: CreateDesignationType = {
-          designationName: formData.designationName,
-          createdBy: formData.createdBy,
-        }
-
+        const submitData: CreateDesignationType = { ...formData }
         if (isEditMode) {
           submitData.updatedBy = userData?.userId || 0
         } else {
@@ -167,14 +173,9 @@ const Designations = () => {
         }
 
         if (isEditMode && editingDesignationId) {
-          updateMutation.mutate({
-            id: editingDesignationId,
-            data: submitData,
-          })
-          console.log('update', isEditMode, editingDesignationId)
+          updateMutation.mutate({ id: editingDesignationId, data: submitData })
         } else {
           addMutation.mutate(submitData)
-          console.log('create')
         }
       } catch (err) {
         setError('Failed to save designation')
@@ -197,12 +198,16 @@ const Designations = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (dept: any) => {
+  const handleEditClick = (desig: any) => {
     setFormData({
-      designationName: dept.designationName,
+      designationName: desig.designationName,
+      designationCode: desig.designationCode ?? null,
+      jobLevel: desig.jobLevel ?? null,
+      description: desig.description ?? null,
+      status: desig.status ?? true,
       createdBy: userData?.userId || 0,
     })
-    setEditingDesignationId(dept.designationId)
+    setEditingDesignationId(desig.designationId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -246,34 +251,56 @@ const Designations = () => {
               >
                 Designation Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Job Level</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!designations || designations.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   Loading designations...
                 </TableCell>
               </TableRow>
             ) : !designations.data || designations.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No designations found
                 </TableCell>
               </TableRow>
             ) : paginatedDesignations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No designations match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedDesignations.map((dept: any, index) => (
-                <TableRow key={index}>
-                  <TableCell>{index + 1}</TableCell>
+              paginatedDesignations.map((desig: any, index) => (
+                <TableRow key={desig.designationId ?? index}>
+                  <TableCell>
+                    {(currentPage - 1) * designationsPerPage + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
-                    {dept.designationName}
+                    {desig.designationName}
+                  </TableCell>
+                  <TableCell>{desig.designationCode ?? '—'}</TableCell>
+                  <TableCell>{desig.jobLevel ?? '—'}</TableCell>
+                  <TableCell className="max-w-[160px] truncate">
+                    {desig.description ?? '—'}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        desig.status
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {desig.status ? 'Active' : 'Inactive'}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -281,7 +308,7 @@ const Designations = () => {
                         variant="ghost"
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
-                        onClick={() => handleEditClick(dept)}
+                        onClick={() => handleEditClick(desig)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -290,7 +317,7 @@ const Designations = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingDesignationId(dept.designationId)
+                          setDeletingDesignationId(desig.designationId)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -319,7 +346,6 @@ const Designations = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -346,10 +372,8 @@ const Designations = () => {
                     </PaginationItem>
                   )
                 }
-
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -371,10 +395,11 @@ const Designations = () => {
         isOpen={isPopupOpen}
         onClose={closePopup}
         title={isEditMode ? 'Edit Designation' : 'Add Designation'}
-        size="sm:max-w-md"
+        size="sm:max-w-lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Designation Name */}
             <div className="space-y-2">
               <Label htmlFor="designationName">
                 Designation Name <span className="text-red-500">*</span>
@@ -385,6 +410,53 @@ const Designations = () => {
                 value={formData.designationName}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+
+            {/* Designation Code */}
+            <div className="space-y-2">
+              <Label htmlFor="designationCode">Designation Code</Label>
+              <Input
+                id="designationCode"
+                name="designationCode"
+                value={formData.designationCode ?? ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            {/* Job Level */}
+            <div className="space-y-2">
+              <Label htmlFor="jobLevel">Job Level</Label>
+              <Input
+                id="jobLevel"
+                name="jobLevel"
+                type="number"
+                min={0}
+                value={formData.jobLevel ?? ''}
+                onChange={handleNumberChange}
+                placeholder="e.g. 1"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                name="description"
+                value={formData.description ?? ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2 col-span-2">
+              <CustomSwitch
+                label="Status"
+                checked={formData.status ?? true}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, status: value }))
+                }
               />
             </div>
           </div>

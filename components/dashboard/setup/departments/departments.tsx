@@ -23,13 +23,20 @@ import {
 } from '@/components/ui/pagination'
 import { ArrowUpDown, Search, BookOpen, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateDepartmentType, GetDepartmentType } from '@/utils/type'
+import type {
+  CreateDepartmentType,
+  GetDepartmentType,
+  GetDivisionType,
+  GetEmploymentType,
+} from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
   useAddDepartment,
   useDeleteDepartment,
   useGetDepartments,
+  useGetDivisions,
+  useGetAllEmployees,
   useUpdateDepartment,
 } from '@/hooks/use-api'
 import {
@@ -41,13 +48,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { CustomCombobox } from '@/utils/custom-combobox'
+import CustomSwitch from '@/utils/custom-switch'
+
+const buildEmployeeLabel = (emp: GetEmploymentType) =>
+  `${emp.empCode ?? ''} - ${emp.empFullName ?? ''}`.trim()
 
 const Departments = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
   const { data: departments } = useGetDepartments()
-  console.log('🚀 ~ Departments ~ departments:', departments)
+  const { data: divisions } = useGetDivisions()
+  const { data: employees } = useGetAllEmployees()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -68,31 +81,42 @@ const Departments = () => {
     number | null
   >(null)
 
-  const [formData, setFormData] = useState<CreateDepartmentType>({
-    departmentName: '',
-    createdBy: userData?.userId || 0,
-  })
+  const defaultForm = useCallback<any>(
+    () => ({
+      departmentName: '',
+      departmentCode: null,
+      divisionId: null,
+      parentDepartmentId: null,
+      costCenterId: null,
+      headEmployeeId: null,
+      status: true,
+      createdBy: userData?.userId || 0,
+    }),
+    [userData?.userId]
+  )
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const [formData, setFormData] = useState<CreateDepartmentType>(defaultForm)
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSelectChange = (
+    name: keyof CreateDepartmentType,
+    value: string
+  ) => {
+    const parsed = value === '0' || value === '' ? null : Number(value)
+    setFormData((prev) => ({ ...prev, [name]: parsed }))
   }
 
   const resetForm = useCallback(() => {
-    setFormData({
-      departmentName: '',
-      createdBy: userData?.userId || 0,
-    })
+    setFormData({ ...defaultForm, createdBy: userData?.userId || 0 })
     setEditingDepartmentId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }, [userData?.userId])
+  }, [userData?.userId, defaultForm])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
@@ -104,12 +128,10 @@ const Departments = () => {
     onClose: closePopup,
     reset: resetForm,
   })
-
   const updateMutation = useUpdateDepartment({
     onClose: closePopup,
     reset: resetForm,
   })
-
   const deleteMutation = useDeleteDepartment({
     onClose: closePopup,
     reset: resetForm,
@@ -126,7 +148,7 @@ const Departments = () => {
 
   const filteredDepartments = useMemo(() => {
     if (!departments?.data) return []
-    return departments.data?.filter((dept) =>
+    return departments.data.filter((dept) =>
       dept.departmentName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [departments?.data, searchTerm])
@@ -151,15 +173,9 @@ const Departments = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-
       setError(null)
-
       try {
-        const submitData: CreateDepartmentType = {
-          departmentName: formData.departmentName,
-          createdBy: formData.createdBy,
-        }
-
+        const submitData: CreateDepartmentType = { ...formData }
         if (isEditMode) {
           submitData.updatedBy = userData?.userId || 0
         } else {
@@ -167,14 +183,9 @@ const Departments = () => {
         }
 
         if (isEditMode && editingDepartmentId) {
-          updateMutation.mutate({
-            id: editingDepartmentId,
-            data: submitData,
-          })
-          console.log('update', isEditMode, editingDepartmentId)
+          updateMutation.mutate({ id: editingDepartmentId, data: submitData as GetDepartmentType })
         } else {
           addMutation.mutate(submitData)
-          console.log('create')
         }
       } catch (err) {
         setError('Failed to save department')
@@ -200,6 +211,12 @@ const Departments = () => {
   const handleEditClick = (dept: any) => {
     setFormData({
       departmentName: dept.departmentName,
+      departmentCode: dept.departmentCode ?? null,
+      divisionId: dept.divisionId ?? null,
+      parentDepartmentId: dept.parentDepartmentId ?? null,
+      costCenterId: dept.costCenterId ?? null,
+      headEmployeeId: dept.headEmployeeId ?? null,
+      status: dept.status ?? true,
       createdBy: userData?.userId || 0,
     })
     setEditingDepartmentId(dept.departmentId)
@@ -246,34 +263,54 @@ const Departments = () => {
               >
                 Department Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Department Code</TableHead>
+              <TableHead>Division</TableHead>
+              <TableHead>Head Employee</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!departments || departments.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   Loading departments...
                 </TableCell>
               </TableRow>
             ) : !departments.data || departments.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No departments found
                 </TableCell>
               </TableRow>
             ) : paginatedDepartments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No departments match your search
                 </TableCell>
               </TableRow>
             ) : (
               paginatedDepartments.map((dept: any, index) => (
-                <TableRow key={index}>
-                  <TableCell>{index + 1}</TableCell>
+                <TableRow key={dept.departmentId ?? index}>
+                  <TableCell>
+                    {(currentPage - 1) * departmentsPerPage + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {dept.departmentName}
+                  </TableCell>
+                  <TableCell>{dept.departmentCode ?? '—'}</TableCell>
+                  <TableCell>{dept.divisionName ?? '—'}</TableCell>
+                  <TableCell>{dept.headEmployeeName ?? '—'}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        dept.status
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {dept.status ? 'Active' : 'Inactive'}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -319,7 +356,6 @@ const Departments = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -346,10 +382,8 @@ const Departments = () => {
                     </PaginationItem>
                   )
                 }
-
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -371,10 +405,11 @@ const Departments = () => {
         isOpen={isPopupOpen}
         onClose={closePopup}
         title={isEditMode ? 'Edit Department' : 'Add Department'}
-        size="sm:max-w-md"
+        size="sm:max-w-lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Department Name */}
             <div className="space-y-2">
               <Label htmlFor="departmentName">
                 Department Name <span className="text-red-500">*</span>
@@ -385,6 +420,131 @@ const Departments = () => {
                 value={formData.departmentName}
                 onChange={handleInputChange}
                 required
+              />
+            </div>
+
+            {/* Department Code */}
+            <div className="space-y-2">
+              <Label htmlFor="departmentCode">Department Code</Label>
+              <Input
+                id="departmentCode"
+                name="departmentCode"
+                value={formData.departmentCode ?? ''}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            {/* Division */}
+            <div className="space-y-2">
+              <Label htmlFor="divisionId">Division</Label>
+              <CustomCombobox
+                items={
+                  divisions?.data?.map((div: GetDivisionType) => ({
+                    id: div.divisionId!.toString(),
+                    name: div.divisionName,
+                  })) || []
+                }
+                value={
+                  formData.divisionId
+                    ? {
+                        id: formData.divisionId.toString(),
+                        name:
+                          divisions?.data?.find(
+                            (d: GetDivisionType) =>
+                              d.divisionId === formData.divisionId
+                          )?.divisionName ?? formData.divisionId.toString(),
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'divisionId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select division"
+              />
+            </div>
+
+            {/* Parent Department */}
+            <div className="space-y-2">
+              <Label htmlFor="parentDepartmentId">Parent Department</Label>
+              <CustomCombobox
+                items={
+                  departments?.data
+                    ?.filter((d: any) => d.departmentId !== editingDepartmentId)
+                    .map((d: any) => ({
+                      id: d.departmentId!.toString(),
+                      name: d.departmentName,
+                    })) || []
+                }
+                value={
+                  formData.parentDepartmentId
+                    ? {
+                        id: formData.parentDepartmentId.toString(),
+                        name:
+                          departments?.data?.find(
+                            (d: any) =>
+                              d.departmentId === formData.parentDepartmentId
+                          )?.departmentName ??
+                          formData.parentDepartmentId.toString(),
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'parentDepartmentId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select parent department"
+              />
+            </div>
+
+            {/* Head Employee */}
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="headEmployeeId">Head Employee</Label>
+              <CustomCombobox
+                items={
+                  employees?.data?.map((emp: GetEmploymentType) => ({
+                    id: emp.employeeId!.toString(),
+                    name: buildEmployeeLabel(emp),
+                  })) || []
+                }
+                value={
+                  formData.headEmployeeId
+                    ? {
+                        id: formData.headEmployeeId.toString(),
+                        name: (() => {
+                          const matched = employees?.data?.find(
+                            (emp: GetEmploymentType) =>
+                              emp.employeeId === formData.headEmployeeId
+                          )
+                          return matched
+                            ? buildEmployeeLabel(matched)
+                            : formData.headEmployeeId.toString()
+                        })(),
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'headEmployeeId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select head employee"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2 col-span-2">
+              <CustomSwitch
+                label="Status"
+                checked={formData.status ?? true}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, status: value }))
+                }
               />
             </div>
           </div>
