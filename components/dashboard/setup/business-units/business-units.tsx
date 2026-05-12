@@ -48,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import CustomSwitch from '@/utils/custom-switch'
 
 const BusinessUnits = () => {
   useInitializeUser()
@@ -567,25 +568,16 @@ const BusinessUnits = () => {
             </div>
 
             {/* Status */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <div className="flex items-center gap-2 h-9">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="status"
-                    checked={formData.status}
-                    onChange={handleStatusChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-black transition-colors" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
-                </label>
-                <span className="text-sm text-muted-foreground">
-                  {formData.status ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
+            <CustomSwitch
+              label="Status"
+              checked={formData.status}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status: value,
+                }))
+              }
+            />
           </div>
 
           {error && (
