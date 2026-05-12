@@ -1,12 +1,12 @@
-import EmployeeTypes from '@/components/dashboard/setup/employee-types/employee-types';
+import EmploymentTypes from '@/components/dashboard/setup/employee-types/employee-types';
 import React from 'react';
 
-const EmployeeTypePage = () => {
+const EmploymentTypePage = () => {
     return (
         <div>
-            <EmployeeTypes />
+            <EmploymentTypes />
         </div>
     );
 };
 
-export default EmployeeTypePage;
+export default EmploymentTypePage;

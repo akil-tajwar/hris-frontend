@@ -21,7 +21,7 @@ import {
   useUpdateEmployeeWithFees,
   useGetDepartments,
   useGetDesignations,
-  useGetEmployeeTypes,
+  useGetEmploymentTypes,
   useGetLeaveTypes,
   useGetOfficeTimingWeekends,
   useGetEmployeeById,
@@ -31,7 +31,7 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmployeeType } from '@/utils/type'
+import type { CreateEmploymentType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import { formatDateForInput, formatTime } from '@/utils/conversions'
 
@@ -48,7 +48,7 @@ const EditEmployee = () => {
 
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
-  const { data: employeeTypes } = useGetEmployeeTypes()
+  const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
@@ -75,7 +75,7 @@ const EditEmployee = () => {
 
   const [formData, setFormData] = useState<
     Omit<
-      CreateEmployeeType,
+      CreateEmploymentType,
       'employeeId' | 'createdAt' | 'updatedAt' | 'createdBy'
     >
   >({
@@ -131,7 +131,7 @@ const EditEmployee = () => {
     isActive: true,
     departmentId: 0,
     designationId: 0,
-    employeeTypeId: 0,
+    employmentTypeId: 0,
     officeTimingId: 0,
     companyId: 0,
     workStationId: 0,
@@ -188,7 +188,7 @@ const EditEmployee = () => {
         isActive: emp.isActive ?? true,
         departmentId: emp.departmentId || 0,
         designationId: emp.designationId || 0,
-        employeeTypeId: emp.employeeTypeId || 0,
+        employmentTypeId: emp.employmentTypeId || 0,
         officeTimingId: emp.officeTimingId || 0,
         companyId: emp.companyId || 0,
         workStationId: emp.workStationId || 0,
@@ -303,7 +303,7 @@ const EditEmployee = () => {
       return setError('Please select department')
     if (!formData.designationId || formData.designationId <= 0)
       return setError('Please select designation')
-    if (!formData.employeeTypeId || formData.employeeTypeId <= 0)
+    if (!formData.employmentTypeId || formData.employmentTypeId <= 0)
       return setError('Please select employee type')
     if (!formData.companyId || formData.companyId <= 0)
       return setError('Please select company')
@@ -662,30 +662,30 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employeeTypeId">
-                Employee Type <span className="text-red-500">*</span>
+              <Label htmlFor="employmentTypeId">
+                Employment Type <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
                 items={
-                  employeeTypes?.data?.map((type) => ({
-                    id: type?.employeeTypeId?.toString() || '0',
-                    name: type.employeeTypeName || 'Unnamed type',
+                  employmentTypes?.data?.map((type) => ({
+                    id: type?.employmentTypeId?.toString() || '0',
+                    name: type.employmentTypeName || 'Unnamed type',
                   })) || []
                 }
                 value={
-                  formData.employeeTypeId
+                  formData.employmentTypeId
                     ? {
-                        id: formData.employeeTypeId.toString(),
+                        id: formData.employmentTypeId.toString(),
                         name:
-                          employeeTypes?.data?.find(
-                            (t) => t.employeeTypeId === formData.employeeTypeId
-                          )?.employeeTypeName || '',
+                          employmentTypes?.data?.find(
+                            (t) => t.employmentTypeId === formData.employmentTypeId
+                          )?.employmentTypeName || '',
                       }
                     : null
                 }
                 onChange={(value) =>
                   handleSelectChange(
-                    'employeeTypeId',
+                    'employmentTypeId',
                     value ? String(value.id) : '0'
                   )
                 }

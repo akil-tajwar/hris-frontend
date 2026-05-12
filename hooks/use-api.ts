@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
   assignLeaveType,
+  createBusinessUnit,
   createCompany,
   createCostCenter,
   createCustomer,
@@ -14,7 +15,7 @@ import {
   createEmployeeAttendance,
   createEmployeeLeave,
   createEmployeeOtherSalaryComponent,
-  createEmployeeType,
+  createEmploymentType,
   createHoliday,
   createLeaveType,
   createLone,
@@ -23,6 +24,7 @@ import {
   createSalary,
   createTenant,
   createWorkStation,
+  deleteBusinessUnit,
   deleteCompany,
   deleteCostCenter,
   deleteCustomer,
@@ -33,7 +35,7 @@ import {
   deleteEmployeeAttendance,
   deleteEmployeeLeave,
   deleteEmployeeOtherSalaryComponent,
-  deleteEmployeeType,
+  deleteEmploymentType,
   deleteHoliday,
   deleteLeaveType,
   deleteLone,
@@ -42,6 +44,7 @@ import {
   deleteSalary,
   deleteTenant,
   deleteWorkStation,
+  editBusinessUnit,
   editCompany,
   editCostCenter,
   editCustomer,
@@ -52,7 +55,7 @@ import {
   editEmployeeAttendance,
   editEmployeeLeave,
   editEmployeeOtherSalaryComponent,
-  editEmployeeType,
+  editEmploymentType,
   editHoliday,
   editLeaveType,
   editLone,
@@ -61,6 +64,7 @@ import {
   editSalary,
   editTenant,
   editWorkStation,
+  getAllBusinessUnits,
   getAllCompanies,
   getAllCostCenters,
   getAllCustomers,
@@ -72,7 +76,7 @@ import {
   getAllEmployeeLeaveTypes,
   getAllEmployeeOtherSalaryComponents,
   getAllEmployees,
-  getAllEmployeeTypes,
+  getAllEmploymentTypes,
   getAllHolidays,
   getAllLeaveTypes,
   getAllLones,
@@ -98,7 +102,7 @@ import {
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
   CreateEmployeeOtherSalaryComponentType,
-  CreateEmployeeTypeType,
+  CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
@@ -115,6 +119,8 @@ import {
   CreateCostCenterType,
   CreateTenantType,
   CreateCustomerType,
+  CreateBusinessUnitType,
+  GetBusinessUnitType,
 } from '@/utils/type'
 
 //roles
@@ -257,6 +263,140 @@ export const useDeleteCustomer = ({
         description: 'Customer is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//business units
+export const useGetBusinessUnits = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['business-units'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllBusinessUnits(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddBusinessUnit = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateBusinessUnitType) => {
+      const res = await createBusinessUnit(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create customer',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'BusinessUnit created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['business-units'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding business unit:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateBusinessUnit = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetBusinessUnitType }) => {
+      return editBusinessUnit(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'BusinessUnit edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['business-units'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing business unit:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteBusinessUnit = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteBusinessUnit(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'BusinessUnit is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['business-units'] })
 
       reset()
       onClose()
@@ -1202,24 +1342,24 @@ export const useDeleteDesignation = ({
 }
 
 //employee type
-export const useGetEmployeeTypes = () => {
+export const useGetEmploymentTypes = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['employeeTypes'],
+    queryKey: ['employmentTypes'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllEmployeeTypes(token)
+      return getAllEmploymentTypes(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddEmployeeType = ({
+export const useAddEmploymentType = ({
   onClose,
   reset,
 }: {
@@ -1231,8 +1371,8 @@ export const useAddEmployeeType = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateEmployeeTypeType) => {
-      const res = await createEmployeeType(data, token)
+    mutationFn: async (data: CreateEmploymentTypeType) => {
+      const res = await createEmploymentType(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -1250,12 +1390,12 @@ export const useAddEmployeeType = ({
         description: 'Employee type created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['employeeTypes'] })
+      queryClient.invalidateQueries({ queryKey: ['employmentTypes'] })
       reset()
       onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding employeeType:', error)
+      console.error('Error adding employmentType:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -1267,7 +1407,7 @@ export const useAddEmployeeType = ({
   return mutation
 }
 
-export const useUpdateEmployeeType = ({
+export const useUpdateEmploymentType = ({
   onClose,
   reset,
 }: {
@@ -1285,29 +1425,29 @@ export const useUpdateEmployeeType = ({
       data,
     }: {
       id: number
-      data: CreateEmployeeTypeType
+      data: CreateEmploymentTypeType
     }) => {
-      return editEmployeeType(id, data, token)
+      return editEmploymentType(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'employee type edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['employeeTypes'] })
+      queryClient.invalidateQueries({ queryKey: ['employmentTypes'] })
 
       reset()
       onClose()
     },
     onError: (error) => {
-      console.error('Error editing employeeType:', error)
+      console.error('Error editing employmentType:', error)
     },
   })
 
   return mutation
 }
 
-export const useDeleteEmployeeType = ({
+export const useDeleteEmploymentType = ({
   onClose,
   reset,
 }: {
@@ -1321,14 +1461,14 @@ export const useDeleteEmployeeType = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeType(id, token)
+      return deleteEmploymentType(id, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'employee type is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['employeeTypes'] })
+      queryClient.invalidateQueries({ queryKey: ['employmentTypes'] })
 
       reset()
       onClose()

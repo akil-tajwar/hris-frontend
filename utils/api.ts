@@ -6,8 +6,8 @@ import {
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
   CreateEmployeeOtherSalaryComponentType,
-  CreateEmployeeType,
-  CreateEmployeeTypeType,
+  CreateEmploymentType,
+  CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
@@ -19,8 +19,8 @@ import {
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
   GetEmployeeOtherSalaryComponentType,
-  GetEmployeeType,
-  GetEmployeeTypeType,
+  GetEmploymentType,
+  GetEmploymentTypeType,
   GetHolidayType,
   GetLeaveTypeType,
   GetEmployeeLoneType,
@@ -49,6 +49,8 @@ import {
   RegisterUserResponseSchema,
   GetCustomerType,
   CreateCustomerType,
+  GetBusinessUnitType,
+  CreateBusinessUnitType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -123,6 +125,57 @@ export async function editCustomer(
 export async function deleteCustomer(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/customers/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//business units
+export async function getAllBusinessUnits(token: string) {
+  return fetchApi<GetBusinessUnitType[]>({
+    url: 'api/business-units/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createBusinessUnit(data: CreateBusinessUnitType, token: string) {
+  return fetchApi<CreateBusinessUnitType>({
+    url: 'api/business-units/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editBusinessUnit(
+  id: number,
+  data: GetBusinessUnitType,
+  token: string
+) {
+  return fetchApi<GetBusinessUnitType>({
+    url: `api/business-units/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteBusinessUnit(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/business-units/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
@@ -500,9 +553,9 @@ export async function deleteCostCenter(id: number, token: string) {
 }
 
 //employee type
-export async function getAllEmployeeTypes(token: string) {
-  return fetchApi<GetEmployeeTypeType[]>({
-    url: 'api/employeeTypes/getall',
+export async function getAllEmploymentTypes(token: string) {
+  return fetchApi<GetEmploymentTypeType[]>({
+    url: 'api/employmentTypes/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -511,12 +564,12 @@ export async function getAllEmployeeTypes(token: string) {
   })
 }
 
-export async function createEmployeeType(
-  data: CreateEmployeeTypeType,
+export async function createEmploymentType(
+  data: CreateEmploymentTypeType,
   token: string
 ) {
-  return fetchApi<CreateEmployeeTypeType>({
-    url: 'api/employeeTypes/create',
+  return fetchApi<CreateEmploymentTypeType>({
+    url: 'api/employmentTypes/create',
     method: 'POST',
     body: data,
     headers: {
@@ -526,13 +579,13 @@ export async function createEmployeeType(
   })
 }
 
-export async function editEmployeeType(
+export async function editEmploymentType(
   id: number,
-  data: GetEmployeeTypeType,
+  data: GetEmploymentTypeType,
   token: string
 ) {
-  return fetchApi<GetEmployeeTypeType>({
-    url: `api/employeeTypes/edit/${id}`,
+  return fetchApi<GetEmploymentTypeType>({
+    url: `api/employmentTypes/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: {
@@ -542,9 +595,9 @@ export async function editEmployeeType(
   })
 }
 
-export async function deleteEmployeeType(id: number, token: string) {
+export async function deleteEmploymentType(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/employeeTypes/delete/${id}`,
+    url: `api/employmentTypes/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
@@ -621,7 +674,7 @@ export async function deleteOfficeTimingWeekend(id: number, token: string) {
 
 //employee
 export async function getAllEmployees(token: string) {
-  return fetchApi<GetEmployeeType[]>({
+  return fetchApi<GetEmploymentType[]>({
     url: 'api/employees/getall',
     method: 'GET',
     headers: {
@@ -632,7 +685,7 @@ export async function getAllEmployees(token: string) {
 }
 
 export async function getEmployeeById(token: string, id: number) {
-  return fetchApi<GetEmployeeType>({
+  return fetchApi<GetEmploymentType>({
     url: `api/employees/getById/${id}`,
     method: 'GET',
     headers: {
@@ -643,7 +696,7 @@ export async function getEmployeeById(token: string, id: number) {
 }
 
 export async function createEmployee(formData: FormData, token: string) {
-  return fetchApiWithFile<CreateEmployeeType>({
+  return fetchApiWithFile<CreateEmploymentType>({
     url: 'api/employees/create',
     method: 'POST',
     body: formData,
@@ -658,7 +711,7 @@ export async function editEmployee(
   formData: FormData,
   token: string
 ) {
-  return fetchApiWithFile<GetEmployeeType>({
+  return fetchApiWithFile<GetEmploymentType>({
     url: `api/employees/edit/${id}`,
     method: 'PATCH',
     body: formData,
