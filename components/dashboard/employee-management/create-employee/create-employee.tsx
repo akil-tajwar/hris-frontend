@@ -21,7 +21,7 @@ import {
   useAddEmployee,
   useGetDepartments,
   useGetDesignations,
-  useGetEmployeeTypes,
+  useGetEmploymentTypes,
   useGetLeaveTypes,
   useGetOfficeTimingWeekends,
   useGetCompanies,
@@ -30,7 +30,7 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmployeeType } from '@/utils/type'
+import type { CreateEmploymentType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
@@ -81,7 +81,7 @@ const STATIC_COLUMNS = [
   { header: 'Employee Code', key: 'empCode', width: 16, required: true },
   { header: 'Department', key: 'departmentId', width: 30, required: true },
   { header: 'Designation', key: 'designationId', width: 30, required: true },
-  { header: 'Employee Type', key: 'employeeTypeId', width: 24, required: true },
+  { header: 'Employment Type', key: 'employmentTypeId', width: 24, required: true },
   {
     header: 'Office Timing',
     key: 'officeTimingId',
@@ -97,7 +97,7 @@ const CreateEmployee = () => {
 
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
-  const { data: employeeTypes } = useGetEmployeeTypes()
+  const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
@@ -121,7 +121,7 @@ const CreateEmployee = () => {
 
   const [formData, setFormData] = useState<
     Omit<
-      CreateEmployeeType,
+      CreateEmploymentType,
       'employeeId' | 'createdAt' | 'updatedAt' | 'updatedBy'
     >
   >({
@@ -178,7 +178,7 @@ const CreateEmployee = () => {
     isActive: true,
     departmentId: 0,
     designationId: 0,
-    employeeTypeId: 0,
+    employmentTypeId: 0,
     officeTimingId: 0,
     companyId: 0,
     workStationId: 0,
@@ -296,7 +296,7 @@ const CreateEmployee = () => {
       isActive: true,
       departmentId: 0,
       designationId: 0,
-      employeeTypeId: 0,
+      employmentTypeId: 0,
       officeTimingId: 0,
       companyId: 0,
       workStationId: 0,
@@ -341,7 +341,7 @@ const CreateEmployee = () => {
       return setError('Please select department')
     if (!formData.designationId || formData.designationId <= 0)
       return setError('Please select designation')
-    if (!formData.employeeTypeId || formData.employeeTypeId <= 0)
+    if (!formData.employmentTypeId || formData.employmentTypeId <= 0)
       return setError('Please select employee type')
     if (!formData.companyId || formData.companyId <= 0)
       return setError('Please select company')
@@ -391,8 +391,8 @@ const CreateEmployee = () => {
     const designationLabels = (designations?.data ?? []).map(
       (d) => `${d.designationName} | ${d.designationId}`
     )
-    const employeeTypeLabels = (employeeTypes?.data ?? []).map(
-      (t) => `${t.employeeTypeName} | ${t.employeeTypeId}`
+    const employmentTypeLabels = (employmentTypes?.data ?? []).map(
+      (t) => `${t.employmentTypeName} | ${t.employmentTypeId}`
     )
     const officeTimingLabels = (officeTimingWeekends?.data ?? []).map(
       (t) =>
@@ -550,9 +550,9 @@ const CreateEmployee = () => {
         allowBlank: true,
         showErrorMessage: true,
         errorStyle: 'stop',
-        errorTitle: 'Invalid Employee Type',
+        errorTitle: 'Invalid Employment Type',
         error: 'Please select an employee type from the dropdown.',
-        formulae: ['EmployeeTypeList'],
+        formulae: ['EmploymentTypeList'],
       }
       sheet.getCell(`S${row}`).dataValidation = {
         type: 'list',
@@ -600,13 +600,13 @@ const CreateEmployee = () => {
         'DesignationList'
       )
 
-    employeeTypeLabels.forEach((label, i) => {
+    employmentTypeLabels.forEach((label, i) => {
       lookupSheet.getCell(`C${i + 1}`).value = label
     })
-    if (employeeTypeLabels.length > 0)
+    if (employmentTypeLabels.length > 0)
       workbook.definedNames.add(
-        `Lookup!$C$1:$C$${employeeTypeLabels.length}`,
-        'EmployeeTypeList'
+        `Lookup!$C$1:$C$${employmentTypeLabels.length}`,
+        'EmploymentTypeList'
       )
 
     officeTimingLabels.forEach((label, i) => {
@@ -729,7 +729,7 @@ const CreateEmployee = () => {
           empCode: String(get('Employee Code') ?? ''),
           departmentId: parseId(get('Department')) ?? 0,
           designationId: parseId(get('Designation')) ?? 0,
-          employeeTypeId: parseId(get('Employee Type')) ?? 0,
+          employmentTypeId: parseId(get('Employment Type')) ?? 0,
           officeTimingId: parseId(get('Office Timing')) ?? null,
           leaveTypeIds,
           createdBy: userData?.userId || 0,
@@ -1073,30 +1073,30 @@ const CreateEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employeeTypeId">
-                Employee Type <span className="text-red-500">*</span>
+              <Label htmlFor="employmentTypeId">
+                Employment Type <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
                 items={
-                  employeeTypes?.data?.map((type) => ({
-                    id: type?.employeeTypeId?.toString() || '0',
-                    name: type.employeeTypeName || 'Unnamed type',
+                  employmentTypes?.data?.map((type) => ({
+                    id: type?.employmentTypeId?.toString() || '0',
+                    name: type.employmentTypeName || 'Unnamed type',
                   })) || []
                 }
                 value={
-                  formData.employeeTypeId
+                  formData.employmentTypeId
                     ? {
-                        id: formData.employeeTypeId.toString(),
+                        id: formData.employmentTypeId.toString(),
                         name:
-                          employeeTypes?.data?.find(
-                            (t) => t.employeeTypeId === formData.employeeTypeId
-                          )?.employeeTypeName || '',
+                          employmentTypes?.data?.find(
+                            (t) => t.employmentTypeId === formData.employmentTypeId
+                          )?.employmentTypeName || '',
                       }
                     : null
                 }
                 onChange={(value) =>
                   handleSelectChange(
-                    'employeeTypeId',
+                    'employmentTypeId',
                     value ? String(value.id) : '0'
                   )
                 }
@@ -1728,7 +1728,7 @@ const CreateEmployee = () => {
             </p>
             <p>
               2. Select <strong>Department</strong>,{' '}
-              <strong>Designation</strong>, <strong>Employee Type</strong>, and{' '}
+              <strong>Designation</strong>, <strong>Employment Type</strong>, and{' '}
               <strong>Office Timing</strong> from the built-in dropdowns — IDs
               are extracted automatically on import.
             </p>

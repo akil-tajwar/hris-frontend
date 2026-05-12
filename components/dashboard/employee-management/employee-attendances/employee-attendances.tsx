@@ -36,7 +36,7 @@ import { Popup } from '@/utils/popup'
 import type {
   CreateEmployeeAttendanceType,
   GetEmployeeAttendanceType,
-  GetEmployeeType,
+  GetEmploymentType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -112,7 +112,7 @@ const EmployeeAttendances = () => {
   }
 
   const getOfficeTimingForEmployee = useCallback(
-    (emp: GetEmployeeType) => {
+    (emp: GetEmploymentType) => {
       const officeTiming = officeTimingWeekends?.data?.find(
         (ot: any) => ot.officeTimingId === emp.officeTimingId
       )
@@ -151,7 +151,7 @@ const EmployeeAttendances = () => {
     setAttendanceForms((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleEmployeeChange = (index: number, emp: GetEmployeeType | null) => {
+  const handleEmployeeChange = (index: number, emp: GetEmploymentType | null) => {
     setAttendanceForms((prev) => {
       const updated = [...prev]
       if (!emp) {
@@ -369,7 +369,7 @@ const EmployeeAttendances = () => {
 
   const handleEditClick = (attendance: GetEmployeeAttendanceType) => {
     const employee = employees?.data?.find(
-      (emp: GetEmployeeType) => emp.employeeId === attendance.employeeId
+      (emp: GetEmploymentType) => emp.employeeId === attendance.employeeId
     )
 
     if (employee && officeTimingWeekends?.data) {
@@ -737,13 +737,13 @@ const EmployeeAttendances = () => {
                         <CustomCombobox
                           items={(employees?.data || [])
                             .filter(
-                              (emp: GetEmployeeType) =>
+                              (emp: GetEmploymentType) =>
                                 emp.isActive === 1 &&
                                 !usedEmployeeIds
                                   .filter((id) => id !== form.employeeId)
                                   .includes(emp.employeeId!)
                             )
-                            .map((emp: GetEmployeeType) => ({
+                            .map((emp: GetEmploymentType) => ({
                               id: emp.employeeId!.toString(),
                               name: emp.empFullName,
                             }))}
@@ -757,7 +757,7 @@ const EmployeeAttendances = () => {
                           }
                           onChange={(value) => {
                             const emp = (employees?.data || []).find(
-                              (e: GetEmployeeType) =>
+                              (e: GetEmploymentType) =>
                                 e.employeeId?.toString() === value?.id
                             )
                             handleEmployeeChange(index, emp || null)

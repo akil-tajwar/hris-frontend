@@ -79,6 +79,7 @@ export const CustomerSchema = z.object({
   email: z.string().email().max(50),
   phone: z.string().max(50).optional().nullable(),
   address: z.string().optional().nullable(),
+  companyId: z.number().int(),
   createdBy: z.number().int(),
   createdAt: z.date().optional(),
   updatedBy: z.number().int().optional().nullable(),
@@ -99,6 +100,28 @@ export const tenantSchema = z.object({
 })
 export type CreateTenantType = z.infer<typeof tenantSchema>
 export type GetTenantType = z.infer<typeof tenantSchema>
+
+export const businessUnitSchema = z.object({
+  businessUnitId: z.number().nullable().optional(),
+  companyId: z.number(),
+  unitName: z.string(),
+  unitCode: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  headEmployeeId: z.number().nullable().optional(),
+  status: z.boolean().default(true),
+  createdBy: z.number(),
+  createdAt: z.date().nullable().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+});
+export type CreateBusinessUnitType = z.infer<typeof businessUnitSchema>
+export type GetBusinessUnitType = z.infer<typeof businessUnitSchema> & {
+  empCode: string
+  empFullName: string
+  departmentName: string
+  designationName: string
+  companyName: string
+}
 
 //departments
 export const departmentSchema = z.object({
@@ -174,16 +197,16 @@ export type CreateDivisionType = z.infer<typeof divisionSchema>
 export type GetDivisionType = z.infer<typeof divisionSchema>
 
 //employee type
-export const employeeTypeSchema = z.object({
-  employeeTypeId: z.number().optional(),
-  employeeTypeName: z.string(),
+export const employmentTypeSchema = z.object({
+  employmentTypeId: z.number().optional(),
+  employmentTypeName: z.string(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateEmployeeTypeType = z.infer<typeof employeeTypeSchema>
-export type GetEmployeeTypeType = z.infer<typeof employeeTypeSchema>
+export type CreateEmploymentTypeType = z.infer<typeof employmentTypeSchema>
+export type GetEmploymentTypeType = z.infer<typeof employmentTypeSchema>
 
 //cost center type
 export const costCenterSchema = z.object({
@@ -280,7 +303,7 @@ export const employeeSchema = z.object({
   // Foreign Keys (IDs)
   departmentId: z.number().int(),
   designationId: z.number().int(),
-  employeeTypeId: z.number().int(),
+  employmentTypeId: z.number().int(),
   officeTimingId: z.number().int(),
   companyId: z.number().int(),
   workStationId: z.number().int(),
@@ -314,12 +337,12 @@ export const updateEmployeeSchema = employeeSchema.partial().extend({
 })
 
 // Type exports
-export type CreateEmployeeType = z.infer<typeof createEmployeeSchema>
-export type UpdateEmployeeType = z.infer<typeof updateEmployeeSchema>
-export type GetEmployeeType = z.infer<typeof employeeSchema> & {
+export type CreateEmploymentType = z.infer<typeof createEmployeeSchema>
+export type UpdateEmploymentType = z.infer<typeof updateEmployeeSchema>
+export type GetEmploymentType = z.infer<typeof employeeSchema> & {
   departmentName: string
   designationName: string
-  employeeTypeName: string
+  employmentTypeName: string
   companyName: string
   workStationName: string
   divisionName: string

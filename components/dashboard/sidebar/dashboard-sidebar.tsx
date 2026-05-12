@@ -70,6 +70,10 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/company',
         },
         {
+          title: 'Business Units',
+          href: '/dashboard/setup/business-units',
+        },
+        {
             title: 'Divisions',
             href: '/dashboard/setup/divisions',
         },
@@ -82,7 +86,7 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/cost-centers',
         },
         {
-          title: 'Employee Types',
+          title: 'Employment Types',
           href: '/dashboard/setup/employee-types',
         },
         {
