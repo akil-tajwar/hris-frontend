@@ -79,6 +79,7 @@ export const CustomerSchema = z.object({
   email: z.string().email().max(50),
   phone: z.string().max(50).optional().nullable(),
   address: z.string().optional().nullable(),
+  companyId: z.number().int(),
   createdBy: z.number().int(),
   createdAt: z.date().optional(),
   updatedBy: z.number().int().optional().nullable(),

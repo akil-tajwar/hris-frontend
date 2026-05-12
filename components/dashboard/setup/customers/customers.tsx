@@ -29,6 +29,7 @@ import { useAtom } from 'jotai'
 import {
   useAddCustomer,
   useDeleteCustomer,
+  useGetCompanies,
   useGetCustomers,
   useUpdateCustomer,
 } from '@/hooks/use-api'
@@ -41,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { CustomCombobox } from '@/utils/custom-combobox'
 
 const Customers = () => {
   useInitializeUser()
@@ -48,6 +50,7 @@ const Customers = () => {
 
   const { data: customers } = useGetCustomers()
   console.log('🚀 ~ Customers ~ customers:', customers)
+  const { data: companies } = useGetCompanies()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -73,6 +76,7 @@ const Customers = () => {
     email: '',
     phone: '',
     address: '',
+    companyId: 0,
     createdBy: userData?.userId || 0,
   })
 
@@ -92,6 +96,7 @@ const Customers = () => {
       email: '',
       phone: '',
       address: '',
+      companyId: 0,
       createdBy: userData?.userId || 0,
     })
     setEditingCustomerId(null)
@@ -127,6 +132,21 @@ const Customers = () => {
     } else {
       setSortColumn(column)
       setSortDirection('asc')
+    }
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    const stringFields = [
+      'gender',
+      'bloodGroup',
+      'nationality',
+      'maritalStatus',
+      'qualification',
+    ]
+    if (stringFields.includes(name)) {
+      setFormData((prev) => ({ ...prev, [name]: value || null }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     }
   }
 
@@ -171,6 +191,7 @@ const Customers = () => {
           email: formData.email,
           phone: formData.phone,
           address: formData.address,
+          companyId: formData.companyId,
           createdBy: formData.createdBy,
         }
 
@@ -217,6 +238,7 @@ const Customers = () => {
       email: customer.email,
       phone: customer.phone ?? '',
       address: customer.address ?? '',
+      companyId: customer.companyId ?? 0,
       createdBy: userData?.userId || 0,
     })
     setEditingCustomerId(customer.customerId)
@@ -447,6 +469,38 @@ const Customers = () => {
                 name="address"
                 value={formData.address ?? ''}
                 onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="companyId">
+                Company <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  companies?.data?.map((c) => ({
+                    id: c?.companyId?.toString() || '0',
+                    name: c.companyName || 'Unnamed company',
+                  })) || []
+                }
+                value={
+                  formData.companyId
+                    ? {
+                        id: formData.companyId.toString(),
+                        name:
+                          companies?.data?.find(
+                            (c) => c.companyId === formData.companyId
+                          )?.companyName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'companyId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select company"
               />
             </div>
           </div>
