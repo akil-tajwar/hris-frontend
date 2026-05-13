@@ -23,7 +23,7 @@ import {
   useGetDesignations,
   useGetEmploymentTypes,
   useGetLeaveTypes,
-  useGetOfficeTimingWeekends,
+  useGetShiftDayAndWeekDays,
   useGetEmployeeById,
   useGetCompanies,
   useGetWorkStations,
@@ -31,7 +31,7 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmploymentType } from '@/utils/type'
+import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import { formatDateForInput, formatTime } from '@/utils/conversions'
 
@@ -49,7 +49,7 @@ const EditEmployee = () => {
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
-  const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
+  const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
   const { data: workStations } = useGetWorkStations()
@@ -75,7 +75,7 @@ const EditEmployee = () => {
 
   const [formData, setFormData] = useState<
     Omit<
-      CreateEmploymentType,
+      CreateEmployeeType,
       'employeeId' | 'createdAt' | 'updatedAt' | 'createdBy'
     >
   >({
@@ -132,7 +132,7 @@ const EditEmployee = () => {
     departmentId: 0,
     designationId: 0,
     employmentTypeId: 0,
-    officeTimingId: 0,
+    shiftId: 0,
     companyId: 0,
     workStationId: 0,
     divisionId: 0,
@@ -189,7 +189,7 @@ const EditEmployee = () => {
         departmentId: emp.departmentId || 0,
         designationId: emp.designationId || 0,
         employmentTypeId: emp.employmentTypeId || 0,
-        officeTimingId: emp.officeTimingId || 0,
+        shiftId: emp.shiftId || 0,
         companyId: emp.companyId || 0,
         workStationId: emp.workStationId || 0,
         divisionId: emp.divisionId || 0,
@@ -857,26 +857,26 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="officeTimingId">
-                Office Timing <span className="text-red-500">*</span>
+              <Label htmlFor="shiftId">
+                Shift <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
                 items={
-                  officeTimingWeekends?.data?.map((timing) => ({
-                    id: timing.officeTimingId?.toString() || '0',
-                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekends?.length ? ` (Off: ${timing.weekends.join(', ')})` : ''}`,
+                  shiftDayAndWeekDays?.data?.map((timing) => ({
+                    id: timing.shiftId?.toString() || '0',
+                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekDays?.length ? ` (Off: ${timing.weekDays.join(', ')})` : ''}`,
                   })) || []
                 }
                 value={
-                  formData.officeTimingId
+                  formData.shiftId
                     ? {
-                        id: formData.officeTimingId.toString(),
+                        id: formData.shiftId.toString(),
                         name: (() => {
-                          const t = officeTimingWeekends?.data?.find(
-                            (t) => t.officeTimingId === formData.officeTimingId
+                          const t = shiftDayAndWeekDays?.data?.find(
+                            (t) => t.shiftId === formData.shiftId
                           )
                           return t
-                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''}`
+                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''}`
                             : ''
                         })(),
                       }
@@ -885,10 +885,10 @@ const EditEmployee = () => {
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    officeTimingId: value ? Number(value.id) : 0,
+                    shiftId: value ? Number(value.id) : 0,
                   }))
                 }
-                placeholder="Select office timing"
+                placeholder="Select shift"
               />
             </div>
 

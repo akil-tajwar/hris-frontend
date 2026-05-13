@@ -98,8 +98,8 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/leave-types',
         },
         {
-          title: 'Office Timing & Weekends',
-          href: '/dashboard/setup/office-timing-and-weekends',
+          title: 'Shift and Week Days',
+          href: '/dashboard/setup/shift-and-week-days',
         },
         {
           title: 'Other Salary Components',

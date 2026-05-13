@@ -23,14 +23,14 @@ import {
   useGetDesignations,
   useGetEmploymentTypes,
   useGetLeaveTypes,
-  useGetOfficeTimingWeekends,
+  useGetShiftDayAndWeekDays,
   useGetCompanies,
   useGetWorkStations,
   useGetDivisions,
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmploymentType } from '@/utils/type'
+import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
@@ -83,8 +83,8 @@ const STATIC_COLUMNS = [
   { header: 'Designation', key: 'designationId', width: 30, required: true },
   { header: 'Employment Type', key: 'employmentTypeId', width: 24, required: true },
   {
-    header: 'Office Timing',
-    key: 'officeTimingId',
+    header: 'Shift',
+    key: 'shiftId',
     width: 36,
     required: false,
   },
@@ -98,7 +98,7 @@ const CreateEmployee = () => {
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
-  const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
+  const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
   const { data: workStations } = useGetWorkStations()
@@ -121,7 +121,7 @@ const CreateEmployee = () => {
 
   const [formData, setFormData] = useState<
     Omit<
-      CreateEmploymentType,
+      CreateEmployeeType,
       'employeeId' | 'createdAt' | 'updatedAt' | 'updatedBy'
     >
   >({
@@ -179,7 +179,7 @@ const CreateEmployee = () => {
     departmentId: 0,
     designationId: 0,
     employmentTypeId: 0,
-    officeTimingId: 0,
+    shiftId: 0,
     companyId: 0,
     workStationId: 0,
     divisionId: 0,
@@ -297,7 +297,7 @@ const CreateEmployee = () => {
       departmentId: 0,
       designationId: 0,
       employmentTypeId: 0,
-      officeTimingId: 0,
+      shiftId: 0,
       companyId: 0,
       workStationId: 0,
       divisionId: 0,
@@ -394,9 +394,9 @@ const CreateEmployee = () => {
     const employmentTypeLabels = (employmentTypes?.data ?? []).map(
       (t) => `${t.employmentTypeName} | ${t.employmentTypeId}`
     )
-    const officeTimingLabels = (officeTimingWeekends?.data ?? []).map(
+    const shiftLabels = (shiftDayAndWeekDays?.data ?? []).map(
       (t) =>
-        `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''} | ${t.officeTimingId}`
+        `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''} | ${t.shiftId}`
     )
     const genderLabels = ['Male', 'Female']
     const bloodGroupLabels = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
@@ -557,7 +557,7 @@ const CreateEmployee = () => {
       sheet.getCell(`S${row}`).dataValidation = {
         type: 'list',
         allowBlank: true,
-        formulae: ['OfficeTimingList'],
+        formulae: ['ShiftList'],
       }
       sheet.getCell(`K${row}`).dataValidation = {
         type: 'list',
@@ -609,13 +609,13 @@ const CreateEmployee = () => {
         'EmploymentTypeList'
       )
 
-    officeTimingLabels.forEach((label, i) => {
+    shiftLabels.forEach((label, i) => {
       lookupSheet.getCell(`D${i + 1}`).value = label
     })
-    if (officeTimingLabels.length > 0)
+    if (shiftLabels.length > 0)
       workbook.definedNames.add(
-        `Lookup!$D$1:$D$${officeTimingLabels.length}`,
-        'OfficeTimingList'
+        `Lookup!$D$1:$D$${shiftLabels.length}`,
+        'ShiftList'
       )
 
     genderLabels.forEach((g, i) => {
@@ -730,7 +730,7 @@ const CreateEmployee = () => {
           departmentId: parseId(get('Department')) ?? 0,
           designationId: parseId(get('Designation')) ?? 0,
           employmentTypeId: parseId(get('Employment Type')) ?? 0,
-          officeTimingId: parseId(get('Office Timing')) ?? null,
+          shiftId: parseId(get('Shift')) ?? null,
           leaveTypeIds,
           createdBy: userData?.userId || 0,
         }
@@ -1266,26 +1266,26 @@ const CreateEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="officeTimingId">
-                Office Timing <span className="text-red-500">*</span>
+              <Label htmlFor="shiftId">
+                Shift <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
                 items={
-                  officeTimingWeekends?.data?.map((timing) => ({
-                    id: timing.officeTimingId?.toString() || '0',
-                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekends?.length ? ` (Off: ${timing.weekends.join(', ')})` : ''}`,
+                  shiftDayAndWeekDays?.data?.map((timing) => ({
+                    id: timing.shiftId?.toString() || '0',
+                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekDays?.length ? ` (Off: ${timing.weekDays.join(', ')})` : ''}`,
                   })) || []
                 }
                 value={
-                  formData.officeTimingId
+                  formData.shiftId
                     ? {
-                        id: formData.officeTimingId.toString(),
+                        id: formData.shiftId.toString(),
                         name: (() => {
-                          const t = officeTimingWeekends?.data?.find(
-                            (t) => t.officeTimingId === formData.officeTimingId
+                          const t = shiftDayAndWeekDays?.data?.find(
+                            (t) => t.shiftId === formData.shiftId
                           )
                           return t
-                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekends?.length ? ` (Off: ${t.weekends.join(', ')})` : ''}`
+                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''}`
                             : ''
                         })(),
                       }
@@ -1294,10 +1294,10 @@ const CreateEmployee = () => {
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    officeTimingId: value ? Number(value.id) : 0,
+                    shiftId: value ? Number(value.id) : 0,
                   }))
                 }
-                placeholder="Select office timing"
+                placeholder="Select shift"
               />
             </div>
 
@@ -1729,7 +1729,7 @@ const CreateEmployee = () => {
             <p>
               2. Select <strong>Department</strong>,{' '}
               <strong>Designation</strong>, <strong>Employment Type</strong>, and{' '}
-              <strong>Office Timing</strong> from the built-in dropdowns — IDs
+              <strong>Shift</strong> from the built-in dropdowns — IDs
               are extracted automatically on import.
             </p>
             <p>

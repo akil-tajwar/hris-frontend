@@ -113,7 +113,7 @@ export const businessUnitSchema = z.object({
   createdAt: z.date().nullable().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().nullable().optional(),
-});
+})
 export type CreateBusinessUnitType = z.infer<typeof businessUnitSchema>
 export type GetBusinessUnitType = z.infer<typeof businessUnitSchema> & {
   empCode: string
@@ -127,18 +127,34 @@ export type GetBusinessUnitType = z.infer<typeof businessUnitSchema> & {
 export const departmentSchema = z.object({
   departmentId: z.number().optional(),
   departmentName: z.string(),
+  departmentCode: z.string().nullable().optional(),
+  divisionId: z.number().nullable().optional(),
+  parentDepartmentId: z.number().nullable().optional(),
+  costCenterId: z.number().nullable().optional(),
+  headEmployeeId: z.number().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
 export type CreateDepartmentType = z.infer<typeof departmentSchema>
-export type GetDepartmentType = z.infer<typeof departmentSchema>
+export type GetDepartmentType = z.infer<typeof departmentSchema> & {
+  divisionName: string
+  parentDepartmentName: string
+  costCenterName: string
+  headEmployeeName: string
+  headEmployeeCode: string
+}
 
 //designations
 export const designationSchema = z.object({
   designationId: z.number().optional(),
   designationName: z.string(),
+  designationCode: z.string().nullable().optional(),
+  jobLevel: z.number().nullable().optional(),
+  description: z.string().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -188,13 +204,24 @@ export type GetWorkStationType = z.infer<typeof workStationSchema>
 export const divisionSchema = z.object({
   divisionId: z.number().optional(),
   divisionName: z.string(),
+  divisionCode: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  businessUnitId: z.number().nullable().optional(),
+  headEmployeeId: z.number().nullable().optional(),
+  status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
 export type CreateDivisionType = z.infer<typeof divisionSchema>
-export type GetDivisionType = z.infer<typeof divisionSchema>
+export type GetDivisionType = z.infer<typeof divisionSchema> & {
+  businessUnitName: string
+  empCode: string
+  empFullName: string
+  departmentName: string
+  designationName: string
+}
 
 //employee type
 export const employmentTypeSchema = z.object({
@@ -222,7 +249,6 @@ export type GetCostCenterType = z.infer<typeof costCenterSchema>
 
 //employee
 export const employeeSchema = z.object({
-  // Primary Key (auto-generated)
   employeeId: z.number().optional(),
 
   // Basic Information
@@ -304,7 +330,7 @@ export const employeeSchema = z.object({
   departmentId: z.number().int(),
   designationId: z.number().int(),
   employmentTypeId: z.number().int(),
-  officeTimingId: z.number().int(),
+  shiftId: z.number().int(),
   companyId: z.number().int(),
   workStationId: z.number().int(),
   divisionId: z.number().int(),
@@ -312,7 +338,7 @@ export const employeeSchema = z.object({
   reportingAuthorityId: z.number().int().nullable(),
 
   // Additional fields from your service (not in original schema)
-  officeTiming: z.string().optional(), // This might be a string representation
+  shift: z.string().optional(), // This might be a string representation
 
   // For creating employee with leave types
   leaveTypeIds: z.array(z.number()).optional(),
@@ -337,9 +363,9 @@ export const updateEmployeeSchema = employeeSchema.partial().extend({
 })
 
 // Type exports
-export type CreateEmploymentType = z.infer<typeof createEmployeeSchema>
-export type UpdateEmploymentType = z.infer<typeof updateEmployeeSchema>
-export type GetEmploymentType = z.infer<typeof employeeSchema> & {
+export type CreateEmployeeType = z.infer<typeof createEmployeeSchema>
+export type updateEmployeeType = z.infer<typeof updateEmployeeSchema>
+export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   departmentName: string
   designationName: string
   employmentTypeName: string
@@ -348,33 +374,55 @@ export type GetEmploymentType = z.infer<typeof employeeSchema> & {
   divisionName: string
   costCenterName: string
   reportingAuthorityName: string
-  officeTiming: string
+  shift: string
   leaveTypes: string[]
 }
 
-//weekend
-export const weekendSchema = z.object({
-  weekendId: z.number().optional(),
+//weekDay
+export const weekDaySchema = z.object({
+  weekDayId: z.number().optional(),
   day: z.string(),
 })
-export type GetWeekendType = z.infer<typeof weekendSchema>
+export type GetWeekDayType = z.infer<typeof weekDaySchema>
 
-//office timing weekend
-export const officeTimingSchema = z.object({
-  officeTiminId: z.number().optional(),
-  officeTimingId: z.number().optional(),
-  startTime: z.string(),
-  endTime: z.string(),
-  weekendIds: z.array(z.number()),
-  createdBy: z.number(),
-  createdAt: z.date().optional(),
-  updatedBy: z.number().nullable().optional(),
-  updatedAt: z.date().optional(),
+//shift and week day
+export const ShiftsSchema = z.object({
+  shift: z.object({
+    companyId: z.number(),
+    companyName: z.string().optional(), // only for get
+    shiftName: z.string(),
+    shiftCode: z.string(),
+    shiftType: z.enum(['Fixed', 'Flexible', 'Rotational']),
+    startTime: z.string(),
+    endTime: z.string(),
+    breakMinutes: z.number(),
+    expectedWorkHours: z.number(),
+    crossDay: z.boolean(),
+    isFlexible: z.boolean(),
+    flexibleInFrom: z.string().nullable(),
+    flexibleInTo: z.string().nullable(),
+    minimumHoursForPresent: z.number(),
+    status: z.boolean(),
+    createdBy: z.number().optional(),
+    updatedBy: z.number().optional(),
+  }),
+
+  shiftDayAndWeekDays: z.array(
+    z.object({
+      weekDayId: z.number(),
+      weekDay: z.string().optional(), // only for get
+      dayType: z.enum(['FullDay', 'HalfDay', 'Weekend']),
+      startTime: z.string().nullable().optional(),
+      endTime: z.string().nullable().optional(),
+      breakMinutes: z.number().optional(),
+      expectedWorkHours: z.number().optional(),
+      minimumHoursForPresent: z.number().optional(),
+    })
+  ),
 })
-export type CreateOfficeTimingType = z.infer<typeof officeTimingSchema>
-export type GetOfficeTimingType = z.infer<typeof officeTimingSchema> & {
-  weekends: string[]
-}
+
+export type GetShiftsType = z.infer<typeof ShiftsSchema>
+export type CreateShiftType = z.infer<typeof ShiftsSchema>
 
 //holiday
 export const holidaySchema = z.object({

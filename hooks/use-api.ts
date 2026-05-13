@@ -19,7 +19,7 @@ import {
   createHoliday,
   createLeaveType,
   createLone,
-  createOfficeTimingWeekend,
+  createShiftDayAndWeekDays,
   createOtherSalaryComponent,
   createSalary,
   createTenant,
@@ -39,7 +39,7 @@ import {
   deleteHoliday,
   deleteLeaveType,
   deleteLone,
-  deleteOfficeTimingWeekend,
+  deleteShiftDayAndWeekDays,
   deleteOtherSalaryComponent,
   deleteSalary,
   deleteTenant,
@@ -59,7 +59,7 @@ import {
   editHoliday,
   editLeaveType,
   editLone,
-  editOfficeTimingWeekend,
+  editShiftDayAndWeekDays,
   editOtherSalaryComponent,
   editSalary,
   editTenant,
@@ -80,12 +80,12 @@ import {
   getAllHolidays,
   getAllLeaveTypes,
   getAllLones,
-  getAllOfficeTimingWeekends,
+  getAllShiftDayAndWeekDays,
   getAllOtherSalaryComponents,
   getAllRoles,
   getAllSalaries,
   getAllTenants,
-  getAllWeekends,
+  getAllWeekDays,
   getAllWorkStations,
   getAttendanceReport,
   getEmployeeAttendanceSummary,
@@ -106,13 +106,13 @@ import {
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
-  CreateOfficeTimingType,
+  CreateShiftType,
   CreateOtherSalaryComponentType,
   CreateSalaryType,
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
   GetEmployeeLoneType,
-  GetOfficeTimingType,
+  GetShiftsType,
   CreateCompanyType,
   CreateWorkStationType,
   CreateDivisionType,
@@ -121,6 +121,8 @@ import {
   CreateCustomerType,
   CreateBusinessUnitType,
   GetBusinessUnitType,
+  GetDepartmentType,
+  GetDivisionType,
 } from '@/utils/type'
 
 //roles
@@ -622,7 +624,7 @@ export const useUpdateDepartment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateDepartmentType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetDepartmentType }) => {
       return editDepartment(id, data, token)
     },
     onSuccess: () => {
@@ -1018,7 +1020,7 @@ export const useUpdateDivision = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateDivisionType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetDivisionType }) => {
       return editDivision(id, data, token)
     },
     onSuccess: () => {
@@ -1481,43 +1483,43 @@ export const useDeleteEmploymentType = ({
   return mutation
 }
 
-//weekend
-export const useGetWeekends = () => {
+//weekDay
+export const useGetWeekDays = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['weekends'],
+    queryKey: ['weekDays'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllWeekends(token)
+      return getAllWeekDays(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-//office timing weekends
-export const useGetOfficeTimingWeekends = () => {
+//shift weekDays
+export const useGetShiftDayAndWeekDays = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['officeTimings'],
+    queryKey: ['shift'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllOfficeTimingWeekends(token)
+      return getAllShiftDayAndWeekDays(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddOfficeTimingWeekend = ({
+export const useAddShiftDayAndWeekDays = ({
   onClose,
   reset,
 }: {
@@ -1529,8 +1531,8 @@ export const useAddOfficeTimingWeekend = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateOfficeTimingType) => {
-      const res = await createOfficeTimingWeekend(data, token)
+    mutationFn: async (data: CreateShiftType) => {
+      const res = await createShiftDayAndWeekDays(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -1538,7 +1540,7 @@ export const useAddOfficeTimingWeekend = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to create office timing',
+          description: res.error.message || 'Failed to create shift',
         })
         return
       }
@@ -1548,12 +1550,12 @@ export const useAddOfficeTimingWeekend = ({
         description: 'Office timing created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['officeTimings'] })
+      queryClient.invalidateQueries({ queryKey: ['shift'] })
       reset()
       onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding office timing:', error)
+      console.error('Error adding shift:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -1565,7 +1567,7 @@ export const useAddOfficeTimingWeekend = ({
   return mutation
 }
 
-export const useUpdateOfficeTimingWeekend = ({
+export const useUpdateShiftDayAndWeekDays = ({
   onClose,
   reset,
 }: {
@@ -1578,28 +1580,28 @@ export const useUpdateOfficeTimingWeekend = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: GetOfficeTimingType }) => {
-      return editOfficeTimingWeekend(id, data, token)
+    mutationFn: ({ id, data }: { id: number; data: GetShiftsType }) => {
+      return editShiftDayAndWeekDays(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'office timing is edited successfully.',
+        description: 'shift is edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['officeTimings'] })
+      queryClient.invalidateQueries({ queryKey: ['shift'] })
 
       reset()
       onClose()
     },
     onError: (error) => {
-      console.error('Error editing office timing:', error)
+      console.error('Error editing shift:', error)
     },
   })
 
   return mutation
 }
 
-export const useDeleteOfficeTimingWeekend = ({
+export const useDeleteShiftDayAndWeekDays = ({
   onClose,
   reset,
 }: {
@@ -1613,14 +1615,14 @@ export const useDeleteOfficeTimingWeekend = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteOfficeTimingWeekend(id, token)
+      return deleteShiftDayAndWeekDays(id, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'office timing is deleted successfully.',
+        description: 'shift is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['officeTimings'] })
+      queryClient.invalidateQueries({ queryKey: ['shift'] })
 
       reset()
       onClose()

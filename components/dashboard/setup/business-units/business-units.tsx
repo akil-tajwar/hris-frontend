@@ -27,7 +27,7 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 import type {
   CreateBusinessUnitType,
   GetBusinessUnitType,
-  GetEmploymentType,
+  GetEmployeeType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -48,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import CustomSwitch from '@/utils/custom-switch'
 
 const BusinessUnits = () => {
   useInitializeUser()
@@ -188,7 +189,7 @@ const BusinessUnits = () => {
     return parts.length > 0 ? parts.join(' - ') : '—'
   }
 
-  const buildEmployeeLabel = (emp: GetEmploymentType): string =>
+  const buildEmployeeLabel = (emp: GetEmployeeType): string =>
     [emp.empCode, emp.empFullName, emp.departmentName, emp.designationName]
       .filter(Boolean)
       .join(' - ')
@@ -535,7 +536,7 @@ const BusinessUnits = () => {
               <Label htmlFor="headEmployeeId">Head Employee</Label>
               <CustomCombobox
                 items={
-                  employees?.data?.map((emp: GetEmploymentType) => ({
+                  employees?.data?.map((emp: GetEmployeeType) => ({
                     id: emp.employeeId!.toString(),
                     name: buildEmployeeLabel(emp),
                   })) || []
@@ -546,7 +547,7 @@ const BusinessUnits = () => {
                         id: formData.headEmployeeId.toString(),
                         name: (() => {
                           const matched = employees?.data?.find(
-                            (emp: GetEmploymentType) =>
+                            (emp: GetEmployeeType) =>
                               emp.employeeId === formData.headEmployeeId
                           )
                           return matched
@@ -567,25 +568,16 @@ const BusinessUnits = () => {
             </div>
 
             {/* Status */}
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <div className="flex items-center gap-2 h-9">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="status"
-                    checked={formData.status}
-                    onChange={handleStatusChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-black transition-colors" />
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
-                </label>
-                <span className="text-sm text-muted-foreground">
-                  {formData.status ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
+            <CustomSwitch
+              label="Status"
+              checked={formData.status}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  status: value,
+                }))
+              }
+            />
           </div>
 
           {error && (
