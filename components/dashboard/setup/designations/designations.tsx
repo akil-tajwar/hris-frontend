@@ -286,10 +286,10 @@ const Designations = () => {
                   <TableCell className="font-medium">
                     {desig.designationName}
                   </TableCell>
-                  <TableCell>{desig.designationCode ?? '—'}</TableCell>
-                  <TableCell>{desig.jobLevel ?? '—'}</TableCell>
+                  <TableCell>{desig.designationCode ?? '-'}</TableCell>
+                  <TableCell>{desig.jobLevel ?? '-'}</TableCell>
                   <TableCell className="max-w-[160px] truncate">
-                    {desig.description ?? '—'}
+                    {desig.description ?? '-'}
                   </TableCell>
                   <TableCell>
                     <span
@@ -407,7 +407,7 @@ const Designations = () => {
               <Input
                 id="designationName"
                 name="designationName"
-                value={formData.designationName}
+                value={formData.designationName ?? ''}
                 onChange={handleInputChange}
                 required
               />

@@ -50,7 +50,7 @@ import type {
   CreateEmployeeOtherSalaryComponentType,
   GetEmployeeOtherSalaryComponentType,
   GetOtherSalaryComponentType,
-  GetEmploymentType,
+  GetEmployeeType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -338,8 +338,8 @@ const EmployeeOtherSalaryComponents = () => {
   const employeeItems = useMemo(() => {
     if (!employees?.data) return []
     return employees.data
-      .filter((emp: GetEmploymentType) => emp.isActive === 1)
-      .map((emp: GetEmploymentType) => ({
+      .filter((emp: GetEmployeeType) => emp.isActive === 1)
+      .map((emp: GetEmployeeType) => ({
         id: emp.employeeId!.toString(),
         name: `${emp.empCode} - ${emp.empFullName} - ${emp.departmentName || ''} - ${emp.designationName || ''}`,
       }))

@@ -363,9 +363,9 @@ export const updateEmployeeSchema = employeeSchema.partial().extend({
 })
 
 // Type exports
-export type CreateEmploymentType = z.infer<typeof createEmployeeSchema>
-export type UpdateEmploymentType = z.infer<typeof updateEmployeeSchema>
-export type GetEmploymentType = z.infer<typeof employeeSchema> & {
+export type CreateEmployeeType = z.infer<typeof createEmployeeSchema>
+export type updateEmployeeType = z.infer<typeof updateEmployeeSchema>
+export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   departmentName: string
   designationName: string
   employmentTypeName: string

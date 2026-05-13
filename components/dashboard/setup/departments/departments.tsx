@@ -27,7 +27,7 @@ import type {
   CreateDepartmentType,
   GetDepartmentType,
   GetDivisionType,
-  GetEmploymentType,
+  GetEmployeeType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -51,7 +51,7 @@ import {
 import { CustomCombobox } from '@/utils/custom-combobox'
 import CustomSwitch from '@/utils/custom-switch'
 
-const buildEmployeeLabel = (emp: GetEmploymentType) =>
+const buildEmployeeLabel = (emp: GetEmployeeType) =>
   `${emp.empCode ?? ''} - ${emp.empFullName ?? ''}`.trim()
 
 const Departments = () => {
@@ -417,7 +417,7 @@ const Departments = () => {
               <Input
                 id="departmentName"
                 name="departmentName"
-                value={formData.departmentName}
+                value={formData.departmentName ?? ''}
                 onChange={handleInputChange}
                 required
               />
@@ -506,7 +506,7 @@ const Departments = () => {
               <Label htmlFor="headEmployeeId">Head Employee</Label>
               <CustomCombobox
                 items={
-                  employees?.data?.map((emp: GetEmploymentType) => ({
+                  employees?.data?.map((emp: GetEmployeeType) => ({
                     id: emp.employeeId!.toString(),
                     name: buildEmployeeLabel(emp),
                   })) || []
@@ -517,7 +517,7 @@ const Departments = () => {
                         id: formData.headEmployeeId.toString(),
                         name: (() => {
                           const matched = employees?.data?.find(
-                            (emp: GetEmploymentType) =>
+                            (emp: GetEmployeeType) =>
                               emp.employeeId === formData.headEmployeeId
                           )
                           return matched

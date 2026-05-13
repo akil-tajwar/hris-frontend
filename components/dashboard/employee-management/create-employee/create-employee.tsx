@@ -30,7 +30,7 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmploymentType } from '@/utils/type'
+import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
@@ -121,7 +121,7 @@ const CreateEmployee = () => {
 
   const [formData, setFormData] = useState<
     Omit<
-      CreateEmploymentType,
+      CreateEmployeeType,
       'employeeId' | 'createdAt' | 'updatedAt' | 'updatedBy'
     >
   >({

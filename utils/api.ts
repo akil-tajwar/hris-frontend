@@ -6,7 +6,7 @@ import {
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
   CreateEmployeeOtherSalaryComponentType,
-  CreateEmploymentType,
+  CreateEmployeeType,
   CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
@@ -19,7 +19,7 @@ import {
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
   GetEmployeeOtherSalaryComponentType,
-  GetEmploymentType,
+  GetEmployeeType,
   GetEmploymentTypeType,
   GetHolidayType,
   GetLeaveTypeType,
@@ -674,7 +674,7 @@ export async function deleteOfficeTimingWeekend(id: number, token: string) {
 
 //employee
 export async function getAllEmployees(token: string) {
-  return fetchApi<GetEmploymentType[]>({
+  return fetchApi<GetEmployeeType[]>({
     url: 'api/employees/getall',
     method: 'GET',
     headers: {
@@ -685,7 +685,7 @@ export async function getAllEmployees(token: string) {
 }
 
 export async function getEmployeeById(token: string, id: number) {
-  return fetchApi<GetEmploymentType>({
+  return fetchApi<GetEmployeeType>({
     url: `api/employees/getById/${id}`,
     method: 'GET',
     headers: {
@@ -696,7 +696,7 @@ export async function getEmployeeById(token: string, id: number) {
 }
 
 export async function createEmployee(formData: FormData, token: string) {
-  return fetchApiWithFile<CreateEmploymentType>({
+  return fetchApiWithFile<CreateEmployeeType>({
     url: 'api/employees/create',
     method: 'POST',
     body: formData,
@@ -711,7 +711,7 @@ export async function editEmployee(
   formData: FormData,
   token: string
 ) {
-  return fetchApiWithFile<GetEmploymentType>({
+  return fetchApiWithFile<GetEmployeeType>({
     url: `api/employees/edit/${id}`,
     method: 'PATCH',
     body: formData,

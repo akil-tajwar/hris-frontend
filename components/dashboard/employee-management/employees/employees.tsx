@@ -31,7 +31,7 @@ import {
 import { ArrowUpDown, Search, Users, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { AssignLeaveTypeType, GetEmploymentType } from '@/utils/type'
+import type { AssignLeaveTypeType, GetEmployeeType } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
@@ -65,7 +65,7 @@ const Employees = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [employeesPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetEmploymentType>('empFullName')
+    useState<keyof GetEmployeeType>('empFullName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -147,7 +147,7 @@ const Employees = () => {
     reset: resetDelete,
   })
 
-  const handleSort = (column: keyof GetEmploymentType) => {
+  const handleSort = (column: keyof GetEmployeeType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {

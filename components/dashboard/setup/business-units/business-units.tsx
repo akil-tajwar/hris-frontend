@@ -27,7 +27,7 @@ import { CustomCombobox } from '@/utils/custom-combobox'
 import type {
   CreateBusinessUnitType,
   GetBusinessUnitType,
-  GetEmploymentType,
+  GetEmployeeType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -189,7 +189,7 @@ const BusinessUnits = () => {
     return parts.length > 0 ? parts.join(' - ') : '—'
   }
 
-  const buildEmployeeLabel = (emp: GetEmploymentType): string =>
+  const buildEmployeeLabel = (emp: GetEmployeeType): string =>
     [emp.empCode, emp.empFullName, emp.departmentName, emp.designationName]
       .filter(Boolean)
       .join(' - ')
@@ -536,7 +536,7 @@ const BusinessUnits = () => {
               <Label htmlFor="headEmployeeId">Head Employee</Label>
               <CustomCombobox
                 items={
-                  employees?.data?.map((emp: GetEmploymentType) => ({
+                  employees?.data?.map((emp: GetEmployeeType) => ({
                     id: emp.employeeId!.toString(),
                     name: buildEmployeeLabel(emp),
                   })) || []
@@ -547,7 +547,7 @@ const BusinessUnits = () => {
                         id: formData.headEmployeeId.toString(),
                         name: (() => {
                           const matched = employees?.data?.find(
-                            (emp: GetEmploymentType) =>
+                            (emp: GetEmployeeType) =>
                               emp.employeeId === formData.headEmployeeId
                           )
                           return matched
