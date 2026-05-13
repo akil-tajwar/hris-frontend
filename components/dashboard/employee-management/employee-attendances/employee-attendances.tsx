@@ -46,7 +46,7 @@ import {
   useGetEmployeeAttendances,
   useUpdateEmployeeAttendance,
   useGetAllEmployees,
-  useGetOfficeTimingWeekends,
+  useGetShiftDayAndWeekDays,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -66,7 +66,7 @@ const EmployeeAttendances = () => {
 
   const { data: employeeAttendances } = useGetEmployeeAttendances()
   const { data: employees } = useGetAllEmployees()
-  const { data: officeTimingWeekends } = useGetOfficeTimingWeekends()
+  const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -111,17 +111,17 @@ const EmployeeAttendances = () => {
     return isLate ? Math.max(0, diff) : Math.max(0, -diff)
   }
 
-  const getOfficeTimingForEmployee = useCallback(
+  const getShiftForEmployee = useCallback(
     (emp: GetEmployeeType) => {
-      const officeTiming = officeTimingWeekends?.data?.find(
-        (ot: any) => ot.officeTimingId === emp.officeTimingId
+      const shift = shiftDayAndWeekDays?.data?.find(
+        (ot: any) => ot.shiftId === emp.shiftId
       )
       return {
-        startTime: officeTiming?.startTime || '09:00',
-        endTime: officeTiming?.endTime || '17:00',
+        startTime: shift?.startTime || '09:00',
+        endTime: shift?.endTime || '17:00',
       }
     },
-    [officeTimingWeekends?.data]
+    [shiftDayAndWeekDays?.data]
   )
 
   const buildEmptyRow = (): GetEmployeeAttendanceType => ({
@@ -162,7 +162,7 @@ const EmployeeAttendances = () => {
         }
         return updated
       }
-      const { startTime, endTime } = getOfficeTimingForEmployee(emp)
+      const { startTime, endTime } = getShiftForEmployee(emp)
       updated[index] = {
         ...updated[index],
         employeeId: emp.employeeId!,
@@ -372,8 +372,8 @@ const EmployeeAttendances = () => {
       (emp: GetEmployeeType) => emp.employeeId === attendance.employeeId
     )
 
-    if (employee && officeTimingWeekends?.data) {
-      const { startTime, endTime } = getOfficeTimingForEmployee(employee)
+    if (employee && shiftDayAndWeekDays?.data) {
+      const { startTime, endTime } = getShiftForEmployee(employee)
 
       setAttendanceForms([
         {
