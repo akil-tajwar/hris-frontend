@@ -443,16 +443,44 @@ export type GetHolidayType = z.infer<typeof holidaySchema>
 //leave type
 export const leaveTypeSchema = z.object({
   leaveTypeId: z.number().optional(),
-  leaveTypeName: z.string(),
-  totalLeaves: z.number(),
+  companyId: z.number(),
+  code: z.string().min(1).max(20),
+  name: z.string().min(1).max(100),
+  category: z.enum(['Paid', 'Unpaid', 'Special']),
+  genderApplicable: z
+    .enum(['Male', 'Female', 'All'])
+    .nullable()
+    .optional(),
+  religionApplicable: z.boolean().nullable().optional(),
+  maritalStatusApplicable: z
+    .enum(['Single', 'Married', 'All'])
+    .nullable()
+    .optional(),
+  maxDaysPerYear: z.number(),
+  maxDaysPerRequest: z.number(),
+  minDaysPerRequest: z.number(),
+  allowHalfDay: z.boolean().optional(),
+  allowHourly: z.boolean().optional(),
+  attachmentRequired: z.boolean().optional(),
+  attachmentAfterDays: z.number().nullable().optional(),
+  carryForwardAllowed: z.boolean().optional(),
+  maxCarryForwardDays: z.number().nullable().optional(),
+  encashmentAllowed: z.boolean().optional(),
+  negativeBalanceAllowed: z.boolean().optional(),
+  sandwichPolicyApplicable: z.boolean().optional(),
+  probationAllowed: z.boolean().optional(),
+  noticePeriodAllowed: z.boolean().optional(),
   yearPeriod: z.number(),
+  active: z.boolean().optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
 export type CreateLeaveTypeType = z.infer<typeof leaveTypeSchema>
-export type GetLeaveTypeType = z.infer<typeof leaveTypeSchema>
+export type GetLeaveTypeType = z.infer<typeof leaveTypeSchema> & {
+  companyName: string
+}
 
 export const employeeLeaveTypeSchema = z.object({
   employeeLeaveTypeId: z.number().optional(),

@@ -423,6 +423,11 @@ const ShiftAndWeekDays = () => {
     isEditMode,
     isPopupOpen,
     formData.shiftDayAndWeekDays.length,
+    formData.shift.startTime,
+    formData.shift.endTime,
+    formData.shift.breakMinutes,
+    formData.shift.expectedWorkHours,
+    formData.shift.minimumHoursForPresent,
   ])
 
   // ─── Re-sync day configs when shift values change ─────────────────────────
@@ -442,6 +447,8 @@ const ShiftAndWeekDays = () => {
     formData.shift.breakMinutes,
     formData.shift.expectedWorkHours,
     formData.shift.minimumHoursForPresent,
+    isPopupOpen,
+    formData.shiftDayAndWeekDays.length,
   ])
 
   // ─── Edit handler ─────────────────────────────────────────────────────────
