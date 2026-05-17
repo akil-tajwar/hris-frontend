@@ -51,6 +51,8 @@ import {
   CreateCustomerType,
   GetBusinessUnitType,
   CreateBusinessUnitType,
+  GetLeavePolicyType,
+  CreateLeavePolicyType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -844,6 +846,60 @@ export async function editLeaveType(
 export async function deleteLeaveType(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/leaveTypes/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//leave policy
+export async function getAllLeavePolicies(token: string) {
+  return fetchApi<GetLeavePolicyType[]>({
+    url: 'api/leavePolicy/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createLeavePolicy(
+  data: CreateLeavePolicyType,
+  token: string
+) {
+  return fetchApi<CreateLeavePolicyType>({
+    url: 'api/leavePolicy/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editLeavePolicy(
+  id: number,
+  data: GetLeavePolicyType,
+  token: string
+) {
+  return fetchApi<GetLeavePolicyType>({
+    url: `api/leavePolicy/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteLeavePolicy(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/leavePolicy/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

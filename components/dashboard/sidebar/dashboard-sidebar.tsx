@@ -7,6 +7,7 @@ import {
   DollarSign,
   FileChartColumn,
   Home,
+  LucideAirVent,
   Settings,
   UserCog,
 } from 'lucide-react'
@@ -94,10 +95,6 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/holidays',
         },
         {
-          title: 'Leave Types',
-          href: '/dashboard/setup/leave-types',
-        },
-        {
           title: 'Shift and Week Days',
           href: '/dashboard/setup/shift-and-week-days',
         },
@@ -131,6 +128,21 @@ export function DashboardSidebar() {
         {
           title: 'Employee Lones',
           href: '/dashboard/employee-management/employee-lones',
+        },
+      ],
+    },
+    {
+      title: 'Leave Management',
+      icon: LucideAirVent,
+      href: '/dashboard/leave-management',
+      subItems: [
+        {
+          title: 'Leave Types',
+          href: '/dashboard/setup/leave-types',
+        },
+        {
+          title: 'Leave Policy',
+          href: '/dashboard/leave-management/leave-policy',
         },
       ],
     },

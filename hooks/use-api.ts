@@ -94,6 +94,10 @@ import {
   getLoneReport,
   getSalaryReport,
   skipLone,
+  getAllLeavePolicies,
+  createLeavePolicy,
+  editLeavePolicy,
+  deleteLeavePolicy,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -123,6 +127,9 @@ import {
   GetBusinessUnitType,
   GetDepartmentType,
   GetDivisionType,
+  GetLeaveTypeType,
+  CreateLeavePolicyType,
+  GetLeavePolicyType,
 } from '@/utils/type'
 
 //roles
@@ -2036,7 +2043,7 @@ export const useUpdateLeaveType = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateLeaveTypeType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetLeaveTypeType }) => {
       return editLeaveType(id, data, token)
     },
     onSuccess: () => {
@@ -2079,6 +2086,140 @@ export const useDeleteLeaveType = ({
         description: 'leave type is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['leaveTypes'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//leave policy
+export const useGetLeavePolicies = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['leavePolicy'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllLeavePolicies(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddLeavePolicys = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateLeavePolicyType) => {
+      const res = await createLeavePolicy(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create leave policy',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Leave Policy created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding leave policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateLeavePolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetLeavePolicyType }) => {
+      return editLeavePolicy(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'leave policy is edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing leave policy:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteLeavePolicys = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteLeavePolicy(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'leave policy is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
 
       reset()
       onClose()

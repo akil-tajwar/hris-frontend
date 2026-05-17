@@ -492,6 +492,43 @@ export type GetEmployeeLeaveTypeType = z.infer<
   departmentName: string
 }
 
+export const LeavePolicySchema = z.object({
+  leavePolicyMaster: z.object({
+    leavePolicyMasterId: z.number().optional().nullable(),
+    companyId: z.number(),
+    companyName: z.string().optional(), // only for get
+    policyName: z.string(),
+    effectiveFrom: z.coerce.date(),
+    effectiveTo: z.coerce.date().optional().nullable(),
+    description: z.string().optional().nullable(),
+    active: z.boolean(),
+    createdBy: z.number(),
+    createdAt: z.coerce.date(),
+    updatedBy: z.number().optional().nullable(),
+    updatedAt: z.coerce.date().optional().nullable(),
+  }),
+  leavePolicyDetails: z.array(
+    z.object({
+      leavePolicyDetailsId: z.number().optional(),
+      leavePolicyMasterId: z.number().nullable().optional(),
+      leaveTypeId: z.number(),
+      leaveTypeName: z.string().optional(), // only for get
+      yearlyAllocation: z.number(),
+      accrualFrequency: z.enum(['Monthly', 'Quarterly', 'Yearly']),
+      accrualRate: z.number(),
+      maxBalanceAllowed: z.number(),
+      carryForwardLimit: z.number(),
+      active: z.boolean(),
+      createdBy: z.number(),
+      createdAt: z.coerce.date(),
+      updatedBy: z.number().optional().nullable(),
+      updatedAt: z.coerce.date().optional().nullable(),
+    })
+  ),
+})
+export type GetLeavePolicyType = z.infer<typeof LeavePolicySchema>
+export type CreateLeavePolicyType = z.infer<typeof LeavePolicySchema>
+
 export const employeeAttendanceSchema = z.object({
   employeeAttendanceId: z.number().optional(),
   employeeId: z.number(),

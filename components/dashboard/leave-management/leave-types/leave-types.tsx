@@ -287,7 +287,10 @@ const LeaveTypes = () => {
         }
 
         if (isEditMode && editingLeaveTypeId) {
-          updateMutation.mutate({ id: editingLeaveTypeId, data: submitData })
+          updateMutation.mutate({
+            id: editingLeaveTypeId,
+            data: submitData as GetLeaveTypeType,
+          })
         } else {
           addMutation.mutate([submitData] as any)
         }
