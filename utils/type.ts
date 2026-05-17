@@ -350,11 +350,22 @@ export const employeeSchema = z.object({
   updatedAt: z.date().optional(),
 })
 
-// For Create operations (without auto-generated and audit fields)
-export const createEmployeeSchema = employeeSchema.omit({
-  employeeId: true,
-  createdAt: true,
-  updatedAt: true,
+export const createEmployeeSchema = z.object({
+  employeeData: employeeSchema.omit({
+    employeeId: true,
+    createdAt: true,
+    updatedAt: true,
+  }),
+  userData: z.object({
+    username: z.string().min(1),
+    password: z.string().min(6),
+    confirmPassword: z.string().min(6),
+    active: z.boolean().default(true),
+    isPasswordResetRequired: z.boolean().default(false),
+    roleId: z.number().int(),
+    tenantId: z.number().int(),
+    email: z.string().email(),
+  }),
 })
 
 // For Update operations (all fields optional except ID)
@@ -374,8 +385,9 @@ export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   divisionName: string
   costCenterName: string
   reportingAuthorityName: string
-  shift: string
-  leaveTypes: string[]
+  shiftName: string
+  startTime: string
+  endTime: string
 }
 
 //weekDay
@@ -388,6 +400,7 @@ export type GetWeekDayType = z.infer<typeof weekDaySchema>
 //shift and week day
 export const ShiftsSchema = z.object({
   shift: z.object({
+    shiftId: z.number().optional(),
     companyId: z.number(),
     companyName: z.string().optional(), // only for get
     shiftName: z.string(),
@@ -528,6 +541,31 @@ export const LeavePolicySchema = z.object({
 })
 export type GetLeavePolicyType = z.infer<typeof LeavePolicySchema>
 export type CreateLeavePolicyType = z.infer<typeof LeavePolicySchema>
+
+export const EmployeeLeaveAssignmentSchema = z.object({
+  employeeLeaveAssignmentId: z.number().optional(),
+  employeeId: z.number(),
+  leavePolicyMasterId: z.number(),
+  effectiveFrom: z.coerce.date(),
+  effectiveTo: z.coerce.date().optional().nullable(),
+  active: z.boolean().default(true),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().optional().nullable(),
+  updatedAt: z.date().optional().nullable(),
+})
+export type CreateEmployeeLeaveAssignmentType = z.infer<
+  typeof EmployeeLeaveAssignmentSchema
+>
+export type GetEmployeeLeaveAssignmentType = z.infer<
+  typeof EmployeeLeaveAssignmentSchema
+> & {
+  employeeName: string
+  empCode: string
+  designationName: string
+  departmentName: string
+  policyName: string
+}
 
 export const employeeAttendanceSchema = z.object({
   employeeAttendanceId: z.number().optional(),

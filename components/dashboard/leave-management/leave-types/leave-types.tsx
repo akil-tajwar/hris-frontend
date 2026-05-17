@@ -859,7 +859,7 @@ const LeaveTypes = () => {
 
               <div className="space-y-2">
                 <CustomSwitch
-                  label="Religion Applicable"
+                  label="Marital Status Applicable"
                   checked={formData.maritalStatusApplicable ?? false}
                   onChange={(value) =>
                     setFormData((prev) => ({

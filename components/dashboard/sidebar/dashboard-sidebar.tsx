@@ -138,11 +138,15 @@ export function DashboardSidebar() {
       subItems: [
         {
           title: 'Leave Types',
-          href: '/dashboard/setup/leave-types',
+          href: '/dashboard/leave-management/leave-types',
         },
         {
           title: 'Leave Policy',
           href: '/dashboard/leave-management/leave-policy',
+        },
+        {
+          title: 'Employee Leave Assignments',
+          href: '/dashboard/leave-management/employee-leave-assignments',
         },
       ],
     },

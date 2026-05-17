@@ -53,6 +53,8 @@ import {
   CreateBusinessUnitType,
   GetLeavePolicyType,
   CreateLeavePolicyType,
+  GetEmployeeLeaveAssignmentType,
+  CreateEmployeeLeaveAssignmentType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -908,6 +910,60 @@ export async function deleteLeavePolicy(id: number, token: string) {
   })
 }
 
+export async function getAllEmployeeLeaveAssignments(token: string) {
+  return fetchApi<GetEmployeeLeaveAssignmentType[]>({
+    url: 'api/employeeLeaveAssignments/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createEmployeeLeaveAssignment(
+  data: CreateEmployeeLeaveAssignmentType,
+  token: string
+) {
+  return fetchApi<CreateEmployeeLeaveAssignmentType>({
+    url: 'api/employeeLeaveAssignments/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editEmployeeLeaveAssignment(
+  id: number,
+  data: GetEmployeeLeaveAssignmentType,
+  token: string
+) {
+  return fetchApi<GetEmployeeLeaveAssignmentType>({
+    url: `api/employeeLeaveAssignments/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteEmployeeLeaveAssignment(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/employeeLeaveAssignments/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//employee attendance
 export async function getAllEmployeeAttendances(token: string) {
   return fetchApi<GetEmployeeAttendanceType[]>({
     url: 'api/employeeAttendances/getall',

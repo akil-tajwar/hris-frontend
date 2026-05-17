@@ -98,6 +98,10 @@ import {
   createLeavePolicy,
   editLeavePolicy,
   deleteLeavePolicy,
+  getAllEmployeeLeaveAssignments,
+  createEmployeeLeaveAssignment,
+  editEmployeeLeaveAssignment,
+  deleteEmployeeLeaveAssignment,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -130,6 +134,8 @@ import {
   GetLeaveTypeType,
   CreateLeavePolicyType,
   GetLeavePolicyType,
+  CreateEmployeeLeaveAssignmentType,
+  GetEmployeeLeaveAssignmentType,
 } from '@/utils/type'
 
 //roles
@@ -717,19 +723,19 @@ export const useAddCompany = ({
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log("🚀 ~ useAddCompany ~ formData:", formData)
+      console.log('🚀 ~ useAddCompany ~ formData:', formData)
       const res = await createCompany(formData, token)
       return res
     },
     onSuccess: () => {
-    toast({
-      title: 'Success',
-      description: 'Company created successfully!',
-    })
-    queryClient.invalidateQueries({ queryKey: ['companies'] })
-    reset()
-    onClose()
-  },
+      toast({
+        title: 'Success',
+        description: 'Company created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      reset()
+      onClose()
+    },
     onError: (error: any) => {
       console.error('Error adding company:', error)
       toast({
@@ -759,14 +765,14 @@ export const useUpdateCompany = ({
       return editCompany(id, formData, token)
     },
     onSuccess: () => {
-    toast({
-      title: 'Success!',
-      description: 'Company updated successfully.',
-    })
-    queryClient.invalidateQueries({ queryKey: ['companies'] })
-    reset()
-    onClose()
-  },
+      toast({
+        title: 'Success!',
+        description: 'Company updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      reset()
+      onClose()
+    },
     onError: (error: any) => {
       console.error('Error editing company:', error)
       toast({
@@ -2226,6 +2232,179 @@ export const useDeleteLeavePolicys = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useGetEmployeeLeaveAssignments = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLeaveAssignments'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllEmployeeLeaveAssignments(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+// Create employee leave assignment
+export const useCreateEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateEmployeeLeaveAssignmentType) => {
+      const res = await createEmployeeLeaveAssignment(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Employee leave assignment created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding employee leave assignment:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+// Update employee leave assignment
+export const useUpdateEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeeLeaveAssignmentType
+    }) => {
+      return editEmployeeLeaveAssignment(id, data, token)
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to update employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Employee leave assignment updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing employee leave assignment:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Failed to update employee leave assignment',
+      })
+    },
+  })
+
+  return mutation
+}
+
+// Delete employee leave assignment
+export const useDeleteEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteEmployeeLeaveAssignment(id, token)
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to delete employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Employee leave assignment deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Failed to delete employee leave assignment',
+      })
     },
   })
 
