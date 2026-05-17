@@ -86,7 +86,7 @@ const defaultFormData: Omit<CreateLeaveTypeType, 'createdBy'> = {
   category: 'Paid',
   genderApplicable: 'All',
   religionApplicable: false,
-  maritalStatusApplicable: 'All',
+  maritalStatusApplicable: false,
   maxDaysPerYear: 0,
   maxDaysPerRequest: 0,
   minDaysPerRequest: 0,
@@ -361,7 +361,7 @@ const LeaveTypes = () => {
       category: leaveType.category,
       genderApplicable: leaveType.genderApplicable ?? 'All',
       religionApplicable: leaveType.religionApplicable ?? false,
-      maritalStatusApplicable: leaveType.maritalStatusApplicable ?? 'All',
+      maritalStatusApplicable: leaveType.maritalStatusApplicable ?? false,
       maxDaysPerYear: leaveType.maxDaysPerYear,
       maxDaysPerRequest: leaveType.maxDaysPerRequest,
       minDaysPerRequest: leaveType.minDaysPerRequest,
@@ -499,7 +499,7 @@ const LeaveTypes = () => {
                 <Table>
                   <TableHeader className="bg-amber-50">
                     <TableRow>
-                      <TableHead className="w-16">Sl No.</TableHead>
+                      <TableHead className="w-20">Sl No.</TableHead>
                       <TableHead
                         onClick={() => handleSort('code')}
                         className="cursor-pointer transition-colors"
@@ -818,7 +818,7 @@ const LeaveTypes = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Marital Status Applicable</Label>
                 <CustomCombobox
                   items={MARITAL_STATUS_OPTIONS}
@@ -839,7 +839,7 @@ const LeaveTypes = () => {
                   }
                   placeholder="Select marital status"
                 />
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <CustomSwitch
@@ -849,6 +849,19 @@ const LeaveTypes = () => {
                     setFormData((prev) => ({
                       ...prev,
                       religionApplicable: value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <CustomSwitch
+                  label="Religion Applicable"
+                  checked={formData.maritalStatusApplicable ?? false}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      maritalStatusApplicable: value,
                     }))
                   }
                 />

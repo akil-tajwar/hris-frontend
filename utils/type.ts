@@ -1,5 +1,5 @@
 import { off } from 'process'
-import { z } from 'zod'
+import { boolean, z } from 'zod'
 
 //auth + authorization + user management
 export const SignInRequestSchema = z.object({
@@ -447,15 +447,9 @@ export const leaveTypeSchema = z.object({
   code: z.string().min(1).max(20),
   name: z.string().min(1).max(100),
   category: z.enum(['Paid', 'Unpaid', 'Special']),
-  genderApplicable: z
-    .enum(['Male', 'Female', 'All'])
-    .nullable()
-    .optional(),
+  genderApplicable: z.enum(['Male', 'Female', 'All']).nullable().optional(),
   religionApplicable: z.boolean().nullable().optional(),
-  maritalStatusApplicable: z
-    .enum(['Single', 'Married', 'All'])
-    .nullable()
-    .optional(),
+  maritalStatusApplicable: z.boolean().nullable().optional(),
   maxDaysPerYear: z.number(),
   maxDaysPerRequest: z.number(),
   minDaysPerRequest: z.number(),
