@@ -625,6 +625,43 @@ export type GetSalaryComponentType = z.infer<
   typeof salaryComponentSchema
 >
 
+export const SalaryStructureSchema = z.object({
+  salaryStructureMaster: z.object({
+    salaryStructureId: z.number().optional().nullable(),
+    structureName: z.string(),
+    structureCode: z.string().optional().nullable(),
+    companyId: z.number(),
+    companyName: z.string().optional(), // only for get
+    structureType: z.enum(['Earning', 'Deduction']),
+    effectiveFrom: z.coerce.date(),
+    effectiveTo: z.coerce.date().optional().nullable(),
+    active: z.boolean(),
+    createdBy: z.number(),
+    createdAt: z.coerce.date(),
+    updatedBy: z.number().optional().nullable(),
+    updatedAt: z.coerce.date().optional().nullable(),
+  }),
+  salaryStructureDetails: z.array(
+    z.object({
+      salaryStructureDetailId: z.number().optional(),
+      salaryStructureId: z.number().optional().nullable(),
+      salaryComponentId: z.number(),
+      salaryComponentName: z.string().optional(), // only for get
+      amount: z.number(),
+      percentage: z.number().optional().nullable(),
+      formulaExpression: z.string().optional().nullable(),
+      calculationOrder: z.number(),
+      mandatory: z.boolean(),
+      createdBy: z.number(),
+      createdAt: z.coerce.date(),
+      updatedBy: z.number().optional().nullable(),
+      updatedAt: z.coerce.date().optional().nullable(),
+    })
+  ),
+})
+export type GetSalaryStructureType = z.infer<typeof SalaryStructureSchema>
+export type CreateSalaryStructureType = z.infer<typeof SalaryStructureSchema>
+
 export const salarySchema = z.object({
   salary: z.object({
     salaryMonth: z.string(),

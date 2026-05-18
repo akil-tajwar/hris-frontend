@@ -102,6 +102,10 @@ import {
   createEmployeeLeaveAssignment,
   editEmployeeLeaveAssignment,
   deleteEmployeeLeaveAssignment,
+  getAllSalaryStructures,
+  createSalaryStructure,
+  editSalaryStructure,
+  deleteSalaryStructure,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -136,6 +140,8 @@ import {
   GetLeavePolicyType,
   CreateEmployeeLeaveAssignmentType,
   GetEmployeeLeaveAssignmentType,
+  CreateSalaryStructureType,
+  GetSalaryStructureType,
 } from '@/utils/type'
 
 //roles
@@ -2238,6 +2244,166 @@ export const useDeleteLeavePolicys = ({
   return mutation
 }
 
+export const useGetSalaryStructures = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['salaryStructure'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllSalaryStructures(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateSalaryStructureType) => {
+      const res = await createSalaryStructure(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create salary structure',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Salary structure created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetSalaryStructureType
+    }) => {
+      return editSalaryStructure(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Salary structure updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update salary structure',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteSalaryStructure(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Salary structure deleted successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error deleting salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to delete salary structure',
+      })
+    },
+  })
+
+  return mutation
+}
+
+//employee leave assignment
 export const useGetEmployeeLeaveAssignments = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()

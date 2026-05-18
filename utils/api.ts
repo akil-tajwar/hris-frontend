@@ -55,6 +55,8 @@ import {
   CreateLeavePolicyType,
   GetEmployeeLeaveAssignmentType,
   CreateEmployeeLeaveAssignmentType,
+  GetSalaryStructureType,
+  CreateSalaryStructureType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -910,6 +912,7 @@ export async function deleteLeavePolicy(id: number, token: string) {
   })
 }
 
+//employee leave assignment
 export async function getAllEmployeeLeaveAssignments(token: string) {
   return fetchApi<GetEmployeeLeaveAssignmentType[]>({
     url: 'api/employeeLeaveAssignments/getall',
@@ -1017,7 +1020,7 @@ export async function deleteEmployeeAttendance(id: number, token: string) {
   })
 }
 
-//other salary related components
+//salary components
 export async function getAllSalaryComponents(token: string) {
   return fetchApi<GetSalaryComponentType[]>({
     url: 'api/salaryComponents/getall',
@@ -1070,6 +1073,61 @@ export async function deleteSalaryComponent(id: number, token: string) {
     },
   })
 }
+
+//salary structure
+export async function getAllSalaryStructures(token: string) {
+  return fetchApi<GetSalaryStructureType[]>({
+    url: 'api/salaryStructures/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createSalaryStructure(
+  data: CreateSalaryStructureType,
+  token: string
+) {
+  return fetchApi<CreateSalaryStructureType>({
+    url: 'api/salaryStructures/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editSalaryStructure(
+  id: number,
+  data: GetSalaryStructureType,
+  token: string
+) {
+  return fetchApi<GetSalaryStructureType>({
+    url: `api/salaryStructures/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteSalaryStructure(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/salaryStructures/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 
 //employee other salary components
 export async function getAllEmployeeSalaryComponents(token: string) {
