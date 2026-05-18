@@ -561,7 +561,7 @@ const LoneReport = () => {
                               {sortInstallmentsByDate(installments).map(
                                 (inst, idx) => (
                                   <TableRow
-                                    key={`inst-${inst.employeeOtherSalaryComponentId}`}
+                                    key={`inst-${inst.employeeSalaryComponentId}`}
                                     className={
                                       inst.isSalaryGiven === 1
                                         ? 'bg-green-50'

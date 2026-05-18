@@ -1,4 +1,4 @@
-import LeaveTypes from '@/components/dashboard/setup/leave-types/leave-types';
+import LeaveTypes from '@/components/dashboard/leave-management/leave-types/leave-types';
 import React from 'react';
 
 const LeaveTypesPage = () => {

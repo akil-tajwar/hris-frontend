@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { User } from 'lucide-react'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -22,7 +21,6 @@ import {
   useGetDepartments,
   useGetDesignations,
   useGetEmploymentTypes,
-  useGetLeaveTypes,
   useGetShiftDayAndWeekDays,
   useGetEmployeeById,
   useGetCompanies,
@@ -31,9 +29,77 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
 } from '@/hooks/use-api'
-import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
-import { formatDateForInput, formatTime } from '@/utils/conversions'
+import { formatDateForInput } from '@/utils/conversions'
+
+// ── Same helper used in CreateEmployee ───────────────────────────────────────
+const formatShift = (
+  shiftName?: string,
+  startTime?: string,
+  endTime?: string
+) => {
+  if (!shiftName) return 'Unknown shift'
+  if (!startTime || !endTime) return shiftName
+  return `${shiftName} (${startTime}-${endTime})`
+}
+
+// ── Local form type — employee only, no userData ──────────────────────────────
+type EmployeeEditFormData = {
+  empFullName: string
+  empShortName: string | null
+  dob: string
+  gender: 'Male' | 'Female'
+  nationality:
+    | 'Bangladeshi'
+    | 'Pakistani'
+    | 'Indian'
+    | 'British'
+    | 'American'
+    | null
+  nationalIdNo: string | null
+  maritalStatus: 'Single' | 'Married' | null
+  religion: string | null
+  bloodGroup: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | null
+  photoUrl: string | null
+  cvUrl: string | null
+  certificateUrl: string | null
+  workEmail: string | null
+  privateEmail: string | null
+  homePhone: string | null
+  personalPhone: string | null
+  officialPhone: string
+  presentAddress: string
+  permanentAddress: string | null
+  country: string | null
+  city: string | null
+  zipCode: string | null
+  emergencyContactName: string | null
+  emergencyContactPhone: string | null
+  emergencyContactRelation: string | null
+  qualification: 'SSC' | 'HSC' | 'Graduate' | 'Postgraduate'
+  instituteName: string | null
+  subjectName: string | null
+  startDate: string | null
+  endDate: string | null
+  result: string | null
+  dependentsName: string | null
+  dependentRelation: string | null
+  empCode: string
+  doj: string
+  doc: string | null
+  basicSalary: number
+  isActive: boolean
+  departmentId: number
+  designationId: number
+  employmentTypeId: number
+  shiftId: number
+  companyId: number
+  workStationId: number
+  divisionId: number
+  costCenterId: number
+  reportingAuthorityId: number | null
+  updatedBy: number
+}
 
 const EditEmployee = () => {
   useInitializeUser()
@@ -50,17 +116,11 @@ const EditEmployee = () => {
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
-  const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
   const { data: workStations } = useGetWorkStations()
   const { data: divisions } = useGetDivisions()
   const { data: costCenters } = useGetCostCenters()
   const { data: employees } = useGetAllEmployees()
-
-  const currentYear = new Date().getFullYear()
-  const currentYearLeaveTypes = leaveTypes?.data?.filter(
-    (item) => item.yearPeriod === currentYear
-  )
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -73,13 +133,7 @@ const EditEmployee = () => {
     string | null
   >(null)
 
-  const [formData, setFormData] = useState<
-    Omit<
-      CreateEmployeeType,
-      'employeeId' | 'createdAt' | 'updatedAt' | 'createdBy'
-    >
-  >({
-    // Personal
+  const [formData, setFormData] = useState<EmployeeEditFormData>({
     empFullName: '',
     empShortName: null,
     dob: '',
@@ -92,38 +146,27 @@ const EditEmployee = () => {
     photoUrl: null,
     cvUrl: null,
     certificateUrl: null,
-    // Contact
-    workEmail: '',
+    workEmail: null,
     privateEmail: null,
     homePhone: null,
     personalPhone: null,
     officialPhone: '',
-
-    // Address
     presentAddress: '',
     permanentAddress: null,
     country: null,
     city: null,
     zipCode: null,
-
-    // Emergency Contact
     emergencyContactName: null,
     emergencyContactPhone: null,
     emergencyContactRelation: null,
-
-    // Education
     qualification: 'Graduate',
     instituteName: null,
     subjectName: null,
     startDate: null,
     endDate: null,
     result: null,
-
-    // Dependent
     dependentsName: null,
     dependentRelation: null,
-
-    // Official
     empCode: '',
     doj: new Date().toISOString().split('T')[0],
     doc: null,
@@ -138,7 +181,6 @@ const EditEmployee = () => {
     divisionId: 0,
     costCenterId: 0,
     reportingAuthorityId: null,
-    leaveTypeIds: [],
     updatedBy: userData?.userId || 0,
   })
 
@@ -159,7 +201,8 @@ const EditEmployee = () => {
         bloodGroup: emp.bloodGroup || null,
         photoUrl: emp.photoUrl || null,
         cvUrl: emp.cvUrl || null,
-        workEmail: emp.workEmail || '',
+        certificateUrl: emp.certificateUrl || null,
+        workEmail: emp.workEmail || null,
         privateEmail: emp.privateEmail || null,
         homePhone: emp.homePhone || null,
         personalPhone: emp.personalPhone || null,
@@ -178,12 +221,12 @@ const EditEmployee = () => {
         startDate: formatDateForInput(emp.startDate) || null,
         endDate: formatDateForInput(emp.endDate) || null,
         result: emp.result || null,
-        certificateUrl: emp.certificateUrl || null,
         dependentsName: emp.dependentsName || null,
         dependentRelation: emp.dependentRelation || null,
         empCode: emp.empCode || '',
-        doj: formatDateForInput(emp.doj) || new Date().toISOString().split('T')[0],
-        doc: formatDateForInput(emp.doc) || '',
+        doj:
+          formatDateForInput(emp.doj) || new Date().toISOString().split('T')[0],
+        doc: formatDateForInput(emp.doc) || null,
         basicSalary: emp.basicSalary || 0,
         isActive: emp.isActive ?? true,
         departmentId: emp.departmentId || 0,
@@ -195,7 +238,6 @@ const EditEmployee = () => {
         divisionId: emp.divisionId || 0,
         costCenterId: emp.costCenterId || 0,
         reportingAuthorityId: emp.reportingAuthorityId || null,
-        leaveTypeIds: emp.leaveTypeIds || [],
         updatedBy: userData?.userId || 0,
       })
 
@@ -243,15 +285,6 @@ const EditEmployee = () => {
       setCertificateFile(file)
       setError(null)
     }
-  }
-
-  const handleLeaveTypeToggle = (leaveTypeId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      leaveTypeIds: (prev.leaveTypeIds ?? []).includes(leaveTypeId)
-        ? (prev.leaveTypeIds ?? []).filter((id) => id !== leaveTypeId)
-        : [...(prev.leaveTypeIds ?? []), leaveTypeId],
-    }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -538,16 +571,15 @@ const EditEmployee = () => {
                 onChange={handleEmployeePhotoChange}
                 className="text-sm"
               />
-              {employeePhotoFile && (
+              {employeePhotoFile ? (
                 <p className="text-xs text-green-600">
                   ✓ New photo selected: {employeePhotoFile.name}
                 </p>
-              )}
-              {!employeePhotoFile && existingPhotoUrl && (
+              ) : existingPhotoUrl ? (
                 <p className="text-xs text-blue-600">
                   Current photo: {existingPhotoUrl}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -678,7 +710,8 @@ const EditEmployee = () => {
                         id: formData.employmentTypeId.toString(),
                         name:
                           employmentTypes?.data?.find(
-                            (t) => t.employmentTypeId === formData.employmentTypeId
+                            (t) =>
+                              t.employmentTypeId === formData.employmentTypeId
                           )?.employmentTypeName || '',
                       }
                     : null
@@ -822,9 +855,7 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reportingAuthorityId">
-                Reporting Authority
-              </Label>
+              <Label htmlFor="reportingAuthorityId">Reporting Authority</Label>
               <CustomCombobox
                 items={
                   employees?.data
@@ -856,6 +887,7 @@ const EditEmployee = () => {
               />
             </div>
 
+            {/* ── Shift — uses same nested .shift.* shape as CreateEmployee ── */}
             <div className="space-y-2">
               <Label htmlFor="shiftId">
                 Shift <span className="text-red-500">*</span>
@@ -863,8 +895,12 @@ const EditEmployee = () => {
               <CustomCombobox
                 items={
                   shiftDayAndWeekDays?.data?.map((timing) => ({
-                    id: timing.shiftId?.toString() || '0',
-                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekDays?.length ? ` (Off: ${timing.weekDays.join(', ')})` : ''}`,
+                    id: timing.shift.shiftId?.toString() || '0',
+                    name: formatShift(
+                      timing.shift.shiftName,
+                      timing.shift.startTime,
+                      timing.shift.endTime
+                    ),
                   })) || []
                 }
                 value={
@@ -873,10 +909,14 @@ const EditEmployee = () => {
                         id: formData.shiftId.toString(),
                         name: (() => {
                           const t = shiftDayAndWeekDays?.data?.find(
-                            (t) => t.shiftId === formData.shiftId
+                            (t) => t.shift.shiftId === formData.shiftId
                           )
                           return t
-                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''}`
+                            ? formatShift(
+                                t.shift.shiftName,
+                                t.shift.startTime,
+                                t.shift.endTime
+                              )
                             : ''
                         })(),
                       }
@@ -937,16 +977,15 @@ const EditEmployee = () => {
                 onChange={handleCvChange}
                 className="text-sm"
               />
-              {cvFile && (
+              {cvFile ? (
                 <p className="text-xs text-green-600">
                   ✓ New CV selected: {cvFile.name}
                 </p>
-              )}
-              {!cvFile && existingCvUrl && (
+              ) : existingCvUrl ? (
                 <p className="text-xs text-blue-600">
                   Current CV: {existingCvUrl}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -1043,16 +1082,15 @@ const EditEmployee = () => {
                 onChange={handleCertificateChange}
                 className="text-sm"
               />
-              {certificateFile && (
+              {certificateFile ? (
                 <p className="text-xs text-green-600">
                   ✓ New certificate selected: {certificateFile.name}
                 </p>
-              )}
-              {!certificateFile && existingCertificateUrl && (
+              ) : existingCertificateUrl ? (
                 <p className="text-xs text-blue-600">
                   Current certificate: {existingCertificateUrl}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -1128,7 +1166,7 @@ const EditEmployee = () => {
           </div>
         </div>
 
-        {/* ── Contact & Address Information ── */}
+        {/* ── 6. Contact & Address Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">
             Contact &amp; Address Information
@@ -1249,51 +1287,6 @@ const EditEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-          </div>
-        </div>
-
-        {/* ── Leave Types ── */}
-        <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">
-            Leave Types ({currentYear})
-          </h3>
-          <div className="space-y-3">
-            <Label>Select Leave Types</Label>
-            <div className="grid gap-3 md:grid-cols-3">
-              {currentYearLeaveTypes?.map((leave) => (
-                <div
-                  key={leave.leaveTypeId}
-                  className="flex items-center space-x-2"
-                >
-                  <Checkbox
-                    id={`leave-${leave.leaveTypeId}`}
-                    checked={
-                      leave.leaveTypeId !== undefined &&
-                      (formData.leaveTypeIds ?? []).includes(leave.leaveTypeId)
-                    }
-                    onCheckedChange={() =>
-                      leave.leaveTypeId !== undefined &&
-                      handleLeaveTypeToggle(leave.leaveTypeId)
-                    }
-                    className="bg-white"
-                  />
-                  <label
-                    htmlFor={`leave-${leave.leaveTypeId}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {leave.leaveTypeName}
-                    <span className="text-gray-500 ml-1">
-                      ({leave.totalLeaves} days)
-                    </span>
-                  </label>
-                </div>
-              ))}
-            </div>
-            {(formData.leaveTypeIds ?? []).length > 0 && (
-              <p className="text-xs text-green-600">
-                ✓ {(formData.leaveTypeIds ?? []).length} leave type(s) selected
-              </p>
-            )}
           </div>
         </div>
 

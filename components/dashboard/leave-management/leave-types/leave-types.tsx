@@ -45,6 +45,7 @@ import { useAtom } from 'jotai'
 import {
   useAddLeaveType,
   useDeleteLeaveType,
+  useGetCompanies,
   useGetLeaveTypes,
   useUpdateLeaveType,
 } from '@/hooks/use-api'
@@ -57,18 +58,64 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { CustomCombobox } from '@/utils/custom-combobox'
+import CustomSwitch from '@/utils/custom-switch'
+
+const CATEGORY_OPTIONS = [
+  { id: 'Paid', name: 'Paid' },
+  { id: 'Unpaid', name: 'Unpaid' },
+  { id: 'Special', name: 'Special' },
+]
+
+const GENDER_OPTIONS = [
+  { id: 'Male', name: 'Male' },
+  { id: 'Female', name: 'Female' },
+  { id: 'All', name: 'All' },
+]
+
+const MARITAL_STATUS_OPTIONS = [
+  { id: 'Single', name: 'Single' },
+  { id: 'Married', name: 'Married' },
+  { id: 'All', name: 'All' },
+]
+
+const defaultFormData: Omit<CreateLeaveTypeType, 'createdBy'> = {
+  companyId: 0,
+  code: '',
+  name: '',
+  category: 'Paid',
+  genderApplicable: 'All',
+  religionApplicable: false,
+  maritalStatusApplicable: false,
+  maxDaysPerYear: 0,
+  maxDaysPerRequest: 0,
+  minDaysPerRequest: 0,
+  allowHalfDay: false,
+  allowHourly: false,
+  attachmentRequired: false,
+  attachmentAfterDays: null,
+  carryForwardAllowed: false,
+  maxCarryForwardDays: null,
+  encashmentAllowed: false,
+  negativeBalanceAllowed: false,
+  sandwichPolicyApplicable: false,
+  probationAllowed: false,
+  noticePeriodAllowed: false,
+  yearPeriod: new Date().getFullYear(),
+  active: true,
+}
 
 const LeaveTypes = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
   const { data: leaveTypes } = useGetLeaveTypes()
+  const { data: companies } = useGetCompanies()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [groupsPerPage] = useState(5)
-  const [sortColumn, setSortColumn] =
-    useState<keyof GetLeaveTypeType>('leaveTypeName')
+  const [sortColumn, setSortColumn] = useState<keyof GetLeaveTypeType>('name')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -84,13 +131,11 @@ const LeaveTypes = () => {
     null
   )
 
-  // Get current year and next 2 years
   const currentYear = new Date().getFullYear()
   const availableYears = [currentYear, currentYear + 1, currentYear + 2]
 
   const [formData, setFormData] = useState<CreateLeaveTypeType>({
-    leaveTypeName: '',
-    totalLeaves: 0,
+    ...defaultFormData,
     yearPeriod: currentYear,
     createdBy: userData?.userId || 0,
   })
@@ -99,10 +144,7 @@ const LeaveTypes = () => {
   const [copySourceYear, setCopySourceYear] = useState<number | null>(null)
   const [copyTargetYear, setCopyTargetYear] = useState<number>(currentYear)
   const [leaveTypesToCopy, setLeaveTypesToCopy] = useState<
-    Array<{
-      leaveTypeName: string
-      totalLeaves: number
-    }>
+    Array<{ code: string; name: string; maxDaysPerYear: number }>
   >([])
 
   const handleInputChange = (
@@ -115,17 +157,28 @@ const LeaveTypes = () => {
     }))
   }
 
-  const handleYearChange = (value: string) => {
+  const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      yearPeriod: parseInt(value),
+      [name]: value === '' ? null : Number(value),
     }))
+  }
+
+  const handleYearChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, yearPeriod: parseInt(value) }))
+  }
+
+  const handleSwitchChange = (
+    field: keyof CreateLeaveTypeType,
+    value: boolean
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const resetForm = useCallback(() => {
     setFormData({
-      leaveTypeName: '',
-      totalLeaves: 0,
+      ...defaultFormData,
       yearPeriod: currentYear,
       createdBy: userData?.userId || 0,
     })
@@ -149,16 +202,11 @@ const LeaveTypes = () => {
     setError(null)
   }, [currentYear])
 
-  const addMutation = useAddLeaveType({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-
+  const addMutation = useAddLeaveType({ onClose: closePopup, reset: resetForm })
   const updateMutation = useUpdateLeaveType({
     onClose: closePopup,
     reset: resetForm,
   })
-
   const deleteMutation = useDeleteLeaveType({
     onClose: closePopup,
     reset: resetForm,
@@ -175,39 +223,35 @@ const LeaveTypes = () => {
 
   const filteredLeaveTypes = useMemo(() => {
     if (!leaveTypes?.data || !Array.isArray(leaveTypes.data)) return []
-    return leaveTypes.data.filter((leaveType) =>
-      leaveType.leaveTypeName?.toLowerCase().includes(searchTerm.toLowerCase())
+    return leaveTypes.data.filter(
+      (leaveType) =>
+        leaveType.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        leaveType.code?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [leaveTypes?.data, searchTerm])
 
-  // Group leave types by yearPeriod and sort
   const groupedLeaveTypes = useMemo(() => {
     if (!Array.isArray(filteredLeaveTypes)) return []
 
     const groups = filteredLeaveTypes.reduce(
       (acc, leaveType) => {
         const year = leaveType.yearPeriod || currentYear
-        if (!acc[year]) {
-          acc[year] = []
-        }
+        if (!acc[year]) acc[year] = []
         acc[year].push(leaveType)
         return acc
       },
       {} as Record<number, GetLeaveTypeType[]>
     )
 
-    // Sort each group's leave types
     Object.keys(groups).forEach((year) => {
       groups[parseInt(year)].sort((a, b) => {
         const aValue = a[sortColumn] ?? ''
         const bValue = b[sortColumn] ?? ''
-
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortDirection === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue)
         }
-
         return sortDirection === 'asc'
           ? aValue > bValue
             ? 1
@@ -218,13 +262,11 @@ const LeaveTypes = () => {
       })
     })
 
-    // Sort years in descending order (latest first)
     return Object.entries(groups).sort(
       ([yearA], [yearB]) => parseInt(yearB) - parseInt(yearA)
     )
   }, [filteredLeaveTypes, sortColumn, sortDirection, currentYear])
 
-  // Paginate by year groups
   const paginatedGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * groupsPerPage
     return groupedLeaveTypes.slice(startIndex, startIndex + groupsPerPage)
@@ -239,23 +281,17 @@ const LeaveTypes = () => {
 
       try {
         const submitData: CreateLeaveTypeType = {
-          leaveTypeName: formData.leaveTypeName,
-          totalLeaves: formData.totalLeaves,
-          yearPeriod: formData.yearPeriod,
+          ...formData,
           createdBy: userData?.userId || 0,
-        }
-
-        if (isEditMode) {
-          submitData.updatedBy = userData?.userId || 0
+          ...(isEditMode && { updatedBy: userData?.userId || 0 }),
         }
 
         if (isEditMode && editingLeaveTypeId) {
           updateMutation.mutate({
             id: editingLeaveTypeId,
-            data: submitData,
+            data: submitData as GetLeaveTypeType,
           })
         } else {
-          // Send as array for bulk creation
           addMutation.mutate([submitData] as any)
         }
       } catch (err) {
@@ -284,17 +320,18 @@ const LeaveTypes = () => {
       }
 
       try {
-        // Create array of leave types with the new year
         const copiedLeaveTypes: CreateLeaveTypeType[] = leaveTypesToCopy.map(
           (lt) => ({
-            leaveTypeName: lt.leaveTypeName,
-            totalLeaves: lt.totalLeaves,
+            ...defaultFormData,
+            companyId: formData.companyId,
+            code: lt.code,
+            name: lt.name,
+            maxDaysPerYear: lt.maxDaysPerYear,
             yearPeriod: copyTargetYear,
             createdBy: userData?.userId || 0,
           })
         )
 
-        // Send as array for bulk creation
         await addMutation.mutateAsync(copiedLeaveTypes as any)
         closeCopyPopup()
       } catch (err) {
@@ -302,7 +339,14 @@ const LeaveTypes = () => {
         console.error(err)
       }
     },
-    [leaveTypesToCopy, copyTargetYear, addMutation, userData, closeCopyPopup]
+    [
+      leaveTypesToCopy,
+      copyTargetYear,
+      addMutation,
+      userData,
+      formData.companyId,
+      closeCopyPopup,
+    ]
   )
 
   useEffect(() => {
@@ -313,9 +357,30 @@ const LeaveTypes = () => {
 
   const handleEditClick = (leaveType: GetLeaveTypeType) => {
     setFormData({
-      leaveTypeName: leaveType.leaveTypeName,
-      totalLeaves: leaveType.totalLeaves,
+      leaveTypeId: leaveType.leaveTypeId,
+      companyId: leaveType.companyId,
+      code: leaveType.code,
+      name: leaveType.name,
+      category: leaveType.category,
+      genderApplicable: leaveType.genderApplicable ?? 'All',
+      religionApplicable: leaveType.religionApplicable ?? false,
+      maritalStatusApplicable: leaveType.maritalStatusApplicable ?? false,
+      maxDaysPerYear: leaveType.maxDaysPerYear,
+      maxDaysPerRequest: leaveType.maxDaysPerRequest,
+      minDaysPerRequest: leaveType.minDaysPerRequest,
+      allowHalfDay: leaveType.allowHalfDay ?? false,
+      allowHourly: leaveType.allowHourly ?? false,
+      attachmentRequired: leaveType.attachmentRequired ?? false,
+      attachmentAfterDays: leaveType.attachmentAfterDays ?? null,
+      carryForwardAllowed: leaveType.carryForwardAllowed ?? false,
+      maxCarryForwardDays: leaveType.maxCarryForwardDays ?? null,
+      encashmentAllowed: leaveType.encashmentAllowed ?? false,
+      negativeBalanceAllowed: leaveType.negativeBalanceAllowed ?? false,
+      sandwichPolicyApplicable: leaveType.sandwichPolicyApplicable ?? false,
+      probationAllowed: leaveType.probationAllowed ?? false,
+      noticePeriodAllowed: leaveType.noticePeriodAllowed ?? false,
       yearPeriod: leaveType.yearPeriod || currentYear,
+      active: leaveType.active ?? true,
       createdBy: userData?.userId || 0,
     })
     setEditingLeaveTypeId(leaveType.leaveTypeId!)
@@ -323,29 +388,32 @@ const LeaveTypes = () => {
     setIsPopupOpen(true)
   }
 
-  const handleCopyClick = (year: number, leaveTypes: GetLeaveTypeType[]) => {
+  const handleCopyClick = (
+    year: number,
+    leaveTypesInYear: GetLeaveTypeType[]
+  ) => {
     setCopySourceYear(year)
     setLeaveTypesToCopy(
-      leaveTypes.map((lt) => ({
-        leaveTypeName: lt.leaveTypeName,
-        totalLeaves: lt.totalLeaves,
+      leaveTypesInYear.map((lt) => ({
+        code: lt.code,
+        name: lt.name,
+        maxDaysPerYear: lt.maxDaysPerYear,
       }))
     )
-    // Set default target year to next year after the source year
     setCopyTargetYear(year + 1)
     setIsCopyPopupOpen(true)
   }
 
   const handleCopyLeaveTypeChange = (
     index: number,
-    field: 'leaveTypeName' | 'totalLeaves',
+    field: 'code' | 'name' | 'maxDaysPerYear',
     value: string | number
   ) => {
     setLeaveTypesToCopy((prev) => {
       const updated = [...prev]
       updated[index] = {
         ...updated[index],
-        [field]: field === 'totalLeaves' ? Number(value) : value,
+        [field]: field === 'maxDaysPerYear' ? Number(value) : value,
       }
       return updated
     })
@@ -358,10 +426,7 @@ const LeaveTypes = () => {
   const handleAddNewCopyLeaveType = () => {
     setLeaveTypesToCopy((prev) => [
       ...prev,
-      {
-        leaveTypeName: '',
-        totalLeaves: 0,
-      },
+      { code: '', name: '', maxDaysPerYear: 0 },
     ])
   }
 
@@ -412,7 +477,6 @@ const LeaveTypes = () => {
               key={year}
               className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
             >
-              {/* Year Header */}
               <div className="bg-amber-200 px-6 py-4 flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-black" />
                 <h3 className="text-lg font-semibold text-black">
@@ -434,26 +498,39 @@ const LeaveTypes = () => {
                 </Button>
               </div>
 
-              {/* Leave Types Table */}
               <div className="bg-white">
                 <Table>
                   <TableHeader className="bg-amber-50">
                     <TableRow>
                       <TableHead className="w-20">Sl No.</TableHead>
                       <TableHead
-                        onClick={() => handleSort('leaveTypeName')}
+                        onClick={() => handleSort('code')}
                         className="cursor-pointer transition-colors"
                       >
-                        Leave Type Name
+                        Code <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('name')}
+                        className="cursor-pointer transition-colors"
+                      >
+                        Leave Type Name{' '}
                         <ArrowUpDown className="ml-2 h-4 w-4 inline" />
                       </TableHead>
                       <TableHead
-                        onClick={() => handleSort('totalLeaves')}
+                        onClick={() => handleSort('category')}
                         className="cursor-pointer transition-colors"
                       >
-                        Total Leaves (Days)
+                        Category <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                      </TableHead>
+                      <TableHead
+                        onClick={() => handleSort('maxDaysPerYear')}
+                        className="cursor-pointer transition-colors"
+                      >
+                        Max Days/Year{' '}
                         <ArrowUpDown className="ml-2 h-4 w-4 inline" />
                       </TableHead>
+                      <TableHead>Gender</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -467,10 +544,40 @@ const LeaveTypes = () => {
                           <TableCell className="font-medium text-gray-600">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {leaveType.leaveTypeName}
+                          <TableCell className="font-mono text-sm">
+                            {leaveType.code}
                           </TableCell>
-                          <TableCell>{leaveType.totalLeaves}</TableCell>
+                          <TableCell className="font-medium">
+                            {leaveType.name}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                leaveType.category === 'Paid'
+                                  ? 'bg-green-100 text-green-700'
+                                  : leaveType.category === 'Unpaid'
+                                    ? 'bg-red-100 text-red-700'
+                                    : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {leaveType.category}
+                            </span>
+                          </TableCell>
+                          <TableCell>{leaveType.maxDaysPerYear}</TableCell>
+                          <TableCell>
+                            {leaveType.genderApplicable ?? 'All'}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                leaveType.active
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {leaveType.active ? 'Active' : 'Inactive'}
+                            </span>
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -519,7 +626,6 @@ const LeaveTypes = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -546,10 +652,8 @@ const LeaveTypes = () => {
                     </PaginationItem>
                   )
                 }
-
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -572,59 +676,385 @@ const LeaveTypes = () => {
         isOpen={isPopupOpen}
         onClose={closePopup}
         title={isEditMode ? 'Edit Leave Type' : 'Add Leave Type'}
-        size="sm:max-w-md"
+        size="sm:max-w-3xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="leaveTypeName">
-                Leave Type Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="leaveTypeName"
-                name="leaveTypeName"
-                value={formData.leaveTypeName}
-                onChange={handleInputChange}
-                required
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          {/* Basic Info */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="companyId">
+                  Company <span className="text-red-500">*</span>
+                </Label>
+                <CustomCombobox
+                  items={
+                    companies?.data
+                      ?.filter((c) => c.companyId != null)
+                      .map((c) => ({
+                        id: c.companyId!.toString(),
+                        name: c.companyName,
+                      })) || []
+                  }
+                  value={
+                    formData.companyId
+                      ? {
+                          id: formData.companyId.toString(),
+                          name:
+                            companies?.data?.find(
+                              (c) => c.companyId === formData.companyId
+                            )?.companyName ?? formData.companyId.toString(),
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      companyId: value ? Number(value.id) : 0,
+                    }))
+                  }
+                  placeholder="Select company"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code">
+                  Code <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleInputChange}
+                  placeholder="e.g. CL, SL, AL"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Leave Type Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Casual Leave"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">
+                  Category <span className="text-red-500">*</span>
+                </Label>
+                <CustomCombobox
+                  items={CATEGORY_OPTIONS}
+                  value={
+                    formData.category
+                      ? { id: formData.category, name: formData.category }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      category:
+                        (value?.id as 'Paid' | 'Unpaid' | 'Special') ?? 'Paid',
+                    }))
+                  }
+                  placeholder="Select category"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="yearPeriod">
+                  Year Period <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.yearPeriod.toString()}
+                  onValueChange={handleYearChange}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Eligibility */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Eligibility
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Gender Applicable</Label>
+                <CustomCombobox
+                  items={GENDER_OPTIONS}
+                  value={
+                    formData.genderApplicable
+                      ? {
+                          id: formData.genderApplicable,
+                          name: formData.genderApplicable,
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      genderApplicable:
+                        (value?.id as 'Male' | 'Female' | 'All') ?? null,
+                    }))
+                  }
+                  placeholder="Select gender"
+                />
+              </div>
+
+              {/* <div className="space-y-2">
+                <Label>Marital Status Applicable</Label>
+                <CustomCombobox
+                  items={MARITAL_STATUS_OPTIONS}
+                  value={
+                    formData.maritalStatusApplicable
+                      ? {
+                          id: formData.maritalStatusApplicable,
+                          name: formData.maritalStatusApplicable,
+                        }
+                      : null
+                  }
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      maritalStatusApplicable:
+                        (value?.id as 'Single' | 'Married' | 'All') ?? null,
+                    }))
+                  }
+                  placeholder="Select marital status"
+                />
+              </div> */}
+
+              <div className="space-y-2">
+                <CustomSwitch
+                  label="Religion Applicable"
+                  checked={formData.religionApplicable ?? false}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      religionApplicable: value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <CustomSwitch
+                  label="Marital Status Applicable"
+                  checked={formData.maritalStatusApplicable ?? false}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      maritalStatusApplicable: value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Leave Limits */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Leave Limits
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="maxDaysPerYear">
+                  Max Days Per Year <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="maxDaysPerYear"
+                  name="maxDaysPerYear"
+                  type="number"
+                  min="0"
+                  value={formData.maxDaysPerYear}
+                  onChange={handleNumberInputChange}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxDaysPerRequest">
+                  Max Days Per Request <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="maxDaysPerRequest"
+                  name="maxDaysPerRequest"
+                  type="number"
+                  min="0"
+                  value={formData.maxDaysPerRequest}
+                  onChange={handleNumberInputChange}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="minDaysPerRequest">
+                  Min Days Per Request <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="minDaysPerRequest"
+                  name="minDaysPerRequest"
+                  type="number"
+                  min="0"
+                  value={formData.minDaysPerRequest}
+                  onChange={handleNumberInputChange}
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Leave Options */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Leave Options
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <CustomSwitch
+                label="Allow Half Day"
+                checked={formData.allowHalfDay ?? false}
+                onChange={(value) => handleSwitchChange('allowHalfDay', value)}
+              />
+              <CustomSwitch
+                label="Allow Hourly"
+                checked={formData.allowHourly ?? false}
+                onChange={(value) => handleSwitchChange('allowHourly', value)}
+              />
+              <CustomSwitch
+                label="Negative Balance Allowed"
+                checked={formData.negativeBalanceAllowed ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('negativeBalanceAllowed', value)
+                }
+              />
+              <CustomSwitch
+                label="Sandwich Policy Applicable"
+                checked={formData.sandwichPolicyApplicable ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('sandwichPolicyApplicable', value)
+                }
+              />
+              <CustomSwitch
+                label="Probation Allowed"
+                checked={formData.probationAllowed ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('probationAllowed', value)
+                }
+              />
+              <CustomSwitch
+                label="Notice Period Allowed"
+                checked={formData.noticePeriodAllowed ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('noticePeriodAllowed', value)
+                }
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="totalLeaves">
-                Total Leaves (Days) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="totalLeaves"
-                name="totalLeaves"
-                type="number"
-                min="0"
-                value={formData.totalLeaves}
-                onChange={handleInputChange}
-                required
+          {/* Attachment */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Attachment
+            </h3>
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <CustomSwitch
+                label="Attachment Required"
+                checked={formData.attachmentRequired ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('attachmentRequired', value)
+                }
+              />
+              {formData.attachmentRequired && (
+                <div className="space-y-2">
+                  <Label htmlFor="attachmentAfterDays">
+                    Attachment After Days
+                  </Label>
+                  <Input
+                    id="attachmentAfterDays"
+                    name="attachmentAfterDays"
+                    type="number"
+                    min="0"
+                    value={formData.attachmentAfterDays ?? ''}
+                    onChange={handleNumberInputChange}
+                    placeholder="e.g. 2"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Carry Forward & Encashment */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Carry Forward & Encashment
+            </h3>
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div className="space-y-4">
+                <CustomSwitch
+                  label="Carry Forward Allowed"
+                  checked={formData.carryForwardAllowed ?? false}
+                  onChange={(value) =>
+                    handleSwitchChange('carryForwardAllowed', value)
+                  }
+                />
+                {formData.carryForwardAllowed && (
+                  <div className="space-y-2">
+                    <Label htmlFor="maxCarryForwardDays">
+                      Max Carry Forward Days
+                    </Label>
+                    <Input
+                      id="maxCarryForwardDays"
+                      name="maxCarryForwardDays"
+                      type="number"
+                      min="0"
+                      value={formData.maxCarryForwardDays ?? ''}
+                      onChange={handleNumberInputChange}
+                      placeholder="e.g. 10"
+                    />
+                  </div>
+                )}
+              </div>
+              <CustomSwitch
+                label="Encashment Allowed"
+                checked={formData.encashmentAllowed ?? false}
+                onChange={(value) =>
+                  handleSwitchChange('encashmentAllowed', value)
+                }
               />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="yearPeriod">
-                Year Period <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.yearPeriod.toString()}
-                onValueChange={handleYearChange}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableYears.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Status */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+              Status
+            </h3>
+            <CustomSwitch
+              label="Active"
+              checked={formData.active ?? true}
+              onChange={(value) => handleSwitchChange('active', value)}
+            />
           </div>
 
           {error && (
@@ -633,7 +1063,7 @@ const LeaveTypes = () => {
             </div>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={closePopup}>
               Cancel
             </Button>
@@ -662,10 +1092,10 @@ const LeaveTypes = () => {
             <div className="bg-amber-50 p-4 rounded-lg">
               <p className="text-sm text-gray-700">
                 You are copying <strong>{leaveTypesToCopy.length}</strong> leave
-                type
-                {leaveTypesToCopy.length !== 1 ? 's' : ''} from year{' '}
+                type{leaveTypesToCopy.length !== 1 ? 's' : ''} from year{' '}
                 <strong>{copySourceYear}</strong>. You can modify the values,
-                add new leave types, or remove items you don&apos;t want to copy.
+                add new leave types, or remove items you don&apos;t want to
+                copy.
               </p>
             </div>
 
@@ -713,8 +1143,9 @@ const LeaveTypes = () => {
                   <TableHeader className="bg-gray-50 sticky top-0">
                     <TableRow>
                       <TableHead className="w-12">Sl No.</TableHead>
-                      <TableHead className="w-1/2">Leave Type Name</TableHead>
-                      <TableHead>Total Leaves (Days)</TableHead>
+                      <TableHead className="w-28">Code</TableHead>
+                      <TableHead>Leave Type Name</TableHead>
+                      <TableHead className="w-36">Max Days/Year</TableHead>
                       <TableHead className="text-right w-20">Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -722,11 +1153,11 @@ const LeaveTypes = () => {
                     {leaveTypesToCopy.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={4}
+                          colSpan={5}
                           className="text-center py-8 text-gray-500"
                         >
-                          No leave types to copy. Click &quot;Add Leave Type&quot; button
-                          to add one.
+                          No leave types to copy. Click &quot;Add Leave
+                          Type&quot; to add one.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -737,14 +1168,29 @@ const LeaveTypes = () => {
                           </TableCell>
                           <TableCell>
                             <Input
-                              value={lt.leaveTypeName}
+                              value={lt.code}
                               onChange={(e) =>
                                 handleCopyLeaveTypeChange(
                                   index,
-                                  'leaveTypeName',
+                                  'code',
                                   e.target.value
                                 )
                               }
+                              placeholder="Code"
+                              required
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={lt.name}
+                              onChange={(e) =>
+                                handleCopyLeaveTypeChange(
+                                  index,
+                                  'name',
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Leave type name"
                               required
                             />
                           </TableCell>
@@ -752,16 +1198,16 @@ const LeaveTypes = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={lt.totalLeaves}
+                              value={lt.maxDaysPerYear}
                               onChange={(e) =>
                                 handleCopyLeaveTypeChange(
                                   index,
-                                  'totalLeaves',
+                                  'maxDaysPerYear',
                                   e.target.value
                                 )
                               }
                               required
-                              className="w-32"
+                              className="w-28"
                             />
                           </TableCell>
                           <TableCell className="text-right">

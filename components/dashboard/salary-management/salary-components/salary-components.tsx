@@ -32,16 +32,16 @@ import {
 import { ArrowUpDown, Search, Coins, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
-  CreateOtherSalaryComponentType,
-  GetOtherSalaryComponentType,
+  CreateSalaryComponentType,
+  GetSalaryComponentType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useAddOtherSalaryComponent,
-  useDeleteOtherSalaryComponent,
-  useGetOtherSalaryComponents,
-  useUpdateOtherSalaryComponent,
+  useAddSalaryComponent,
+  useDeleteSalaryComponent,
+  useGetSalaryComponents,
+  useUpdateSalaryComponent,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -53,21 +53,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-const OtherSalaryComponents = () => {
+const SalaryComponents = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: otherSalaryComponents } = useGetOtherSalaryComponents()
-  console.log(
-    '🚀 ~ OtherSalaryComponents ~ otherSalaryComponents:',
-    otherSalaryComponents
-  )
+  const { data: salaryComponents } = useGetSalaryComponents()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [componentsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetOtherSalaryComponentType>('componentName')
+    useState<keyof GetSalaryComponentType>('componentName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -83,57 +79,23 @@ const OtherSalaryComponents = () => {
   )
 
   const getDefaultForm = useCallback(
-    (): CreateOtherSalaryComponentType => ({
+    (): CreateSalaryComponentType => ({
       componentName: '',
+      componentCode: '',
+      percentage: undefined,
+      formulaExpression: undefined,
+      taxable: false,
       componentType: 'Allowance',
-      amount: 0,
-      forDays: 0,
-      status: 1,
-      isAbsentFee: 0,
-      isLoneFee: 0,
-      isLateEarlyOutFee: 0,
+      affectGross: false,
+      affectNet: false,
+      sequenceNo: 0,
       createdBy: userData?.userId || 0,
     }),
     [userData?.userId]
   )
 
   const [formData, setFormData] =
-    useState<CreateOtherSalaryComponentType>(getDefaultForm)
-
-  // Derived: is isLoneFee checked — hides amount & forDays
-  const isLoneFeeChecked = formData.isLoneFee === 1
-  const isAbsentFeeChecked = formData.isAbsentFee === 1
-  const isLateEarlyOutFeehecked = formData.isLateEarlyOutFee === 1
-
-  // Check if any existing record already has isAbsentFee or isLoneFee = 1
-  // excluding the currently edited record
-  const existingAbsentFee = useMemo(() => {
-    return (
-      otherSalaryComponents?.data?.some(
-        (c) =>
-          c.isAbsentFee === 1 && c.otherSalaryComponentId !== editingComponentId
-      ) ?? false
-    )
-  }, [otherSalaryComponents?.data, editingComponentId])
-
-  const existingLoneFee = useMemo(() => {
-    return (
-      otherSalaryComponents?.data?.some(
-        (c) =>
-          c.isLoneFee === 1 && c.otherSalaryComponentId !== editingComponentId
-      ) ?? false
-    )
-  }, [otherSalaryComponents?.data, editingComponentId])
-
-  const existingisLateEarlyOutFee = useMemo(() => {
-    return (
-      otherSalaryComponents?.data?.some(
-        (c) =>
-          c.isLateEarlyOutFee === 1 &&
-          c.otherSalaryComponentId !== editingComponentId
-      ) ?? false
-    )
-  }, [otherSalaryComponents?.data, editingComponentId])
+    useState<CreateSalaryComponentType>(getDefaultForm)
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -142,28 +104,23 @@ const OtherSalaryComponents = () => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value === '' ? undefined : Number(value),
+    }))
+  }
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleCheckboxChange = (
-    field: 'isAbsentFee' | 'isisLateEarlyOutFee' | 'isLoneFee',
+    field: 'taxable' | 'affectGross' | 'affectNet',
     checked: boolean
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      isAbsentFee:
-        field === 'isAbsentFee' ? (checked ? 1 : 0) : prev.isAbsentFee,
-      isLateEarlyOutFee:
-        field === 'isisLateEarlyOutFee'
-          ? checked
-            ? 1
-            : 0
-          : prev.isLateEarlyOutFee,
-      isLoneFee: field === 'isLoneFee' ? (checked ? 1 : 0) : prev.isLoneFee,
-      // Reset amount/forDays to 0 when switching to LoneFee
-      ...(field === 'isLoneFee' && checked ? { amount: 0, forDays: 0 } : {}),
-    }))
+    setFormData((prev) => ({ ...prev, [field]: checked }))
   }
 
   const resetForm = useCallback(() => {
@@ -180,20 +137,20 @@ const OtherSalaryComponents = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddOtherSalaryComponent({
+  const addMutation = useAddSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
-  const updateMutation = useUpdateOtherSalaryComponent({
+  const updateMutation = useUpdateSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
-  const deleteMutation = useDeleteOtherSalaryComponent({
+  const deleteMutation = useDeleteSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const handleSort = (column: keyof GetOtherSalaryComponentType) => {
+  const handleSort = (column: keyof GetSalaryComponentType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -203,11 +160,11 @@ const OtherSalaryComponents = () => {
   }
 
   const filteredComponents = useMemo(() => {
-    if (!otherSalaryComponents?.data) return []
-    return otherSalaryComponents.data.filter((comp) =>
+    if (!salaryComponents?.data) return []
+    return salaryComponents.data.filter((comp) =>
       comp.componentName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [otherSalaryComponents?.data, searchTerm])
+  }, [salaryComponents?.data, searchTerm])
 
   const sortedComponents = useMemo(() => {
     return [...filteredComponents].sort((a, b) => {
@@ -234,27 +191,22 @@ const OtherSalaryComponents = () => {
       e.preventDefault()
       setError(null)
 
-      // Guard: only one isAbsentFee and one isLoneFee allowed
-      if (formData.isAbsentFee === 1 && existingAbsentFee) {
-        setError('An absent fee component already exists. Only one is allowed.')
-        return
-      }
-      if (formData.isLoneFee === 1 && existingLoneFee) {
-        setError('A lone fee component already exists. Only one is allowed.')
+      if (!formData.componentCode.trim()) {
+        setError('Component code is required.')
         return
       }
 
       try {
-        const submitData: CreateOtherSalaryComponentType = {
+        const submitData: CreateSalaryComponentType = {
           componentName: formData.componentName,
+          componentCode: formData.componentCode,
+          percentage: formData.percentage,
+          formulaExpression: formData.formulaExpression,
+          taxable: formData.taxable,
           componentType: formData.componentType,
-          // Force 0 for amount/forDays when isLoneFee is checked
-          amount: isLoneFeeChecked ? 0 : Number(formData.amount),
-          forDays: isLoneFeeChecked ? 0 : Number(formData.forDays),
-          status: formData.status,
-          isAbsentFee: formData.isAbsentFee,
-          isLoneFee: formData.isLoneFee,
-          isLateEarlyOutFee: formData.isLateEarlyOutFee,
+          affectGross: formData.affectGross,
+          affectNet: formData.affectNet,
+          sequenceNo: Number(formData.sequenceNo),
           createdBy: userData?.userId || 0,
         }
 
@@ -276,9 +228,6 @@ const OtherSalaryComponents = () => {
       formData,
       isEditMode,
       editingComponentId,
-      isLoneFeeChecked,
-      existingAbsentFee,
-      existingLoneFee,
       addMutation,
       updateMutation,
       userData,
@@ -291,19 +240,20 @@ const OtherSalaryComponents = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (comp: any) => {
+  const handleEditClick = (comp: GetSalaryComponentType) => {
     setFormData({
       componentName: comp.componentName,
+      componentCode: comp.componentCode,
+      percentage: comp.percentage,
+      formulaExpression: comp.formulaExpression,
+      taxable: comp.taxable ?? false,
       componentType: comp.componentType,
-      amount: Number(comp.amount),
-      forDays: Number(comp.forDays),
-      status: comp.status,
-      isAbsentFee: comp.isAbsentFee ?? 0,
-      isLoneFee: comp.isLoneFee ?? 0,
-      isLateEarlyOutFee: comp.isLateEarlyOutFee ?? 0,
+      affectGross: comp.affectGross ?? false,
+      affectNet: comp.affectNet ?? false,
+      sequenceNo: comp.sequenceNo,
       createdBy: userData?.userId || 0,
     })
-    setEditingComponentId(comp.otherSalaryComponentId)
+    setEditingComponentId(comp.salaryComponentId ?? null)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -315,7 +265,7 @@ const OtherSalaryComponents = () => {
           <div className="bg-amber-100 p-2 rounded-md">
             <Coins className="text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold">Other Salary Components</h2>
+          <h2 className="text-lg font-semibold">Salary Components</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -348,16 +298,16 @@ const OtherSalaryComponents = () => {
                 Component Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('amount')}
+                onClick={() => handleSort('componentCode')}
                 className="cursor-pointer"
               >
-                Amount <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Code <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('forDays')}
+                onClick={() => handleSort('percentage')}
                 className="cursor-pointer"
               >
-                For Days <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Percentage <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('componentType')}
@@ -365,51 +315,51 @@ const OtherSalaryComponents = () => {
               >
                 Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Absent Fee</TableHead>
-              <TableHead>Lone Fee</TableHead>
-              <TableHead>Late/Early Out Fee</TableHead>
               <TableHead
-                onClick={() => handleSort('status')}
+                onClick={() => handleSort('sequenceNo')}
                 className="cursor-pointer"
               >
-                Status <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Seq. No <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Taxable</TableHead>
+              <TableHead>Affect Gross</TableHead>
+              <TableHead>Affect Net</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!otherSalaryComponents ||
-            otherSalaryComponents.data === undefined ? (
+            {!salaryComponents || salaryComponents.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   Loading salary components...
                 </TableCell>
               </TableRow>
-            ) : !otherSalaryComponents.data ||
-              otherSalaryComponents.data.length === 0 ? (
+            ) : !salaryComponents.data || salaryComponents.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No salary components found
                 </TableCell>
               </TableRow>
             ) : paginatedComponents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No salary components match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedComponents.map((comp: any, index) => (
-                <TableRow key={index}>
-                  <TableCell>{index + 1}</TableCell>
+              paginatedComponents.map((comp, index) => (
+                <TableRow key={comp.salaryComponentId ?? index}>
+                  <TableCell>
+                    {(currentPage - 1) * componentsPerPage + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {comp.componentName}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {comp.isLoneFee ? '-' : `${comp.amount}%`}
+                    {comp.componentCode}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {comp.isLoneFee ? '-' : comp.forDays}
+                    {comp.percentage != null ? `${comp.percentage}%` : '-'}
                   </TableCell>
                   <TableCell>
                     <span
@@ -422,48 +372,40 @@ const OtherSalaryComponents = () => {
                       {comp.componentType}
                     </span>
                   </TableCell>
+                  <TableCell className="font-medium">
+                    {comp.sequenceNo}
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        comp.isAbsentFee === 1
+                        comp.taxable
                           ? 'bg-purple-100 text-purple-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {comp.isAbsentFee === 1 ? 'Yes' : 'No'}
+                      {comp.taxable ? 'Yes' : 'No'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        comp.isLoneFee === 1
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {comp.isLoneFee === 1 ? 'Yes' : 'No'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        comp.isLateEarlyOutFee === 1
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {comp.isLateEarlyOutFee === 1 ? 'Yes' : 'No'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        comp.status === 1
+                        comp.affectGross
                           ? 'bg-blue-100 text-blue-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {comp.status === 1 ? 'Active' : 'Inactive'}
+                      {comp.affectGross ? 'Yes' : 'No'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        comp.affectNet
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {comp.affectNet ? 'Yes' : 'No'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -481,7 +423,7 @@ const OtherSalaryComponents = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingComponentId(comp.otherSalaryComponentId)
+                          setDeletingComponentId(comp.salaryComponentId ?? null)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -563,6 +505,7 @@ const OtherSalaryComponents = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
+            {/* Component Name */}
             <div className="space-y-2">
               <Label htmlFor="componentName">
                 Component Name <span className="text-red-500">*</span>
@@ -576,113 +519,71 @@ const OtherSalaryComponents = () => {
               />
             </div>
 
-            {/* Checkboxes */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isAbsentFee"
-                  checked={isAbsentFeeChecked}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange('isAbsentFee', checked === true)
-                  }
-                  disabled={existingAbsentFee && !isAbsentFeeChecked}
-                />
-                <Label htmlFor="isAbsentFee" className="cursor-pointer">
-                  Absent Fee
-                </Label>
-                {existingAbsentFee && !isAbsentFeeChecked && (
-                  <span className="text-xs text-gray-400">(already set)</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isisLateEarlyOutFee"
-                  checked={isLateEarlyOutFeehecked}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange(
-                      'isisLateEarlyOutFee',
-                      checked === true
-                    )
-                  }
-                  disabled={
-                    existingisLateEarlyOutFee && !isLateEarlyOutFeehecked
-                  }
-                />
-                <Label htmlFor="isisLateEarlyOutFee" className="cursor-pointer">
-                  Late/Early Out Fee
-                </Label>
-                {existingisLateEarlyOutFee && !isLateEarlyOutFeehecked && (
-                  <span className="text-xs text-gray-400">(already set)</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isLoneFee"
-                  checked={isLoneFeeChecked}
-                  onCheckedChange={(checked) =>
-                    handleCheckboxChange('isLoneFee', checked === true)
-                  }
-                  disabled={existingLoneFee && !isLoneFeeChecked}
-                />
-                <Label htmlFor="isLoneFee" className="cursor-pointer">
-                  Lone Fee
-                </Label>
-                {existingLoneFee && !isLoneFeeChecked && (
-                  <span className="text-xs text-gray-400">(already set)</span>
-                )}
-              </div>
+            {/* Component Code */}
+            <div className="space-y-2">
+              <Label htmlFor="componentCode">
+                Component Code <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="componentCode"
+                name="componentCode"
+                maxLength={20}
+                value={formData.componentCode}
+                onChange={handleInputChange}
+                placeholder="Max 20 characters"
+                required
+              />
             </div>
 
-            {/* Amount & ForDays — hidden when isLoneFee is checked */}
-            {!isLoneFeeChecked && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">
-                    Amount (%) <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="text-xs text-gray-600 space-y-1 bg-gray-50 p-3 rounded-md border">
-                    <p className="font-medium mb-1">
-                      Percentage of the employee&apos;s basic salary
-                    </p>
-                  </div>
-                  <Input
-                    id="amount"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleInputChange}
-                  />
-                </div>
+            {/* Percentage */}
+            <div className="space-y-2">
+              <Label htmlFor="percentage">Percentage (%)</Label>
+              <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md border">
+                <p className="font-medium mb-1">
+                  Optional — percentage of the employee&apos;s basic salary
+                </p>
+              </div>
+              <Input
+                id="percentage"
+                name="percentage"
+                type="number"
+                min="0"
+                value={formData.percentage ?? ''}
+                onChange={handleNumberInputChange}
+                placeholder="e.g. 10"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="forDays">
-                    For Days <span className="text-red-500">*</span>
-                  </Label>
+            {/* Formula Expression */}
+            <div className="space-y-2">
+              <Label htmlFor="formulaExpression">Formula Expression</Label>
+              <Input
+                id="formulaExpression"
+                name="formulaExpression"
+                maxLength={255}
+                value={formData.formulaExpression ?? ''}
+                onChange={handleInputChange}
+                placeholder="Optional formula (max 255 chars)"
+              />
+            </div>
 
-                  <div className="text-xs text-gray-600 space-y-1 bg-gray-50 p-3 rounded-md border">
-                    <p className="font-medium mb-1">Frequency setting:</p>
-                    <p>0 → Always add this fee (no skipping)</p>
-                    <p>1 → Add → Skip → Add → Skip (adds every other time)</p>
-                    <p>
-                      2 → Add → Skip → Skip → Add → Skip → Skip (adds every 3rd
-                      time)
-                    </p>
-                  </div>
+            {/* Sequence No */}
+            <div className="space-y-2">
+              <Label htmlFor="sequenceNo">
+                Sequence No <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="sequenceNo"
+                name="sequenceNo"
+                type="number"
+                min="0"
+                value={formData.sequenceNo}
+                onChange={handleNumberInputChange}
+                required
+              />
+            </div>
 
-                  <Input
-                    id="forDays"
-                    name="forDays"
-                    type="number"
-                    min="0"
-                    value={formData.forDays}
-                    onChange={handleInputChange}
-                    placeholder="Enter 0, 1, or 2"
-                  />
-                </div>
-              </>
-            )}
-
+            {/* Component Type */}
             <div className="space-y-2">
               <Label htmlFor="componentType">
                 Component Type <span className="text-red-500">*</span>
@@ -703,24 +604,46 @@ const OtherSalaryComponents = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">
-                Status <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={String(formData.status)}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: Number(value) }))
-                }
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Active</SelectItem>
-                  <SelectItem value="0">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Boolean Checkboxes */}
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="taxable"
+                  checked={formData.taxable}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange('taxable', checked === true)
+                  }
+                />
+                <Label htmlFor="taxable" className="cursor-pointer">
+                  Taxable
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="affectGross"
+                  checked={formData.affectGross}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange('affectGross', checked === true)
+                  }
+                />
+                <Label htmlFor="affectGross" className="cursor-pointer">
+                  Affect Gross
+                </Label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="affectNet"
+                  checked={formData.affectNet}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange('affectNet', checked === true)
+                  }
+                />
+                <Label htmlFor="affectNet" className="cursor-pointer">
+                  Affect Net
+                </Label>
+              </div>
             </div>
           </div>
 
@@ -780,4 +703,4 @@ const OtherSalaryComponents = () => {
   )
 }
 
-export default OtherSalaryComponents
+export default SalaryComponents

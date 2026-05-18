@@ -14,13 +14,13 @@ import {
   createEmployee,
   createEmployeeAttendance,
   createEmployeeLeave,
-  createEmployeeOtherSalaryComponent,
+  createEmployeeSalaryComponent,
   createEmploymentType,
   createHoliday,
   createLeaveType,
   createLone,
   createShiftDayAndWeekDays,
-  createOtherSalaryComponent,
+  createSalaryComponent,
   createSalary,
   createTenant,
   createWorkStation,
@@ -34,13 +34,13 @@ import {
   deleteEmployee,
   deleteEmployeeAttendance,
   deleteEmployeeLeave,
-  deleteEmployeeOtherSalaryComponent,
+  deleteEmployeeSalaryComponent,
   deleteEmploymentType,
   deleteHoliday,
   deleteLeaveType,
   deleteLone,
   deleteShiftDayAndWeekDays,
-  deleteOtherSalaryComponent,
+  deleteSalaryComponent,
   deleteSalary,
   deleteTenant,
   deleteWorkStation,
@@ -54,13 +54,13 @@ import {
   editEmployee,
   editEmployeeAttendance,
   editEmployeeLeave,
-  editEmployeeOtherSalaryComponent,
+  editEmployeeSalaryComponent,
   editEmploymentType,
   editHoliday,
   editLeaveType,
   editLone,
   editShiftDayAndWeekDays,
-  editOtherSalaryComponent,
+  editSalaryComponent,
   editSalary,
   editTenant,
   editWorkStation,
@@ -74,14 +74,14 @@ import {
   getAllEmployeeAttendances,
   getAllEmployeeLeaves,
   getAllEmployeeLeaveTypes,
-  getAllEmployeeOtherSalaryComponents,
+  getAllEmployeeSalaryComponents,
   getAllEmployees,
   getAllEmploymentTypes,
   getAllHolidays,
   getAllLeaveTypes,
   getAllLones,
   getAllShiftDayAndWeekDays,
-  getAllOtherSalaryComponents,
+  getAllSalaryComponents,
   getAllRoles,
   getAllSalaries,
   getAllTenants,
@@ -94,6 +94,18 @@ import {
   getLoneReport,
   getSalaryReport,
   skipLone,
+  getAllLeavePolicies,
+  createLeavePolicy,
+  editLeavePolicy,
+  deleteLeavePolicy,
+  getAllEmployeeLeaveAssignments,
+  createEmployeeLeaveAssignment,
+  editEmployeeLeaveAssignment,
+  deleteEmployeeLeaveAssignment,
+  getAllSalaryStructures,
+  createSalaryStructure,
+  editSalaryStructure,
+  deleteSalaryStructure,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -101,13 +113,13 @@ import {
   CreateDesignationType,
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
-  CreateEmployeeOtherSalaryComponentType,
+  CreateEmployeeSalaryComponentType,
   CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
   CreateShiftType,
-  CreateOtherSalaryComponentType,
+  CreateSalaryComponentType,
   CreateSalaryType,
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
@@ -123,6 +135,13 @@ import {
   GetBusinessUnitType,
   GetDepartmentType,
   GetDivisionType,
+  GetLeaveTypeType,
+  CreateLeavePolicyType,
+  GetLeavePolicyType,
+  CreateEmployeeLeaveAssignmentType,
+  GetEmployeeLeaveAssignmentType,
+  CreateSalaryStructureType,
+  GetSalaryStructureType,
 } from '@/utils/type'
 
 //roles
@@ -710,19 +729,19 @@ export const useAddCompany = ({
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log("🚀 ~ useAddCompany ~ formData:", formData)
+      console.log('🚀 ~ useAddCompany ~ formData:', formData)
       const res = await createCompany(formData, token)
       return res
     },
     onSuccess: () => {
-    toast({
-      title: 'Success',
-      description: 'Company created successfully!',
-    })
-    queryClient.invalidateQueries({ queryKey: ['companies'] })
-    reset()
-    onClose()
-  },
+      toast({
+        title: 'Success',
+        description: 'Company created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      reset()
+      onClose()
+    },
     onError: (error: any) => {
       console.error('Error adding company:', error)
       toast({
@@ -752,14 +771,14 @@ export const useUpdateCompany = ({
       return editCompany(id, formData, token)
     },
     onSuccess: () => {
-    toast({
-      title: 'Success!',
-      description: 'Company updated successfully.',
-    })
-    queryClient.invalidateQueries({ queryKey: ['companies'] })
-    reset()
-    onClose()
-  },
+      toast({
+        title: 'Success!',
+        description: 'Company updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      reset()
+      onClose()
+    },
     onError: (error: any) => {
       console.error('Error editing company:', error)
       toast({
@@ -2036,7 +2055,7 @@ export const useUpdateLeaveType = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateLeaveTypeType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetLeaveTypeType }) => {
       return editLeaveType(id, data, token)
     },
     onSuccess: () => {
@@ -2085,6 +2104,473 @@ export const useDeleteLeaveType = ({
     },
     onError: (error) => {
       console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+//leave policy
+export const useGetLeavePolicies = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['leavePolicy'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllLeavePolicies(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddLeavePolicys = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateLeavePolicyType) => {
+      const res = await createLeavePolicy(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create leave policy',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Leave Policy created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding leave policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateLeavePolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetLeavePolicyType }) => {
+      return editLeavePolicy(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'leave policy is edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing leave policy:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteLeavePolicys = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteLeavePolicy(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'leave policy is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['leavePolicy'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useGetSalaryStructures = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['salaryStructure'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllSalaryStructures(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateSalaryStructureType) => {
+      const res = await createSalaryStructure(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create salary structure',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Salary structure created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetSalaryStructureType
+    }) => {
+      return editSalaryStructure(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Salary structure updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update salary structure',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteSalaryStructures = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteSalaryStructure(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Salary structure deleted successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['salaryStructure'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error deleting salary structure:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to delete salary structure',
+      })
+    },
+  })
+
+  return mutation
+}
+
+//employee leave assignment
+export const useGetEmployeeLeaveAssignments = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLeaveAssignments'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllEmployeeLeaveAssignments(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+// Create employee leave assignment
+export const useCreateEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateEmployeeLeaveAssignmentType) => {
+      const res = await createEmployeeLeaveAssignment(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Employee leave assignment created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding employee leave assignment:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+// Update employee leave assignment
+export const useUpdateEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeeLeaveAssignmentType
+    }) => {
+      return editEmployeeLeaveAssignment(id, data, token)
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to update employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Employee leave assignment updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing employee leave assignment:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Failed to update employee leave assignment',
+      })
+    },
+  })
+
+  return mutation
+}
+
+// Delete employee leave assignment
+export const useDeleteEmployeeLeaveAssignment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return deleteEmployeeLeaveAssignment(id, token)
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to delete employee leave assignment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Employee leave assignment deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeeLeaveAssignments'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error sending delete request:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Failed to delete employee leave assignment',
+      })
     },
   })
 
@@ -2236,24 +2722,24 @@ export const useDeleteEmployeeAttendance = ({
 }
 
 //other salary components
-export const useGetOtherSalaryComponents = () => {
+export const useGetSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['otherSalaryComponents'],
+    queryKey: ['salaryComponents'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllOtherSalaryComponents(token)
+      return getAllSalaryComponents(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddOtherSalaryComponent = ({
+export const useAddSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2265,8 +2751,8 @@ export const useAddOtherSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateOtherSalaryComponentType) => {
-      const res = await createOtherSalaryComponent(data, token)
+    mutationFn: async (data: CreateSalaryComponentType) => {
+      const res = await createSalaryComponent(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -2285,7 +2771,7 @@ export const useAddOtherSalaryComponent = ({
         description: 'Other salary component created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
       reset()
       onClose()
     },
@@ -2302,7 +2788,7 @@ export const useAddOtherSalaryComponent = ({
   return mutation
 }
 
-export const useUpdateOtherSalaryComponent = ({
+export const useUpdateSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2320,16 +2806,16 @@ export const useUpdateOtherSalaryComponent = ({
       data,
     }: {
       id: number
-      data: CreateOtherSalaryComponentType
+      data: CreateSalaryComponentType
     }) => {
-      return editOtherSalaryComponent(id, data, token)
+      return editSalaryComponent(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'other salary component edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
@@ -2342,7 +2828,7 @@ export const useUpdateOtherSalaryComponent = ({
   return mutation
 }
 
-export const useDeleteOtherSalaryComponent = ({
+export const useDeleteSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2356,14 +2842,14 @@ export const useDeleteOtherSalaryComponent = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteOtherSalaryComponent(id, token)
+      return deleteSalaryComponent(id, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'other salary component is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
@@ -2377,24 +2863,24 @@ export const useDeleteOtherSalaryComponent = ({
 }
 
 //employee other salary components
-export const useGetEmployeeOtherSalaryComponents = () => {
+export const useGetEmployeeSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['employeeOtherSalaryComponents'],
+    queryKey: ['employeeSalaryComponents'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllEmployeeOtherSalaryComponents(token)
+      return getAllEmployeeSalaryComponents(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddEmployeeOtherSalaryComponent = ({
+export const useAddEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2406,8 +2892,8 @@ export const useAddEmployeeOtherSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateEmployeeOtherSalaryComponentType) => {
-      const res = await createEmployeeOtherSalaryComponent(data, token)
+    mutationFn: async (data: CreateEmployeeSalaryComponentType) => {
+      const res = await createEmployeeSalaryComponent(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -2428,7 +2914,7 @@ export const useAddEmployeeOtherSalaryComponent = ({
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
       reset()
       onClose()
@@ -2446,7 +2932,7 @@ export const useAddEmployeeOtherSalaryComponent = ({
   return mutation
 }
 
-export const useUpdateEmployeeOtherSalaryComponent = ({
+export const useUpdateEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2464,9 +2950,9 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
       data,
     }: {
       id: number
-      data: CreateEmployeeOtherSalaryComponentType
+      data: CreateEmployeeSalaryComponentType
     }) => {
-      return editEmployeeOtherSalaryComponent(id, data, token)
+      return editEmployeeSalaryComponent(id, data, token)
     },
     onSuccess: () => {
       toast({
@@ -2474,7 +2960,7 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
         description: 'Employee other salary component edited successfully.',
       })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       reset()
@@ -2488,7 +2974,7 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
   return mutation
 }
 
-export const useDeleteEmployeeOtherSalaryComponent = ({
+export const useDeleteEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2502,7 +2988,7 @@ export const useDeleteEmployeeOtherSalaryComponent = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeOtherSalaryComponent(id, token)
+      return deleteEmployeeSalaryComponent(id, token)
     },
     onSuccess: () => {
       toast({
@@ -2510,7 +2996,7 @@ export const useDeleteEmployeeOtherSalaryComponent = ({
         description: 'Employee other salary component is deleted successfully.',
       })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       reset()
@@ -2739,14 +3225,14 @@ export const useSkipLone = ({
 
   const mutation = useMutation({
     mutationFn: async ({
-      employeeOtherSalaryComponentId,
+      employeeSalaryComponentId,
       updatedBy,
     }: {
-      employeeOtherSalaryComponentId: number
+      employeeSalaryComponentId: number
       updatedBy: number
     }) => {
       const res = await skipLone(
-        employeeOtherSalaryComponentId,
+        employeeSalaryComponentId,
         updatedBy,
         token
       )
@@ -2771,7 +3257,7 @@ export const useSkipLone = ({
       // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['lones'] })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       // If we have the employeeLoneId from response, invalidate specific lone query

@@ -42,7 +42,7 @@ import { Popup } from '@/utils/popup'
 import type {
   CreateSalaryType,
   GetSalaryType,
-  GetEmployeeOtherSalaryComponentType,
+  GetEmployeeSalaryComponentType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -51,7 +51,7 @@ import {
   useDeleteSalary,
   useGetSalaries,
   useGetAllEmployees,
-  useGetEmployeeOtherSalaryComponents,
+  useGetEmployeeSalaryComponents,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -94,11 +94,11 @@ const Salaries = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: salaries } = useGetSalaries()
-  const { data: employeeOtherSalaryComponents } =
-    useGetEmployeeOtherSalaryComponents()
+  const { data: employeeSalaryComponents } =
+    useGetEmployeeSalaryComponents()
   console.log(
-    '🚀 ~ Salaries ~ employeeOtherSalaryComponents:',
-    employeeOtherSalaryComponents
+    '🚀 ~ Salaries ~ employeeSalaryComponents:',
+    employeeSalaryComponents
   )
   const { data: employees } = useGetAllEmployees()
   console.log('🚀 ~ Salaries ~ employees:', employees)
@@ -150,22 +150,22 @@ const Salaries = () => {
       employeeId: number,
       salaryMonth: string,
       salaryYear: number
-    ): GetEmployeeOtherSalaryComponentType[] => {
-      return (employeeOtherSalaryComponents?.data ?? []).filter(
-        (c: GetEmployeeOtherSalaryComponentType) =>
+    ): GetEmployeeSalaryComponentType[] => {
+      return (employeeSalaryComponents?.data ?? []).filter(
+        (c: GetEmployeeSalaryComponentType) =>
           c.employeeId === employeeId &&
           c.salaryMonth === salaryMonth &&
           c.salaryYear === salaryYear
       )
     },
-    [employeeOtherSalaryComponents?.data]
+    [employeeSalaryComponents?.data]
   )
 
   /**
    * Authorization logic:
    * - Allowance: always counted regardless of isAuthorized
-   * - Deduction: counted if isAuthorized !== 1 OR if otherSalaryComponentId === 6 (always counted)
-   *   If isAuthorized === 1 AND otherSalaryComponentId !== 6, skip the deduction.
+   * - Deduction: counted if isAuthorized !== 1 OR if salaryComponentId === 6 (always counted)
+   *   If isAuthorized === 1 AND salaryComponentId !== 6, skip the deduction.
    */
   const calcSalaries = useCallback(
     (
@@ -782,7 +782,7 @@ const Salaries = () => {
                             (c) =>
                               c.componentType === 'Deduction' &&
                               (c.isAuthorized !== 1 ||
-                                c.otherSalaryComponentId === 6)
+                                c.salaryComponentId === 6)
                           )
                           .reduce((sum, c) => sum + c.amount, 0)
 

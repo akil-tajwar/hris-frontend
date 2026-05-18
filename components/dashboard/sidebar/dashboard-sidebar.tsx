@@ -7,6 +7,7 @@ import {
   DollarSign,
   FileChartColumn,
   Home,
+  LucideAirVent,
   Settings,
   UserCog,
 } from 'lucide-react'
@@ -94,16 +95,12 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/holidays',
         },
         {
-          title: 'Leave Types',
-          href: '/dashboard/setup/leave-types',
-        },
-        {
           title: 'Shift and Week Days',
           href: '/dashboard/setup/shift-and-week-days',
         },
         {
           title: 'Other Salary Components',
-          href: '/dashboard/setup/other-salary-components',
+          href: '/dashboard/setup/salary-components',
         },
       ],
     },
@@ -135,13 +132,36 @@ export function DashboardSidebar() {
       ],
     },
     {
+      title: 'Leave Management',
+      icon: LucideAirVent,
+      href: '/dashboard/leave-management',
+      subItems: [
+        {
+          title: 'Leave Types',
+          href: '/dashboard/leave-management/leave-types',
+        },
+        {
+          title: 'Leave Policy',
+          href: '/dashboard/leave-management/leave-policy',
+        },
+        {
+          title: 'Employee Leave Assignments',
+          href: '/dashboard/leave-management/employee-leave-assignments',
+        },
+      ],
+    },
+    {
       title: 'Salary Management',
       icon: DollarSign,
       href: '/dashboard/salary-management',
       subItems: [
         {
-          title: 'Employee Other Salary Components',
-          href: '/dashboard/salary-management/employee-other-salary-components',
+          title: 'Salary Components',
+          href: '/dashboard/salary-management/salary-components',
+        },
+        {
+          title: 'Salary Structures',
+          href: '/dashboard/salary-management/salary-structures',
         },
         {
           title: 'Salary',

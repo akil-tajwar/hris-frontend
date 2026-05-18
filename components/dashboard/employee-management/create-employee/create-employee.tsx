@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { User, Upload, Download } from 'lucide-react'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -22,20 +21,19 @@ import {
   useGetDepartments,
   useGetDesignations,
   useGetEmploymentTypes,
-  useGetLeaveTypes,
   useGetShiftDayAndWeekDays,
   useGetCompanies,
   useGetWorkStations,
   useGetDivisions,
   useGetCostCenters,
   useGetAllEmployees,
+  useGetRoles,
+  useGetTenants,
 } from '@/hooks/use-api'
-import type { CreateEmployeeType } from '@/utils/type'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
 import { saveAs } from 'file-saver'
-import { formatTime } from '@/utils/conversions'
 
 // ── Static column definitions ─────────────────────────────────────────────────
 const STATIC_COLUMNS = [
@@ -81,7 +79,12 @@ const STATIC_COLUMNS = [
   { header: 'Employee Code', key: 'empCode', width: 16, required: true },
   { header: 'Department', key: 'departmentId', width: 30, required: true },
   { header: 'Designation', key: 'designationId', width: 30, required: true },
-  { header: 'Employment Type', key: 'employmentTypeId', width: 24, required: true },
+  {
+    header: 'Employment Type',
+    key: 'employmentTypeId',
+    width: 24,
+    required: true,
+  },
   {
     header: 'Shift',
     key: 'shiftId',
@@ -89,6 +92,87 @@ const STATIC_COLUMNS = [
     required: false,
   },
 ]
+
+// ── Local form types ──────────────────────────────────────────────────────────
+// CreateEmployeeType from the schema is { employeeData: ..., userData: ... }.
+// We manage the two parts separately in state, so we define flat local types.
+type EmployeeFormData = {
+  empFullName: string
+  empShortName: string | null
+  dob: string
+  gender: 'Male' | 'Female'
+  nationality:
+    | 'Bangladeshi'
+    | 'Pakistani'
+    | 'Indian'
+    | 'British'
+    | 'American'
+    | null
+  nationalIdNo: string | null
+  maritalStatus: 'Single' | 'Married' | null
+  religion: string | null
+  bloodGroup: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | null
+  photoUrl: string | null
+  cvUrl: string | null
+  certificateUrl: string | null
+  workEmail: string | null
+  privateEmail: string | null
+  homePhone: string | null
+  personalPhone: string | null
+  officialPhone: string
+  presentAddress: string
+  permanentAddress: string | null
+  country: string | null
+  city: string | null
+  zipCode: string | null
+  emergencyContactName: string | null
+  emergencyContactPhone: string | null
+  emergencyContactRelation: string | null
+  qualification: 'SSC' | 'HSC' | 'Graduate' | 'Postgraduate'
+  instituteName: string | null
+  subjectName: string | null
+  startDate: string | null
+  endDate: string | null
+  result: string | null
+  dependentsName: string | null
+  dependentRelation: string | null
+  empCode: string
+  doj: string
+  doc: string | null
+  basicSalary: number
+  isActive: boolean
+  departmentId: number
+  designationId: number
+  employmentTypeId: number
+  shiftId: number
+  companyId: number
+  workStationId: number
+  divisionId: number
+  costCenterId: number
+  reportingAuthorityId: number | null
+  createdBy: number
+}
+
+type UserFormData = {
+  username: string
+  password: string
+  confirmPassword: string
+  email: string
+  roleId: number
+  tenantId: number
+  active: boolean
+}
+
+// ── Safe shift label helper ───────────────────────────────────────────────────
+const formatShift = (
+  shiftName?: string,
+  startTime?: string,
+  endTime?: string
+) => {
+  if (!shiftName) return 'Unknown shift'
+  if (!startTime || !endTime) return shiftName
+  return `${shiftName} (${startTime}-${endTime})`
+}
 
 const CreateEmployee = () => {
   useInitializeUser()
@@ -99,32 +183,22 @@ const CreateEmployee = () => {
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
-  const { data: leaveTypes } = useGetLeaveTypes()
   const { data: companies } = useGetCompanies()
   const { data: workStations } = useGetWorkStations()
   const { data: divisions } = useGetDivisions()
   const { data: costCenters } = useGetCostCenters()
-  const { data: employees } = useGetAllEmployees() // for reporting authority
-
-  const currentYear = new Date().getFullYear()
-  const currentYearLeaveTypes = leaveTypes?.data?.filter(
-    (item) => item.yearPeriod === currentYear
-  )
+  const { data: employees } = useGetAllEmployees()
+  const { data: roles } = useGetRoles()
+  const { data: tenants } = useGetTenants()
 
   const [error, setError] = useState<string | null>(null)
-  const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
 
   const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null)
   const [cvUrl, setCvFile] = useState<File | null>(null)
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
 
-  const [formData, setFormData] = useState<
-    Omit<
-      CreateEmployeeType,
-      'employeeId' | 'createdAt' | 'updatedAt' | 'updatedBy'
-    >
-  >({
+  const [formData, setFormData] = useState<EmployeeFormData>({
     // Personal
     empFullName: '',
     empShortName: null,
@@ -185,8 +259,18 @@ const CreateEmployee = () => {
     divisionId: 0,
     costCenterId: 0,
     reportingAuthorityId: 0,
-    leaveTypeIds: [],
     createdBy: userData?.userId || 0,
+  })
+
+  // ── User form state ───────────────────────────────────────────────────────
+  const [userFormData, setUserFormData] = useState<UserFormData>({
+    username: '',
+    password: '',
+    confirmPassword: '',
+    email: '',
+    roleId: 0,
+    tenantId: 0,
+    active: true,
   })
 
   // ── Input handlers ──────────────────────────────────────────────────────────
@@ -197,9 +281,13 @@ const CreateEmployee = () => {
     if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     } else {
-      // Store empty string as null in state but Input value will always be string
       setFormData((prev) => ({ ...prev, [name]: value === '' ? null : value }))
     }
+  }
+
+  const handleUserInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setUserFormData((prev) => ({ ...prev, [name]: value === '' ? '' : value }))
   }
 
   const handleEmployeePhotoChange = (
@@ -227,15 +315,6 @@ const CreateEmployee = () => {
       setCertificateFile(file)
       setError(null)
     }
-  }
-
-  const handleLeaveTypeToggle = (leaveTypeId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      leaveTypeIds: (prev.leaveTypeIds ?? []).includes(leaveTypeId)
-        ? (prev.leaveTypeIds ?? []).filter((id) => id !== leaveTypeId)
-        : [...(prev.leaveTypeIds ?? []), leaveTypeId],
-    }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
@@ -303,19 +382,25 @@ const CreateEmployee = () => {
       divisionId: 0,
       costCenterId: 0,
       reportingAuthorityId: 0,
-      leaveTypeIds: [],
       createdBy: userData?.userId || 0,
+    })
+    setUserFormData({
+      username: '',
+      password: '',
+      confirmPassword: '',
+      email: '',
+      roleId: 0,
+      tenantId: 0,
+      active: true,
     })
     setEmployeePhotoFile(null)
     setCvFile(null)
     setCertificateFile(null)
-    setIsPopupOpen(false)
     setError(null)
     router.push('/dashboard/employee-management/employees')
   }
 
   const closePopup = useCallback(() => {
-    setIsPopupOpen(false)
     setError(null)
     router.push('/dashboard/employee-management/employees')
   }, [router])
@@ -327,6 +412,7 @@ const CreateEmployee = () => {
     e.preventDefault()
     setError(null)
 
+    // Employee validations
     if (!formData.empFullName.trim()) return setError('Please enter full name')
     if (!formData.officialPhone.trim())
       return setError('Please enter official phone')
@@ -352,6 +438,19 @@ const CreateEmployee = () => {
     if (!formData.costCenterId || formData.costCenterId <= 0)
       return setError('Please select cost center')
 
+    // User validations
+    if (!userFormData.username.trim()) return setError('Please enter username')
+    if (!userFormData.email.trim()) return setError('Please enter user email')
+    if (!userFormData.password.trim()) return setError('Please enter password')
+    if (userFormData.password.length < 6)
+      return setError('Password must be at least 6 characters')
+    if (userFormData.password !== userFormData.confirmPassword)
+      return setError('Passwords do not match')
+    if (!userFormData.roleId || userFormData.roleId <= 0)
+      return setError('Please select a role')
+    if (!userFormData.tenantId || userFormData.tenantId <= 0)
+      return setError('Please select a tenant')
+
     const form = new FormData()
     form.append(
       'employeeDetails',
@@ -363,6 +462,19 @@ const CreateEmployee = () => {
         createdBy: userData?.userId || 0,
       })
     )
+    form.append(
+      'userData',
+      JSON.stringify({
+        username: userFormData.username,
+        password: userFormData.password,
+        confirmPassword: userFormData.confirmPassword,
+        active: userFormData.active,
+        isPasswordResetRequired: true,
+        roleId: userFormData.roleId,
+        tenantId: userFormData.tenantId,
+        email: userFormData.email,
+      })
+    )
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
     if (cvUrl) form.append('cvUrl', cvUrl)
     if (certificateFile) form.append('certificateUrl', certificateFile)
@@ -371,7 +483,7 @@ const CreateEmployee = () => {
       await addMutation.mutateAsync(form as any)
       toast({
         title: 'Success!',
-        description: 'Employee is added successfully.',
+        description: 'Employee and user account created successfully.',
       })
     } catch (err) {
       setError('Failed to create employee')
@@ -383,7 +495,6 @@ const CreateEmployee = () => {
   const handleDownloadTemplate = async () => {
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
-    const allLeaves = currentYearLeaveTypes ?? []
 
     const departmentLabels = (departments?.data ?? []).map(
       (d) => `${d.departmentName} | ${d.departmentId}`
@@ -395,8 +506,8 @@ const CreateEmployee = () => {
       (t) => `${t.employmentTypeName} | ${t.employmentTypeId}`
     )
     const shiftLabels = (shiftDayAndWeekDays?.data ?? []).map(
-      (t) =>
-        `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''} | ${t.shiftId}`
+      (s) =>
+        `${s.shift.shiftName} (${s.shift.startTime ?? ''}-${s.shift.endTime ?? ''})`
     )
     const genderLabels = ['Male', 'Female']
     const bloodGroupLabels = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
@@ -407,13 +518,6 @@ const CreateEmployee = () => {
       key,
       width,
     }))
-
-    allLeaves.forEach((leave, idx) => {
-      const colHeader = `${leave.leaveTypeName} | ${leave.yearPeriod} (${leave.leaveTypeId})`
-      const colIdx = STATIC_COLUMNS.length + 1 + idx
-      sheet.getColumn(colIdx).width = 38
-      sheet.getColumn(colIdx).header = colHeader
-    })
 
     const headerRow = sheet.getRow(1)
     STATIC_COLUMNS.forEach(({ header, required }, idx) => {
@@ -450,36 +554,6 @@ const CreateEmployee = () => {
       }
     })
 
-    allLeaves.forEach((leave, idx) => {
-      const colHeader = `${leave.leaveTypeName} | ${leave.yearPeriod} (${leave.leaveTypeId})`
-      const colIdx = STATIC_COLUMNS.length + 1 + idx
-      const cell = headerRow.getCell(colIdx)
-      cell.value = {
-        richText: [
-          {
-            text: colHeader,
-            font: { bold: true, color: { argb: 'FF000000' } },
-          },
-        ],
-      }
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFD1FAE5' },
-      }
-      cell.alignment = {
-        vertical: 'middle',
-        horizontal: 'center',
-        wrapText: true,
-      }
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
-      }
-    })
-
     headerRow.height = 36
 
     const hintRow = sheet.getRow(2)
@@ -495,32 +569,6 @@ const CreateEmployee = () => {
         left: { style: 'thin' },
         bottom: { style: 'thin' },
         right: { style: 'thin' },
-      }
-    })
-
-    allLeaves.forEach((leave, idx) => {
-      const colIdx = STATIC_COLUMNS.length + 1 + idx
-      const cell = hintRow.getCell(colIdx)
-      cell.value = `Yes = include  |  blank = skip  (${leave.totalLeaves} days)`
-      cell.font = { italic: true, size: 8, color: { argb: 'FF6B7280' } }
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF0FDF4' },
-      }
-      cell.alignment = { horizontal: 'center' }
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' },
-      }
-      for (let row = 3; row <= 201; row++) {
-        sheet.getCell(row, colIdx).dataValidation = {
-          type: 'list',
-          allowBlank: true,
-          formulae: ['"Yes,No"'],
-        }
       }
     })
 
@@ -643,18 +691,11 @@ const CreateEmployee = () => {
 
   const handleExcelSubmit = async (data: any[]) => {
     try {
-      const allLeaves = currentYearLeaveTypes ?? []
       const normalizeKey = (k: string) => k.trim().replace(/\s*\*$/, '')
 
       const validRows = data.filter((row) => {
         const keys = Object.keys(row).filter((k) => k !== '__EMPTY')
         if (keys.length === 0) return false
-        const allHint = keys.every((k) =>
-          String(row[k] ?? '')
-            .trim()
-            .startsWith('Yes = include')
-        )
-        if (allHint) return false
         const nameKey = keys.find((k) => normalizeKey(k) === 'Full Name')
         const codeKey = keys.find((k) => normalizeKey(k) === 'Employee Code')
         return (
@@ -673,21 +714,6 @@ const CreateEmployee = () => {
         const parseId = (label: string) => {
           const parts = String(label ?? '').split(' | ')
           return parts.length >= 2 ? Number(parts[parts.length - 1]) : null
-        }
-
-        const leaveTypeIds: number[] = []
-        for (const leave of allLeaves) {
-          const colHeader = `${leave.leaveTypeName} | ${leave.yearPeriod} (${leave.leaveTypeId})`
-          const matchedKey = keys.find(
-            (k) => normalizeKey(k) === colHeader.trim()
-          )
-          if (matchedKey) {
-            const cellValue = String(row[matchedKey] ?? '')
-              .trim()
-              .toLowerCase()
-            if (['yes', 'y', '1', 'true'].includes(cellValue))
-              leaveTypeIds.push(leave.leaveTypeId!)
-          }
         }
 
         const normalizeDate = (raw: any): string => {
@@ -731,7 +757,6 @@ const CreateEmployee = () => {
           designationId: parseId(get('Designation')) ?? 0,
           employmentTypeId: parseId(get('Employment Type')) ?? 0,
           shiftId: parseId(get('Shift')) ?? null,
-          leaveTypeIds,
           createdBy: userData?.userId || 0,
         }
       })
@@ -1089,7 +1114,8 @@ const CreateEmployee = () => {
                         id: formData.employmentTypeId.toString(),
                         name:
                           employmentTypes?.data?.find(
-                            (t) => t.employmentTypeId === formData.employmentTypeId
+                            (t) =>
+                              t.employmentTypeId === formData.employmentTypeId
                           )?.employmentTypeName || '',
                       }
                     : null
@@ -1233,9 +1259,7 @@ const CreateEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reportingAuthorityId">
-                Reporting Authority
-              </Label>
+              <Label htmlFor="reportingAuthorityId">Reporting Authority</Label>
               <CustomCombobox
                 items={
                   employees?.data?.map((emp) => ({
@@ -1272,8 +1296,12 @@ const CreateEmployee = () => {
               <CustomCombobox
                 items={
                   shiftDayAndWeekDays?.data?.map((timing) => ({
-                    id: timing.shiftId?.toString() || '0',
-                    name: `${formatTime(timing.startTime)} - ${formatTime(timing.endTime)}${timing.weekDays?.length ? ` (Off: ${timing.weekDays.join(', ')})` : ''}`,
+                    id: timing.shift.shiftId?.toString() || '0',
+                    name: formatShift(
+                      timing.shift.shiftName,
+                      timing.shift.startTime,
+                      timing.shift.endTime
+                    ),
                   })) || []
                 }
                 value={
@@ -1282,10 +1310,10 @@ const CreateEmployee = () => {
                         id: formData.shiftId.toString(),
                         name: (() => {
                           const t = shiftDayAndWeekDays?.data?.find(
-                            (t) => t.shiftId === formData.shiftId
+                            (t) => t.shift.shiftId === formData.shiftId
                           )
                           return t
-                            ? `${formatTime(t.startTime)} - ${formatTime(t.endTime)}${t.weekDays?.length ? ` (Off: ${t.weekDays.join(', ')})` : ''}`
+                            ? formatShift(t.shift.shiftName, t.shift.startTime, t.shift.endTime)
                             : ''
                         })(),
                       }
@@ -1527,7 +1555,7 @@ const CreateEmployee = () => {
           </div>
         </div>
 
-        {/* ── Contact Info (kept as separate section for address + phones) ── */}
+        {/* ── 6. Contact & Address Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-4">
             Contact &amp; Address Information
@@ -1651,48 +1679,155 @@ const CreateEmployee = () => {
           </div>
         </div>
 
-        {/* ── Leave Types ── */}
+        {/* ── 7. User Account Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
-          <h3 className="text-md font-semibold mb-4">
-            Leave Types ({currentYear})
+          <h3 className="text-md font-semibold mb-1">
+            User Account Information
           </h3>
-          <div className="space-y-3">
-            <Label>Select Leave Types</Label>
-            <div className="grid gap-3 md:grid-cols-3">
-              {currentYearLeaveTypes?.map((leave) => (
-                <div
-                  key={leave.leaveTypeId}
-                  className="flex items-center space-x-2"
-                >
-                  <Checkbox
-                    id={`leave-${leave.leaveTypeId}`}
-                    checked={
-                      leave.leaveTypeId !== undefined &&
-                      (formData.leaveTypeIds ?? []).includes(leave.leaveTypeId)
-                    }
-                    onCheckedChange={() =>
-                      leave.leaveTypeId !== undefined &&
-                      handleLeaveTypeToggle(leave.leaveTypeId)
-                    }
-                    className="bg-white"
-                  />
-                  <label
-                    htmlFor={`leave-${leave.leaveTypeId}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {leave.leaveTypeName}
-                    <span className="text-gray-500 ml-1">
-                      ({leave.totalLeaves} days)
-                    </span>
-                  </label>
-                </div>
-              ))}
+          <p className="text-sm text-gray-500 mb-4">
+            Create a system login account for this employee.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="username">
+                Username <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                value={userFormData.username}
+                onChange={handleUserInputChange}
+                placeholder="Enter username"
+              />
             </div>
-            {(formData.leaveTypeIds ?? []).length > 0 && (
-              <p className="text-xs text-green-600">
-                ✓ {(formData.leaveTypeIds ?? []).length} leave type(s) selected
-              </p>
-            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="userEmail">
+                Email <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="userEmail"
+                name="email"
+                type="email"
+                value={userFormData.email}
+                onChange={handleUserInputChange}
+                placeholder="Enter email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={userFormData.password}
+                onChange={handleUserInputChange}
+                placeholder="Min. 6 characters"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">
+                Confirm Password <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={userFormData.confirmPassword}
+                onChange={handleUserInputChange}
+                placeholder="Re-enter password"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="roleId">
+                Role <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  roles?.data?.map((role) => ({
+                    id: role?.roleId?.toString() || '0',
+                    name: role.roleName || 'Unnamed role',
+                  })) || []
+                }
+                value={
+                  userFormData.roleId
+                    ? {
+                        id: userFormData.roleId.toString(),
+                        name:
+                          roles?.data?.find(
+                            (r) => r.roleId === userFormData.roleId
+                          )?.roleName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setUserFormData((prev) => ({
+                    ...prev,
+                    roleId: value ? Number(value.id) : 0,
+                  }))
+                }
+                placeholder="Select role"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tenantId">
+                Tenant <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  tenants?.data?.map((tenant) => ({
+                    id: tenant?.tenantId?.toString() || '0',
+                    name: tenant.tenantName || 'Unnamed tenant',
+                  })) || []
+                }
+                value={
+                  userFormData.tenantId
+                    ? {
+                        id: userFormData.tenantId.toString(),
+                        name:
+                          tenants?.data?.find(
+                            (t) => t.tenantId === userFormData.tenantId
+                          )?.tenantName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setUserFormData((prev) => ({
+                    ...prev,
+                    tenantId: value ? Number(value.id) : 0,
+                  }))
+                }
+                placeholder="Select tenant"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="userActive">Account Status</Label>
+              <Select
+                value={userFormData.active ? 'true' : 'false'}
+                onValueChange={(value) =>
+                  setUserFormData((prev) => ({
+                    ...prev,
+                    active: value === 'true',
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -1728,24 +1863,14 @@ const CreateEmployee = () => {
             </p>
             <p>
               2. Select <strong>Department</strong>,{' '}
-              <strong>Designation</strong>, <strong>Employment Type</strong>, and{' '}
-              <strong>Shift</strong> from the built-in dropdowns — IDs
-              are extracted automatically on import.
+              <strong>Designation</strong>, <strong>Employment Type</strong>,
+              and <strong>Shift</strong> from the built-in dropdowns — IDs are
+              extracted automatically on import.
             </p>
             <p>
-              3. For <strong>Leave Types</strong>, each leave type has its own
-              column (shown in green). Type <strong>Yes</strong> (or select from
-              dropdown) in any leave type column to assign it to the employee.
-              Leave blank to skip.
-            </p>
-            <p>
-              4. Fields marked with a red{' '}
+              3. Fields marked with a red{' '}
               <span className="text-red-500 font-bold">*</span> in the template
               are required.
-            </p>
-            <p className="text-xs text-gray-500 pt-1">
-              Only leave types for <strong>{currentYear}</strong> are shown.
-              Leave type columns display the total days allowed.
             </p>
           </div>
           <ExcelFileInput

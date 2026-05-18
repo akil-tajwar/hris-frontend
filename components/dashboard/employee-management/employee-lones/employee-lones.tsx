@@ -45,7 +45,7 @@ import {
   useAddLone,
   useDeleteLone,
   useGetAllEmployees,
-  useGetEmployeeOtherSalaryComponents,
+  useGetEmployeeSalaryComponents,
   useGetLones,
   useSkipLone,
   useUpdateLone,
@@ -99,11 +99,11 @@ const EmployeeLones = () => {
 
   const { data: lones } = useGetLones()
   const { data: employees } = useGetAllEmployees()
-  const { data: employeeOtherSalaryComponents } =
-    useGetEmployeeOtherSalaryComponents()
+  const { data: employeeSalaryComponents } =
+    useGetEmployeeSalaryComponents()
   console.log(
-    '🚀 ~ EmployeeLones ~ employeeOtherSalaryComponents:',
-    employeeOtherSalaryComponents
+    '🚀 ~ EmployeeLones ~ employeeSalaryComponents:',
+    employeeSalaryComponents
   )
 
   const [error, setError] = useState<string | null>(null)
@@ -124,7 +124,7 @@ const EmployeeLones = () => {
   // Skip lone state
   const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false)
   const [skippingInstallment, setSkippingInstallment] = useState<{
-    employeeOtherSalaryComponentId: number
+    employeeSalaryComponentId: number
     salaryMonth: string
     salaryYear: number
     componentName: string
@@ -151,19 +151,19 @@ const EmployeeLones = () => {
     }))
   }, [employees?.data])
 
-  // Group employeeOtherSalaryComponents by employeeLoneId
+  // Group employeeSalaryComponents by employeeLoneId
   // Only filter by employeeLoneId != null — isLoneFee may not be reliably set
   const loneInstallmentsMap = useMemo(() => {
-    if (!employeeOtherSalaryComponents?.data) return {}
+    if (!employeeSalaryComponents?.data) return {}
     const map: Record<number, any[]> = {}
-    for (const comp of employeeOtherSalaryComponents.data) {
+    for (const comp of employeeSalaryComponents.data) {
       if (comp.employeeLoneId != null) {
         if (!map[comp.employeeLoneId]) map[comp.employeeLoneId] = []
         map[comp.employeeLoneId].push(comp)
       }
     }
     return map
-  }, [employeeOtherSalaryComponents?.data])
+  }, [employeeSalaryComponents?.data])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -196,7 +196,7 @@ const EmployeeLones = () => {
     setError(null)
     resetForm()
     queryClient.invalidateQueries({
-      queryKey: ['employeeOtherSalaryComponents'],
+      queryKey: ['employeeSalaryComponents'],
     })
     queryClient.invalidateQueries({ queryKey: ['lones'] })
   }, [resetForm, queryClient])
@@ -325,8 +325,8 @@ const EmployeeLones = () => {
 
   const handleSkipClick = (installment: any) => {
     setSkippingInstallment({
-      employeeOtherSalaryComponentId:
-        installment.employeeOtherSalaryComponentId,
+      employeeSalaryComponentId:
+        installment.employeeSalaryComponentId,
       salaryMonth: installment.salaryMonth,
       salaryYear: installment.salaryYear,
       componentName: installment.componentName,
@@ -337,8 +337,8 @@ const EmployeeLones = () => {
   const handleSkipConfirm = () => {
     if (skippingInstallment) {
       skipMutation.mutate({
-        employeeOtherSalaryComponentId:
-          skippingInstallment.employeeOtherSalaryComponentId,
+        employeeSalaryComponentId:
+          skippingInstallment.employeeSalaryComponentId,
         updatedBy: userData?.userId || 0,
       })
     }
@@ -570,7 +570,7 @@ const EmployeeLones = () => {
 
                                   return (
                                     <TableRow
-                                      key={inst.employeeOtherSalaryComponentId}
+                                      key={inst.employeeSalaryComponentId}
                                       className={`text-sm ${
                                         alreadySkipped ? 'opacity-60' : ''
                                       }`}

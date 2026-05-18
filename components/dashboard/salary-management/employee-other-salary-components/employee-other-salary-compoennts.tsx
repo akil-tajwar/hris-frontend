@@ -47,20 +47,20 @@ import {
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
-  CreateEmployeeOtherSalaryComponentType,
-  GetEmployeeOtherSalaryComponentType,
-  GetOtherSalaryComponentType,
+  CreateEmployeeSalaryComponentType,
+  GetEmployeeSalaryComponentType,
+  GetSalaryComponentType,
   GetEmployeeType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useGetEmployeeOtherSalaryComponents,
-  useAddEmployeeOtherSalaryComponent,
-  useUpdateEmployeeOtherSalaryComponent,
-  useDeleteEmployeeOtherSalaryComponent,
+  useGetEmployeeSalaryComponents,
+  useAddEmployeeSalaryComponent,
+  useUpdateEmployeeSalaryComponent,
+  useDeleteEmployeeSalaryComponent,
   useGetAllEmployees,
-  useGetOtherSalaryComponents,
+  useGetSalaryComponents,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 
@@ -81,7 +81,7 @@ const MONTHS = [
 
 interface SalaryComponentFormData {
   employeeId: number
-  otherSalaryComponentId: number
+  salaryComponentId: number
   salaryMonth: string
   salaryYear: number
   amount: number
@@ -90,7 +90,7 @@ interface SalaryComponentFormData {
 
 const defaultFormData: SalaryComponentFormData = {
   employeeId: 0,
-  otherSalaryComponentId: 0,
+  salaryComponentId: 0,
   salaryMonth: MONTHS[new Date().getMonth()],
   salaryYear: new Date().getFullYear(),
   amount: 0,
@@ -99,11 +99,11 @@ const defaultFormData: SalaryComponentFormData = {
 
 /**
  * Helper: should this deduction be counted in net salary?
- * - Always count if otherSalaryComponentId === 6 (regardless of isAuthorized)
+ * - Always count if salaryComponentId === 6 (regardless of isAuthorized)
  * - Otherwise count only if isAuthorized === 0
  */
 const isDeductionCounted = (
-  i: GetEmployeeOtherSalaryComponentType
+  i: GetEmployeeSalaryComponentType
 ): boolean => {
   if (i.componentType !== 'Deduction') return false
   if (i.isSkipped === 1) return false // ← add this line
@@ -111,14 +111,14 @@ const isDeductionCounted = (
   return i.isAuthorized === 0
 }
 
-const EmployeeOtherSalaryComponents = () => {
+const EmployeeSalaryComponents = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: salaryComponents } = useGetEmployeeOtherSalaryComponents()
+  const { data: salaryComponents } = useGetEmployeeSalaryComponents()
   const { data: employees } = useGetAllEmployees()
-  console.log('🚀 ~ EmployeeOtherSalaryComponents ~ employees:', employees)
-  const { data: otherSalaryComponents } = useGetOtherSalaryComponents()
+  console.log('🚀 ~ EmployeeSalaryComponents ~ employees:', employees)
+  const { data: salaryComponents } = useGetSalaryComponents()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -136,12 +136,12 @@ const EmployeeOtherSalaryComponents = () => {
     useState<SalaryComponentFormData>(defaultFormData)
 
   useEffect(() => {
-    if (formData.employeeId && formData.otherSalaryComponentId) {
+    if (formData.employeeId && formData.salaryComponentId) {
       const employee = employees?.data?.find(
         (e) => e.employeeId === formData.employeeId
       )
-      const component = otherSalaryComponents?.data?.find(
-        (c) => c.otherSalaryComponentId === formData.otherSalaryComponentId
+      const component = salaryComponents?.data?.find(
+        (c) => c.salaryComponentId === formData.salaryComponentId
       )
 
       if (employee?.basicSalary && component?.amount) {
@@ -151,9 +151,9 @@ const EmployeeOtherSalaryComponents = () => {
     }
   }, [
     formData.employeeId,
-    formData.otherSalaryComponentId,
+    formData.salaryComponentId,
     employees?.data,
-    otherSalaryComponents?.data,
+    salaryComponents?.data,
   ])
 
   const resetForm = useCallback(() => {
@@ -170,17 +170,17 @@ const EmployeeOtherSalaryComponents = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddEmployeeOtherSalaryComponent({
+  const addMutation = useAddEmployeeSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const updateMutation = useUpdateEmployeeOtherSalaryComponent({
+  const updateMutation = useUpdateEmployeeSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const deleteMutation = useDeleteEmployeeOtherSalaryComponent({
+  const deleteMutation = useDeleteEmployeeSalaryComponent({
     onClose: closePopup,
     reset: resetForm,
   })
@@ -201,7 +201,7 @@ const EmployeeOtherSalaryComponents = () => {
 
     const groups: Record<
       string,
-      Record<string, GetEmployeeOtherSalaryComponentType[]>
+      Record<string, GetEmployeeSalaryComponentType[]>
     > = {}
 
     filteredComponents.forEach((item) => {
@@ -272,7 +272,7 @@ const EmployeeOtherSalaryComponents = () => {
         setError('Please select an employee')
         return
       }
-      if (!formData.otherSalaryComponentId) {
+      if (!formData.salaryComponentId) {
         setError('Please select a salary component')
         return
       }
@@ -283,9 +283,9 @@ const EmployeeOtherSalaryComponents = () => {
 
       try {
         if (isEditMode && editingId) {
-          const submitData: CreateEmployeeOtherSalaryComponentType = {
+          const submitData: CreateEmployeeSalaryComponentType = {
             employeeId: formData.employeeId,
-            otherSalaryComponentId: formData.otherSalaryComponentId,
+            salaryComponentId: formData.salaryComponentId,
             salaryMonth: formData.salaryMonth,
             salaryYear: formData.salaryYear,
             amount: formData.amount,
@@ -295,9 +295,9 @@ const EmployeeOtherSalaryComponents = () => {
           }
           await updateMutation.mutateAsync({ id: editingId, data: submitData })
         } else {
-          const submitData: CreateEmployeeOtherSalaryComponentType = {
+          const submitData: CreateEmployeeSalaryComponentType = {
             employeeId: formData.employeeId,
-            otherSalaryComponentId: formData.otherSalaryComponentId,
+            salaryComponentId: formData.salaryComponentId,
             salaryMonth: formData.salaryMonth,
             salaryYear: formData.salaryYear,
             amount: formData.amount,
@@ -320,16 +320,16 @@ const EmployeeOtherSalaryComponents = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (item: GetEmployeeOtherSalaryComponentType) => {
+  const handleEditClick = (item: GetEmployeeSalaryComponentType) => {
     setFormData({
       employeeId: item.employeeId,
-      otherSalaryComponentId: item.otherSalaryComponentId,
+      salaryComponentId: item.salaryComponentId,
       salaryMonth: item.salaryMonth,
       salaryYear: item.salaryYear,
       amount: item.amount,
       isAuthorized: item.isAuthorized,
     })
-    setEditingId(item.employeeOtherSalaryComponentId!)
+    setEditingId(item.employeeSalaryComponentId!)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -346,15 +346,15 @@ const EmployeeOtherSalaryComponents = () => {
   }, [employees?.data])
 
   const otherComponentItems = useMemo(() => {
-    if (!otherSalaryComponents?.data) return []
-    return otherSalaryComponents.data.map(
-      (comp: GetOtherSalaryComponentType) => ({
-        id: comp.otherSalaryComponentId!.toString(),
+    if (!salaryComponents?.data) return []
+    return salaryComponents.data.map(
+      (comp: GetSalaryComponentType) => ({
+        id: comp.salaryComponentId!.toString(),
         name: comp.componentName,
         amount: comp.amount,
       })
     )
-  }, [otherSalaryComponents?.data])
+  }, [salaryComponents?.data])
 
   return (
     <div className="p-6 space-y-6">
@@ -365,7 +365,7 @@ const EmployeeOtherSalaryComponents = () => {
             <BadgeDollarSign className="text-amber-600" />
           </div>
           <h2 className="text-lg font-semibold">
-            Employee Other Salary Components
+            Employee Salary Components
           </h2>
         </div>
         <div className="flex items-center gap-4">
@@ -518,7 +518,7 @@ const EmployeeOtherSalaryComponents = () => {
                                 return (
                                   <TableRow
                                     key={
-                                      item.employeeOtherSalaryComponentId ||
+                                      item.employeeSalaryComponentId ||
                                       index
                                     }
                                     className="hover:bg-amber-50/50"
@@ -594,7 +594,7 @@ const EmployeeOtherSalaryComponents = () => {
                                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                           onClick={() => {
                                             setDeletingId(
-                                              item.employeeOtherSalaryComponentId!
+                                              item.employeeSalaryComponentId!
                                             )
                                             setIsDeleteDialogOpen(true)
                                           }}
@@ -717,22 +717,22 @@ const EmployeeOtherSalaryComponents = () => {
 
           {/* Other Salary Component */}
           <div className="space-y-2">
-            <Label htmlFor="otherSalaryComponent">
+            <Label htmlFor="salaryComponent">
               Salary Component <span className="text-red-500">*</span>
             </Label>
             <CustomCombobox
               items={otherComponentItems}
               value={
-                formData.otherSalaryComponentId
+                formData.salaryComponentId
                   ? otherComponentItems.find(
-                      (c) => c.id === formData.otherSalaryComponentId.toString()
+                      (c) => c.id === formData.salaryComponentId.toString()
                     ) || null
                   : null
               }
               onChange={(value) => {
                 setFormData((prev) => ({
                   ...prev,
-                  otherSalaryComponentId: value ? Number(value.id) : 0,
+                  salaryComponentId: value ? Number(value.id) : 0,
                   amount: value ? value.amount : prev.amount,
                 }))
               }}
@@ -883,4 +883,4 @@ const EmployeeOtherSalaryComponents = () => {
   )
 }
 
-export default EmployeeOtherSalaryComponents
+export default EmployeeSalaryComponents
