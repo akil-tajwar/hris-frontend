@@ -14,13 +14,13 @@ import {
   createEmployee,
   createEmployeeAttendance,
   createEmployeeLeave,
-  createEmployeeOtherSalaryComponent,
+  createEmployeeSalaryComponent,
   createEmploymentType,
   createHoliday,
   createLeaveType,
   createLone,
   createShiftDayAndWeekDays,
-  createOtherSalaryComponent,
+  createSalaryComponent,
   createSalary,
   createTenant,
   createWorkStation,
@@ -34,13 +34,13 @@ import {
   deleteEmployee,
   deleteEmployeeAttendance,
   deleteEmployeeLeave,
-  deleteEmployeeOtherSalaryComponent,
+  deleteEmployeeSalaryComponent,
   deleteEmploymentType,
   deleteHoliday,
   deleteLeaveType,
   deleteLone,
   deleteShiftDayAndWeekDays,
-  deleteOtherSalaryComponent,
+  deleteSalaryComponent,
   deleteSalary,
   deleteTenant,
   deleteWorkStation,
@@ -54,13 +54,13 @@ import {
   editEmployee,
   editEmployeeAttendance,
   editEmployeeLeave,
-  editEmployeeOtherSalaryComponent,
+  editEmployeeSalaryComponent,
   editEmploymentType,
   editHoliday,
   editLeaveType,
   editLone,
   editShiftDayAndWeekDays,
-  editOtherSalaryComponent,
+  editSalaryComponent,
   editSalary,
   editTenant,
   editWorkStation,
@@ -74,14 +74,14 @@ import {
   getAllEmployeeAttendances,
   getAllEmployeeLeaves,
   getAllEmployeeLeaveTypes,
-  getAllEmployeeOtherSalaryComponents,
+  getAllEmployeeSalaryComponents,
   getAllEmployees,
   getAllEmploymentTypes,
   getAllHolidays,
   getAllLeaveTypes,
   getAllLones,
   getAllShiftDayAndWeekDays,
-  getAllOtherSalaryComponents,
+  getAllSalaryComponents,
   getAllRoles,
   getAllSalaries,
   getAllTenants,
@@ -109,13 +109,13 @@ import {
   CreateDesignationType,
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
-  CreateEmployeeOtherSalaryComponentType,
+  CreateEmployeeSalaryComponentType,
   CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
   CreateShiftType,
-  CreateOtherSalaryComponentType,
+  CreateSalaryComponentType,
   CreateSalaryType,
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
@@ -2556,24 +2556,24 @@ export const useDeleteEmployeeAttendance = ({
 }
 
 //other salary components
-export const useGetOtherSalaryComponents = () => {
+export const useGetSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['otherSalaryComponents'],
+    queryKey: ['salaryComponents'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllOtherSalaryComponents(token)
+      return getAllSalaryComponents(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddOtherSalaryComponent = ({
+export const useAddSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2585,8 +2585,8 @@ export const useAddOtherSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateOtherSalaryComponentType) => {
-      const res = await createOtherSalaryComponent(data, token)
+    mutationFn: async (data: CreateSalaryComponentType) => {
+      const res = await createSalaryComponent(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -2605,7 +2605,7 @@ export const useAddOtherSalaryComponent = ({
         description: 'Other salary component created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
       reset()
       onClose()
     },
@@ -2622,7 +2622,7 @@ export const useAddOtherSalaryComponent = ({
   return mutation
 }
 
-export const useUpdateOtherSalaryComponent = ({
+export const useUpdateSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2640,16 +2640,16 @@ export const useUpdateOtherSalaryComponent = ({
       data,
     }: {
       id: number
-      data: CreateOtherSalaryComponentType
+      data: CreateSalaryComponentType
     }) => {
-      return editOtherSalaryComponent(id, data, token)
+      return editSalaryComponent(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'other salary component edited successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
@@ -2662,7 +2662,7 @@ export const useUpdateOtherSalaryComponent = ({
   return mutation
 }
 
-export const useDeleteOtherSalaryComponent = ({
+export const useDeleteSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2676,14 +2676,14 @@ export const useDeleteOtherSalaryComponent = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteOtherSalaryComponent(id, token)
+      return deleteSalaryComponent(id, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'other salary component is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['otherSalaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
@@ -2697,24 +2697,24 @@ export const useDeleteOtherSalaryComponent = ({
 }
 
 //employee other salary components
-export const useGetEmployeeOtherSalaryComponents = () => {
+export const useGetEmployeeSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['employeeOtherSalaryComponents'],
+    queryKey: ['employeeSalaryComponents'],
     queryFn: () => {
       if (!token) {
         throw new Error('Token not found')
       }
-      return getAllEmployeeOtherSalaryComponents(token)
+      return getAllEmployeeSalaryComponents(token)
     },
     enabled: !!token,
     select: (data) => data,
   })
 }
 
-export const useAddEmployeeOtherSalaryComponent = ({
+export const useAddEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2726,8 +2726,8 @@ export const useAddEmployeeOtherSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateEmployeeOtherSalaryComponentType) => {
-      const res = await createEmployeeOtherSalaryComponent(data, token)
+    mutationFn: async (data: CreateEmployeeSalaryComponentType) => {
+      const res = await createEmployeeSalaryComponent(data, token)
       return res
     },
     onSuccess: (res) => {
@@ -2748,7 +2748,7 @@ export const useAddEmployeeOtherSalaryComponent = ({
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
       reset()
       onClose()
@@ -2766,7 +2766,7 @@ export const useAddEmployeeOtherSalaryComponent = ({
   return mutation
 }
 
-export const useUpdateEmployeeOtherSalaryComponent = ({
+export const useUpdateEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2784,9 +2784,9 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
       data,
     }: {
       id: number
-      data: CreateEmployeeOtherSalaryComponentType
+      data: CreateEmployeeSalaryComponentType
     }) => {
-      return editEmployeeOtherSalaryComponent(id, data, token)
+      return editEmployeeSalaryComponent(id, data, token)
     },
     onSuccess: () => {
       toast({
@@ -2794,7 +2794,7 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
         description: 'Employee other salary component edited successfully.',
       })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       reset()
@@ -2808,7 +2808,7 @@ export const useUpdateEmployeeOtherSalaryComponent = ({
   return mutation
 }
 
-export const useDeleteEmployeeOtherSalaryComponent = ({
+export const useDeleteEmployeeSalaryComponent = ({
   onClose,
   reset,
 }: {
@@ -2822,7 +2822,7 @@ export const useDeleteEmployeeOtherSalaryComponent = ({
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeOtherSalaryComponent(id, token)
+      return deleteEmployeeSalaryComponent(id, token)
     },
     onSuccess: () => {
       toast({
@@ -2830,7 +2830,7 @@ export const useDeleteEmployeeOtherSalaryComponent = ({
         description: 'Employee other salary component is deleted successfully.',
       })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       reset()
@@ -3059,14 +3059,14 @@ export const useSkipLone = ({
 
   const mutation = useMutation({
     mutationFn: async ({
-      employeeOtherSalaryComponentId,
+      employeeSalaryComponentId,
       updatedBy,
     }: {
-      employeeOtherSalaryComponentId: number
+      employeeSalaryComponentId: number
       updatedBy: number
     }) => {
       const res = await skipLone(
-        employeeOtherSalaryComponentId,
+        employeeSalaryComponentId,
         updatedBy,
         token
       )
@@ -3091,7 +3091,7 @@ export const useSkipLone = ({
       // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['lones'] })
       queryClient.invalidateQueries({
-        queryKey: ['employeeOtherSalaryComponents'],
+        queryKey: ['employeeSalaryComponents'],
       })
 
       // If we have the employeeLoneId from response, invalidate specific lone query

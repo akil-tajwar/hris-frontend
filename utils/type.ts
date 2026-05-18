@@ -602,26 +602,27 @@ export const assignLeaveTypeSchema = z.object({
 })
 export type AssignLeaveTypeType = z.infer<typeof assignLeaveTypeSchema>
 
-export const otherSalaryComponentSchema = z.object({
-  otherSalaryComponentId: z.number().optional(),
+export const salaryComponentSchema = z.object({
+  salaryComponentId: z.number().optional(),
   componentName: z.string(),
+  componentCode: z.string().max(20),
+  percentage: z.number().optional(),
+  formulaExpression: z.string().max(255).optional(),
+  taxable: z.boolean().default(false),
   componentType: z.enum(['Allowance', 'Deduction']),
-  amount: z.number(),
-  forDays: z.number(),
-  status: z.number(),
-  isAbsentFee: z.boolean(),
-  isLoneFee: z.boolean(),
-  isLateEarlyOutFee: z.boolean(),
+  affectGross: z.boolean().default(false),
+  affectNet: z.boolean().default(false),
+  sequenceNo: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateOtherSalaryComponentType = z.infer<
-  typeof otherSalaryComponentSchema
+export type CreateSalaryComponentType = z.infer<
+  typeof salaryComponentSchema
 >
-export type GetOtherSalaryComponentType = z.infer<
-  typeof otherSalaryComponentSchema
+export type GetSalaryComponentType = z.infer<
+  typeof salaryComponentSchema
 >
 
 export const salarySchema = z.object({
@@ -648,7 +649,7 @@ export const salarySchema = z.object({
     z.object({
       employeeId: z.number(),
       employeeName: z.string().optional(), // only for get
-      otherSalaryComponentId: z.number(),
+      salaryComponentId: z.number(),
       componentName: z.string().optional(), //only for get
       componentType: z.enum(['Allowance', 'Deduction']).optional(), //only for get
       salaryMonth: z.string(),
@@ -680,10 +681,10 @@ export const createSalarySchema = z.object({
 })
 export type CreateSalaryType = z.infer<typeof createSalarySchema>
 
-export const employeeOtherSalaryComponentSchema = z.object({
-  employeeOtherSalaryComponentId: z.number().optional(),
+export const employeeSalaryComponentSchema = z.object({
+  employeeSalaryComponentId: z.number().optional(),
   employeeId: z.number(),
-  otherSalaryComponentId: z.number(),
+  salaryComponentId: z.number(),
   employeeLoneId: z.number().optional().nullable(),
   salaryMonth: z.string(),
   salaryYear: z.number(),
@@ -695,11 +696,11 @@ export const employeeOtherSalaryComponentSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateEmployeeOtherSalaryComponentType = z.infer<
-  typeof employeeOtherSalaryComponentSchema
+export type CreateEmployeeSalaryComponentType = z.infer<
+  typeof employeeSalaryComponentSchema
 >
-export type GetEmployeeOtherSalaryComponentType = z.infer<
-  typeof employeeOtherSalaryComponentSchema
+export type GetEmployeeSalaryComponentType = z.infer<
+  typeof employeeSalaryComponentSchema
 > & {
   empCode: string
   employeeName: string
@@ -775,8 +776,8 @@ export const loneReportSchema = z.array(
 
     installments: z.array(
       z.object({
-        employeeOtherSalaryComponentId: z.number(),
-        otherSalaryComponentId: z.number(),
+        employeeSalaryComponentId: z.number(),
+        salaryComponentId: z.number(),
         salaryMonth: z.string(),
         salaryYear: z.number(),
         amount: z.number(),

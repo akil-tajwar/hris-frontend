@@ -5,27 +5,27 @@ import {
   CreateDesignationType,
   CreateEmployeeAttendanceType,
   CreateEmployeeLeaveType,
-  CreateEmployeeOtherSalaryComponentType,
+  CreateEmployeeSalaryComponentType,
   CreateEmployeeType,
   CreateEmploymentTypeType,
   CreateHolidayType,
   CreateLeaveTypeType,
   CreateEmployeeLoneType,
   CreateShiftType,
-  CreateOtherSalaryComponentType,
+  CreateSalaryComponentType,
   CreateSalaryType,
   GetDepartmentType,
   GetDesignationType,
   GetEmployeeAttendanceType,
   GetEmployeeLeaveType,
-  GetEmployeeOtherSalaryComponentType,
+  GetEmployeeSalaryComponentType,
   GetEmployeeType,
   GetEmploymentTypeType,
   GetHolidayType,
   GetLeaveTypeType,
   GetEmployeeLoneType,
   GetShiftsType,
-  GetOtherSalaryComponentType,
+  GetSalaryComponentType,
   GetSalaryType,
   GetWeekDayType,
   SignInRequest,
@@ -1018,9 +1018,9 @@ export async function deleteEmployeeAttendance(id: number, token: string) {
 }
 
 //other salary related components
-export async function getAllOtherSalaryComponents(token: string) {
-  return fetchApi<GetOtherSalaryComponentType[]>({
-    url: 'api/otherSalaryComponents/getall',
+export async function getAllSalaryComponents(token: string) {
+  return fetchApi<GetSalaryComponentType[]>({
+    url: 'api/salaryComponents/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1029,12 +1029,12 @@ export async function getAllOtherSalaryComponents(token: string) {
   })
 }
 
-export async function createOtherSalaryComponent(
-  data: CreateOtherSalaryComponentType,
+export async function createSalaryComponent(
+  data: CreateSalaryComponentType,
   token: string
 ) {
-  return fetchApi<CreateOtherSalaryComponentType>({
-    url: 'api/otherSalaryComponents/create',
+  return fetchApi<CreateSalaryComponentType>({
+    url: 'api/salaryComponents/create',
     method: 'POST',
     body: data,
     headers: {
@@ -1044,13 +1044,13 @@ export async function createOtherSalaryComponent(
   })
 }
 
-export async function editOtherSalaryComponent(
+export async function editSalaryComponent(
   id: number,
-  data: GetOtherSalaryComponentType,
+  data: GetSalaryComponentType,
   token: string
 ) {
-  return fetchApi<GetOtherSalaryComponentType>({
-    url: `api/otherSalaryComponents/edit/${id}`,
+  return fetchApi<GetSalaryComponentType>({
+    url: `api/salaryComponents/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: {
@@ -1060,9 +1060,9 @@ export async function editOtherSalaryComponent(
   })
 }
 
-export async function deleteOtherSalaryComponent(id: number, token: string) {
+export async function deleteSalaryComponent(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/otherSalaryComponents/delete/${id}`,
+    url: `api/salaryComponents/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
@@ -1072,9 +1072,9 @@ export async function deleteOtherSalaryComponent(id: number, token: string) {
 }
 
 //employee other salary components
-export async function getAllEmployeeOtherSalaryComponents(token: string) {
-  return fetchApi<GetEmployeeOtherSalaryComponentType[]>({
-    url: 'api/employeeOtherSalaryComponents/getall',
+export async function getAllEmployeeSalaryComponents(token: string) {
+  return fetchApi<GetEmployeeSalaryComponentType[]>({
+    url: 'api/employeeSalaryComponents/getall',
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1083,12 +1083,12 @@ export async function getAllEmployeeOtherSalaryComponents(token: string) {
   })
 }
 
-export async function createEmployeeOtherSalaryComponent(
-  data: CreateEmployeeOtherSalaryComponentType,
+export async function createEmployeeSalaryComponent(
+  data: CreateEmployeeSalaryComponentType,
   token: string
 ) {
-  return fetchApi<CreateEmployeeOtherSalaryComponentType>({
-    url: 'api/employeeOtherSalaryComponents/create',
+  return fetchApi<CreateEmployeeSalaryComponentType>({
+    url: 'api/employeeSalaryComponents/create',
     method: 'POST',
     body: data,
     headers: {
@@ -1098,13 +1098,13 @@ export async function createEmployeeOtherSalaryComponent(
   })
 }
 
-export async function editEmployeeOtherSalaryComponent(
+export async function editEmployeeSalaryComponent(
   id: number,
-  data: CreateEmployeeOtherSalaryComponentType,
+  data: CreateEmployeeSalaryComponentType,
   token: string
 ) {
-  return fetchApi<CreateEmployeeOtherSalaryComponentType>({
-    url: `api/employeeOtherSalaryComponents/edit/${id}`,
+  return fetchApi<CreateEmployeeSalaryComponentType>({
+    url: `api/employeeSalaryComponents/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: {
@@ -1114,12 +1114,12 @@ export async function editEmployeeOtherSalaryComponent(
   })
 }
 
-export async function deleteEmployeeOtherSalaryComponent(
+export async function deleteEmployeeSalaryComponent(
   id: number,
   token: string
 ) {
   return fetchApi<{ id: number }>({
-    url: `api/employeeOtherSalaryComponents/delete/${id}`,
+    url: `api/employeeSalaryComponents/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
@@ -1231,12 +1231,12 @@ export async function deleteLone(id: number, token: string) {
 }
 
 export async function skipLone(
-  employeeOtherSalaryComponentId: number,
+  employeeSalaryComponentId: number,
   updatedBy: number,
   token: string
 ) {
   return fetchApi<any>({
-    url: `api/employeeLones/skipLone/${employeeOtherSalaryComponentId}/${updatedBy}`,
+    url: `api/employeeLones/skipLone/${employeeSalaryComponentId}/${updatedBy}`,
     method: 'POST',
     headers: {
       Authorization: token,

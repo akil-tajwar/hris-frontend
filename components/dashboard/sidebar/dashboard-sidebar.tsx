@@ -100,7 +100,7 @@ export function DashboardSidebar() {
         },
         {
           title: 'Other Salary Components',
-          href: '/dashboard/setup/other-salary-components',
+          href: '/dashboard/setup/salary-components',
         },
       ],
     },
@@ -156,8 +156,12 @@ export function DashboardSidebar() {
       href: '/dashboard/salary-management',
       subItems: [
         {
+          title: 'Salary Components',
+          href: '/dashboard/salary-management/salary-components',
+        },
+        {
           title: 'Employee Other Salary Components',
-          href: '/dashboard/salary-management/employee-other-salary-components',
+          href: '/dashboard/salary-management/employee-salary-components',
         },
         {
           title: 'Salary',
