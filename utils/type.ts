@@ -606,6 +606,8 @@ export const salaryComponentSchema = z.object({
   salaryComponentId: z.number().optional(),
   componentName: z.string(),
   componentCode: z.string().max(20),
+  calculationType: z.enum(['Fixed', 'Percentage', 'Formula']),
+  amount: z.number().optional(),
   percentage: z.number().optional(),
   formulaExpression: z.string().max(255).optional(),
   taxable: z.boolean().default(false),

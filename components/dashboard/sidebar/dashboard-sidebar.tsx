@@ -165,7 +165,7 @@ export function DashboardSidebar() {
         },
         {
           title: 'Salary',
-          href: '/dashboard/salary-management/salary',
+          href: '/dashboard/salary-management/salareis',
         }
       ],
     },

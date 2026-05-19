@@ -82,6 +82,8 @@ const SalaryComponents = () => {
     (): CreateSalaryComponentType => ({
       componentName: '',
       componentCode: '',
+      calculationType: 'Fixed',
+      amount: undefined,
       percentage: undefined,
       formulaExpression: undefined,
       taxable: false,
@@ -113,6 +115,17 @@ const SalaryComponents = () => {
   }
 
   const handleSelectChange = (name: string, value: string) => {
+    // When calculationType changes, clear the fields that no longer apply
+    if (name === 'calculationType') {
+      setFormData((prev) => ({
+        ...prev,
+        calculationType: value as 'Fixed' | 'Percentage' | 'Formula',
+        amount: undefined,
+        percentage: undefined,
+        formulaExpression: undefined,
+      }))
+      return
+    }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -196,12 +209,41 @@ const SalaryComponents = () => {
         return
       }
 
+      // Validate that the relevant calculation field is filled
+      if (formData.calculationType === 'Fixed' && formData.amount == null) {
+        setError('Amount is required for Fixed calculation type.')
+        return
+      }
+      if (
+        formData.calculationType === 'Percentage' &&
+        formData.percentage == null
+      ) {
+        setError('Percentage is required for Percentage calculation type.')
+        return
+      }
+      if (
+        formData.calculationType === 'Formula' &&
+        !formData.formulaExpression?.trim()
+      ) {
+        setError('Formula expression is required for Formula calculation type.')
+        return
+      }
+
       try {
         const submitData: CreateSalaryComponentType = {
           componentName: formData.componentName,
           componentCode: formData.componentCode,
-          percentage: formData.percentage,
-          formulaExpression: formData.formulaExpression,
+          calculationType: formData.calculationType,
+          amount:
+            formData.calculationType === 'Fixed' ? formData.amount : undefined,
+          percentage:
+            formData.calculationType === 'Percentage'
+              ? formData.percentage
+              : undefined,
+          formulaExpression:
+            formData.calculationType === 'Formula'
+              ? formData.formulaExpression
+              : undefined,
           taxable: formData.taxable,
           componentType: formData.componentType,
           affectGross: formData.affectGross,
@@ -244,6 +286,8 @@ const SalaryComponents = () => {
     setFormData({
       componentName: comp.componentName,
       componentCode: comp.componentCode,
+      calculationType: comp.calculationType,
+      amount: comp.amount,
       percentage: comp.percentage,
       formulaExpression: comp.formulaExpression,
       taxable: comp.taxable ?? false,
@@ -256,6 +300,20 @@ const SalaryComponents = () => {
     setEditingComponentId(comp.salaryComponentId ?? null)
     setIsEditMode(true)
     setIsPopupOpen(true)
+  }
+
+  // Helper to display the calculation value in the table
+  const getCalculationDisplay = (comp: GetSalaryComponentType) => {
+    if (comp.calculationType === 'Fixed') {
+      return comp.amount != null ? `${comp.amount} BDT` : '-'
+    }
+    if (comp.calculationType === 'Percentage') {
+      return comp.percentage != null ? `${comp.percentage}%` : '-'
+    }
+    if (comp.calculationType === 'Formula') {
+      return comp.formulaExpression ?? '-'
+    }
+    return '-'
   }
 
   return (
@@ -304,11 +362,12 @@ const SalaryComponents = () => {
                 Code <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('percentage')}
+                onClick={() => handleSort('calculationType')}
                 className="cursor-pointer"
               >
-                Percentage <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Calc. Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Value</TableHead>
               <TableHead
                 onClick={() => handleSort('componentType')}
                 className="cursor-pointer"
@@ -330,19 +389,19 @@ const SalaryComponents = () => {
           <TableBody>
             {!salaryComponents || salaryComponents.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   Loading salary components...
                 </TableCell>
               </TableRow>
             ) : !salaryComponents.data || salaryComponents.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No salary components found
                 </TableCell>
               </TableRow>
             ) : paginatedComponents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No salary components match your search
                 </TableCell>
               </TableRow>
@@ -358,8 +417,21 @@ const SalaryComponents = () => {
                   <TableCell className="font-medium">
                     {comp.componentCode}
                   </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        comp.calculationType === 'Fixed'
+                          ? 'bg-sky-100 text-sky-800'
+                          : comp.calculationType === 'Percentage'
+                            ? 'bg-violet-100 text-violet-800'
+                            : 'bg-orange-100 text-orange-800'
+                      }`}
+                    >
+                      {comp.calculationType}
+                    </span>
+                  </TableCell>
                   <TableCell className="font-medium">
-                    {comp.percentage != null ? `${comp.percentage}%` : '-'}
+                    {getCalculationDisplay(comp)}
                   </TableCell>
                   <TableCell>
                     <span
@@ -535,37 +607,88 @@ const SalaryComponents = () => {
               />
             </div>
 
-            {/* Percentage */}
+            {/* Calculation Type */}
             <div className="space-y-2">
-              <Label htmlFor="percentage">Percentage (%)</Label>
-              <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md border">
-                <p className="font-medium mb-1">
-                  Optional — percentage of the employee&apos;s basic salary
-                </p>
-              </div>
-              <Input
-                id="percentage"
-                name="percentage"
-                type="number"
-                min="0"
-                value={formData.percentage ?? ''}
-                onChange={handleNumberInputChange}
-                placeholder="e.g. 10"
-              />
+              <Label htmlFor="calculationType">
+                Calculation Type <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.calculationType}
+                onValueChange={(value) =>
+                  handleSelectChange('calculationType', value)
+                }
+              >
+                <SelectTrigger id="calculationType">
+                  <SelectValue placeholder="Select calculation type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fixed">Fixed</SelectItem>
+                  <SelectItem value="Percentage">Percentage</SelectItem>
+                  <SelectItem value="Formula">Formula</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Formula Expression */}
-            <div className="space-y-2">
-              <Label htmlFor="formulaExpression">Formula Expression</Label>
-              <Input
-                id="formulaExpression"
-                name="formulaExpression"
-                maxLength={255}
-                value={formData.formulaExpression ?? ''}
-                onChange={handleInputChange}
-                placeholder="Optional formula (max 255 chars)"
-              />
-            </div>
+            {/* Conditional field: Fixed → Amount */}
+            {formData.calculationType === 'Fixed' && (
+              <div className="space-y-2">
+                <Label htmlFor="amount">
+                  Amount <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.amount ?? ''}
+                  onChange={handleNumberInputChange}
+                  placeholder="e.g. 5000"
+                />
+              </div>
+            )}
+
+            {/* Conditional field: Percentage → Percentage */}
+            {formData.calculationType === 'Percentage' && (
+              <div className="space-y-2">
+                <Label htmlFor="percentage">
+                  Percentage (%) <span className="text-red-500">*</span>
+                </Label>
+                <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md border">
+                  <p className="font-medium">
+                    Percentage of the employee&apos;s basic salary
+                  </p>
+                </div>
+                <Input
+                  id="percentage"
+                  name="percentage"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.percentage ?? ''}
+                  onChange={handleNumberInputChange}
+                  placeholder="e.g. 10"
+                />
+              </div>
+            )}
+
+            {/* Conditional field: Formula → Formula Expression */}
+            {formData.calculationType === 'Formula' && (
+              <div className="space-y-2">
+                <Label htmlFor="formulaExpression">
+                  Formula Expression <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="formulaExpression"
+                  name="formulaExpression"
+                  maxLength={255}
+                  value={formData.formulaExpression ?? ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g. basicSalary * 0.1 + 500 (max 255 chars)"
+                />
+              </div>
+            )}
 
             {/* Sequence No */}
             <div className="space-y-2">

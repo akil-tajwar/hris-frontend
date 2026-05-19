@@ -2282,8 +2282,7 @@ export const useAddSalaryStructures = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description:
-            res.error.message || 'Failed to create salary structure',
+          description: res.error.message || 'Failed to create salary structure',
         })
         return
       }
@@ -2305,8 +2304,7 @@ export const useAddSalaryStructures = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Unexpected error occurred',
+        description: error?.message || 'Unexpected error occurred',
       })
     },
   })
@@ -2721,7 +2719,7 @@ export const useDeleteEmployeeAttendance = ({
   return mutation
 }
 
-//other salary components
+//salary components
 export const useGetSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -2813,7 +2811,7 @@ export const useUpdateSalaryComponent = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'other salary component edited successfully.',
+        description: 'Salary component edited successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
@@ -2841,9 +2839,24 @@ export const useDeleteSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteSalaryComponent(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteSalaryComponent(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete salary component'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -2854,8 +2867,15 @@ export const useDeleteSalaryComponent = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Failed to delete salary component',
+      })
     },
   })
 
@@ -3231,11 +3251,7 @@ export const useSkipLone = ({
       employeeSalaryComponentId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(
-        employeeSalaryComponentId,
-        updatedBy,
-        token
-      )
+      const res = await skipLone(employeeSalaryComponentId, updatedBy, token)
       return res
     },
     onSuccess: (res) => {
