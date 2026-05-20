@@ -155,7 +155,7 @@ export default function SignIn() {
             )}
             <Button
               type="submit"
-              className="w-full bg-yellow-400 mt-10 hover:bg-yellow-500 text-black"
+              className="w-full bg-blue-400 mt-10 hover:bg-blue-500 text-black"
               disabled={isLoading}
             >
               <LockIcon className="mr-2 h-4 w-4" />

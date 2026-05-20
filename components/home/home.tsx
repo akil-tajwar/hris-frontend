@@ -93,7 +93,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <Link href="/company" className="flex items-center justify-center">
-        <Button className="w-full bg-yellow-400 mt-10 hover:bg-yellow-500 text-black mb-5">Company</Button>
+        <Button className="w-full bg-blue-400 mt-10 hover:bg-blue-500 text-black mb-5">Company</Button>
       </Link>
       <Card className="w-full max-w-md border border-black">
         <CardHeader className="space-y-1">
@@ -160,7 +160,7 @@ export default function Home() {
             )}
             <Button
               type="submit"
-              className="w-full bg-yellow-400 mt-10 hover:bg-yellow-500 text-black"
+              className="w-full bg-blue-400 mt-10 hover:bg-blue-500 text-black"
               disabled={isLoading}
             >
               <LockIcon className="mr-2 h-4 w-4" />

@@ -406,8 +406,8 @@ const EditEmployee = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <User className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <User className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Edit Employee</h2>
         </div>

@@ -296,7 +296,7 @@ const AttendanceReport = () => {
             <CardContent className="p-0">
               <div className="overflow-auto">
                 <Table>
-                  <TableHeader className="bg-amber-100 pdf-table-header">
+                  <TableHeader className="bg-blue-100 pdf-table-header">
                     <TableRow>
                       <TableHead className="font-bold">
                         Attendance Date

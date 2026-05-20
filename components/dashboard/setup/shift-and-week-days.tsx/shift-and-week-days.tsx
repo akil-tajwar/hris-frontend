@@ -475,8 +475,8 @@ const ShiftAndWeekDays = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <Clock className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <Clock className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Shifts & WeekDay Config</h2>
         </div>
@@ -491,7 +491,7 @@ const ShiftAndWeekDays = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add
@@ -502,7 +502,7 @@ const ShiftAndWeekDays = () => {
       {/* Table */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
@@ -569,14 +569,14 @@ const ShiftAndWeekDays = () => {
                   dt === 'Weekend'
                     ? 'bg-red-100 text-red-600'
                     : dt === 'HalfDay'
-                      ? 'bg-yellow-100 text-yellow-700'
+                      ? 'bg-blue-100 text-blue-700'
                       : 'bg-green-100 text-green-700'
 
                 return (
                   <>
                     <TableRow
                       key={`row-${index}`}
-                      className="cursor-pointer hover:bg-amber-50"
+                      className="cursor-pointer hover:bg-blue-50"
                       onClick={() => toggleRowExpand(shiftId)}
                     >
                       <TableCell>
@@ -616,7 +616,7 @@ const ShiftAndWeekDays = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-amber-600 hover:text-amber-700"
+                            className="text-blue-600 hover:text-blue-700"
                             onClick={() => handleEditClick(item)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -639,7 +639,7 @@ const ShiftAndWeekDays = () => {
                     {isExpanded && (
                       <TableRow
                         key={`expand-${index}`}
-                        className="bg-amber-50/40"
+                        className="bg-blue-50/40"
                       >
                         <TableCell colSpan={9} className="py-3 px-6">
                           <div className="text-xs font-semibold text-gray-500 mb-2">
@@ -1033,7 +1033,7 @@ const ShiftAndWeekDays = () => {
                   config.dayType === 'Weekend'
                     ? 'bg-red-100 text-red-600'
                     : config.dayType === 'HalfDay'
-                      ? 'bg-yellow-100 text-yellow-700'
+                      ? 'bg-blue-100 text-blue-700'
                       : 'bg-green-100 text-green-700'
 
                 return (

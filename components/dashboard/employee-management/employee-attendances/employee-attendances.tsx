@@ -414,8 +414,8 @@ const EmployeeAttendances = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <Clock className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <Clock className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Employee Attendances</h2>
         </div>
@@ -430,7 +430,7 @@ const EmployeeAttendances = () => {
             />
           </div>
           <Button
-            className="bg-amber-500 hover:bg-amber-600 text-black"
+            className="bg-blue-500 hover:bg-blue-600 text-black"
             onClick={() => {
               setAttendanceForms([buildEmptyRow()])
               setIsPopupOpen(true)
@@ -463,7 +463,7 @@ const EmployeeAttendances = () => {
               className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
             >
               {/* Date Header */}
-              <div className="bg-amber-200 px-6 py-4 flex items-center gap-3">
+              <div className="bg-blue-200 px-6 py-4 flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-black" />
                 <h3 className="text-lg font-semibold text-black">
                   {formatDate(new Date(date))}
@@ -477,7 +477,7 @@ const EmployeeAttendances = () => {
               {/* Table */}
               <div className="bg-white">
                 <Table>
-                  <TableHeader className="bg-amber-50">
+                  <TableHeader className="bg-blue-50">
                     <TableRow>
                       <TableHead className="w-20">Sl No.</TableHead>
                       <TableHead
@@ -509,7 +509,7 @@ const EmployeeAttendances = () => {
                     {attendances.map((attendance: any, index) => (
                       <TableRow
                         key={attendance.employeeAttendanceId || index}
-                        className={`hover:bg-amber-50/50 ${attendance.isAbsent ? 'bg-red-50/40' : ''}`}
+                        className={`hover:bg-blue-50/50 ${attendance.isAbsent ? 'bg-red-50/40' : ''}`}
                       >
                         <TableCell className="font-medium text-gray-600">
                           {index + 1}
@@ -582,7 +582,7 @@ const EmployeeAttendances = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               onClick={() => handleEditClick(attendance)}
                             >
                               <Edit2 className="h-4 w-4" />
@@ -852,7 +852,7 @@ const EmployeeAttendances = () => {
               type="button"
               variant="outline"
               onClick={handleAddRow}
-              className="gap-2 border-dashed border-amber-400 text-amber-700 hover:bg-amber-50"
+              className="gap-2 border-dashed border-blue-400 text-blue-700 hover:bg-blue-50"
             >
               <Plus className="h-4 w-4" />
               Add More
@@ -872,7 +872,7 @@ const EmployeeAttendances = () => {
             <Button
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending || updateMutation.isPending
                 ? 'Saving...'

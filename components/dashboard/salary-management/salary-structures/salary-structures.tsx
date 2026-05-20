@@ -401,8 +401,8 @@ const SalaryStructure = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <DollarSign className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <DollarSign className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Salary Structure</h2>
         </div>
@@ -417,7 +417,7 @@ const SalaryStructure = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add
@@ -428,7 +428,7 @@ const SalaryStructure = () => {
       {/* Table */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
@@ -495,7 +495,7 @@ const SalaryStructure = () => {
                 return (
                   <React.Fragment key={`fragment-${structureId ?? index}`}>
                     <TableRow
-                      className="cursor-pointer hover:bg-amber-50"
+                      className="cursor-pointer hover:bg-blue-50"
                       onClick={() => toggleRowExpand(structureId)}
                     >
                       <TableCell>
@@ -556,7 +556,7 @@ const SalaryStructure = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-amber-600 hover:text-amber-700"
+                            className="text-blue-600 hover:text-blue-700"
                             onClick={() => handleEditClick(item)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -582,7 +582,7 @@ const SalaryStructure = () => {
                     {isExpanded && (
                       <TableRow
                         key={`expand-${index}`}
-                        className="bg-amber-50/40"
+                        className="bg-blue-50/40"
                       >
                         <TableCell colSpan={9} className="py-3 px-6">
                           <div className="text-xs font-semibold text-gray-500 mb-2">
@@ -942,7 +942,7 @@ const SalaryStructure = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-amber-600 border-amber-400 hover:bg-amber-50"
+                className="text-blue-600 border-blue-400 hover:bg-blue-50"
                 onClick={handleAddDetail}
               >
                 + Add Detail

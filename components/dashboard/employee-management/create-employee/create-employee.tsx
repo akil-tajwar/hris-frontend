@@ -796,8 +796,8 @@ const CreateEmployee = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <User className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <User className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Create Employee</h2>
         </div>
@@ -1855,7 +1855,7 @@ const CreateEmployee = () => {
         size="sm:max-w-3xl"
       >
         <div className="py-4">
-          <div className="mb-4 p-4 bg-amber-50 rounded-md text-sm text-gray-700 space-y-1">
+          <div className="mb-4 p-4 bg-blue-50 rounded-md text-sm text-gray-700 space-y-1">
             <p className="font-semibold">How to use:</p>
             <p>
               1. Click <strong>Download Template</strong> to get the Excel file

@@ -444,7 +444,7 @@ const LoneReport = () => {
             <CardContent className="p-0">
               <div className="overflow-auto">
                 <Table>
-                  <TableHeader className="bg-amber-100 pdf-table-header">
+                  <TableHeader className="bg-blue-100 pdf-table-header">
                     <TableRow>
                       <TableHead className="font-bold w-8"></TableHead>
                       <TableHead className="font-bold">Employee Code</TableHead>
@@ -460,7 +460,7 @@ const LoneReport = () => {
                         Installment Summary
                       </TableHead>
                     </TableRow>
-                    <TableRow className="bg-amber-50">
+                    <TableRow className="bg-blue-50">
                       <TableHead></TableHead>
                       <TableHead></TableHead>
                       <TableHead></TableHead>
@@ -492,7 +492,7 @@ const LoneReport = () => {
                         <Fragment key={`lone-${lone.employeeLoneId}`}>
                           {/* ── Main loan row ── */}
                           <TableRow
-                            className="cursor-pointer hover:bg-amber-50/40"
+                            className="cursor-pointer hover:bg-blue-50/40"
                             onClick={() => toggleRow(lone.employeeLoneId)}
                           >
                             <TableCell className="text-gray-400">

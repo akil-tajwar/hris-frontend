@@ -65,7 +65,7 @@ export default function Navbar() {
           <div className="flex-shrink-0 flex items-center">
             <div className="flex items-center">
               <span className="text-2xl font-bold text-gray-800">Biz</span>
-              <span className="text-2xl font-bold text-yellow-500">Flow</span>
+              <span className="text-2xl font-bold text-blue-500">Flow</span>
             </div>
           </div>
           <div className="flex items-center ml-4">
