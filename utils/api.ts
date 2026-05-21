@@ -61,6 +61,8 @@ import {
   CreateEmployeePreboardingType,
   GetChecklistType,
   CreateChecklistType,
+  CreateEmployeePreboardingChecklistType,
+  GetEmployeePreboardingChecklistType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -736,6 +738,52 @@ export async function deleteEmployeePreboarding(id: number, token: string) {
   })
 }
 
+//assign checklist to preboarding employee
+export async function createPreboardingEmployeeChecklist(
+  data: CreateEmployeePreboardingChecklistType,
+  token: string
+) {
+  return fetchApi<CreateEmployeePreboardingChecklistType>({
+    url: 'api/employeePreboarding/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//edit assigned checklist to preboarding employee
+export async function editEmployeePreboardingChecklist(
+  id: number,
+  data: GetEmployeePreboardingChecklistType,
+  token: string
+) {
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// get assigned checklist by preboarding employee id
+export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
+  return fetchApi<GetEmployeeType>({
+    url: `api/employeePreboarding/getById/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//checklist
 export async function getAllChecklists(token: string) {
   return fetchApi<GetChecklistType[]>({
     url: 'api/checklists/getall',

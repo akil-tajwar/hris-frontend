@@ -114,6 +114,9 @@ import {
   createChecklist,
   editChecklist,
   deleteChecklist,
+  getPreboardingEmployeeChecklistsById,
+  createPreboardingEmployeeChecklist,
+  editEmployeePreboardingChecklist,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -154,6 +157,8 @@ import {
   GetEmployeePreboardingType,
   CreateChecklistType,
   GetChecklistType,
+  CreateEmployeePreboardingChecklistType,
+  GetEmployeePreboardingChecklistType,
 } from '@/utils/type'
 
 //roles
@@ -2213,6 +2218,119 @@ export const useDeleteChecklists = ({
   return mutation
 }
 
+export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employees', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getPreboardingEmployeeChecklistsById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useAddPreboardingEmployeeChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateEmployeePreboardingChecklistType) => {
+      const res = await createPreboardingEmployeeChecklist(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create checklist',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Checklist created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdatePreboardingEmployeeChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeePreboardingChecklistType
+    }) => {
+      return editEmployeePreboardingChecklist(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update checklist',
+      })
+    },
+  })
+
+  return mutation
+}
 
 //employee
 export const useAddEmployee = ({

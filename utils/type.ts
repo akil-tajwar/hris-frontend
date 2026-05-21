@@ -264,7 +264,7 @@ export const employeePreboardingSchema = z.object({
   salaryStructureMasterId: z.number(),
   offeredSalary: z.number(),
   probationMonths: z.number(),
-  status: z.string(),
+  status: z.boolean().default(false),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -281,6 +281,7 @@ export type GetEmployeePreboardingType = z.infer<typeof employeePreboardingSchem
   salaryStructureName: string
 }
 
+//checklist
 export const ChecklistSchema = z.object({
   checklistMaster: z.object({
     checklistMasterId: z.number().optional().nullable(),
@@ -309,6 +310,25 @@ export const ChecklistSchema = z.object({
 })
 export type GetChecklistType = z.infer<typeof ChecklistSchema>
 export type CreateChecklistType = z.infer<typeof ChecklistSchema>
+
+//employee preboarding checklist
+export const EmployeePreboardingChecklistSchema = z.object({
+  employeePreboardingChecklistId: z.number().optional().nullable(),
+  preboardingId: z.number(),
+  checklistDetailsId: z.number(),
+  responsibleEmployeeId: z.number(),
+  completionDate: z.coerce.date(),
+  status: z.boolean(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema>
+export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema> & {
+  responsibleEmployeeName: string
+  checklistDetailsName: string
+}
 
 //employee
 export const employeeSchema = z.object({
