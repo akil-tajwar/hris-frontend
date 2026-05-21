@@ -110,6 +110,10 @@ import {
   createEmployeePreboarding,
   editEmployeePreboarding,
   deleteEmployeePreboarding,
+  getAllChecklists,
+  createChecklist,
+  editChecklist,
+  deleteChecklist,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -148,6 +152,8 @@ import {
   GetSalaryStructureType,
   CreateEmployeePreboardingType,
   GetEmployeePreboardingType,
+  CreateChecklistType,
+  GetChecklistType,
 } from '@/utils/type'
 
 //roles
@@ -2034,6 +2040,179 @@ export const useDeleteEmployeePreboarding = ({
     },
   })
 }
+
+//checklists
+export const useGetChecklists = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['checklists'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllChecklists(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateChecklistType) => {
+      const res = await createChecklist(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create checklist',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Checklist created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetChecklistType
+    }) => {
+      return editChecklist(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update checklist',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteChecklist(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete checklist'
+        )
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['checklists'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
 
 //employee
 export const useAddEmployee = ({

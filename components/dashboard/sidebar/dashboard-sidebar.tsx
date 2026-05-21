@@ -110,6 +110,10 @@ export function DashboardSidebar() {
       href: '/dashboard/employee-management',
       subItems: [
         {
+          title: 'Checklists',
+          href: '/dashboard/employee-management/checklists',
+        },
+        {
           title: 'Employee Preboardings',
           href: '/dashboard/employee-management/employee-preboardings',
         },

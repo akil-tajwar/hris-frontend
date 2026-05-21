@@ -281,6 +281,35 @@ export type GetEmployeePreboardingType = z.infer<typeof employeePreboardingSchem
   salaryStructureName: string
 }
 
+export const ChecklistSchema = z.object({
+  checklistMaster: z.object({
+    checklistMasterId: z.number().optional().nullable(),
+    checklistName: z.string(),
+    heading: z.string().optional(),
+    responsibleEmployeeId: z.number().optional(),
+    responsibleEmployeeName: z.string().optional().nullable(), // only for get
+    createdBy: z.number(),
+    createdAt: z.coerce.date(),
+    updatedBy: z.number().optional().nullable(),
+    updatedAt: z.coerce.date().optional().nullable(),
+  }),
+  checklistDetails: z.array(
+    z.object({
+      checklistDetailsId: z.number().optional(),
+      checklistDetailsName: z.string(),
+      checklistMasterId: z.number().nullable(),
+      responsibleEmployeeId: z.number(),
+      responsibleEmployeeName: z.string().optional().nullable(), // only for get
+      createdBy: z.number(),
+      createdAt: z.coerce.date(),
+      updatedBy: z.number().optional().nullable(),
+      updatedAt: z.coerce.date().optional().nullable(),
+    })
+  ),
+})
+export type GetChecklistType = z.infer<typeof ChecklistSchema>
+export type CreateChecklistType = z.infer<typeof ChecklistSchema>
+
 //employee
 export const employeeSchema = z.object({
   employeeId: z.number().optional(),
