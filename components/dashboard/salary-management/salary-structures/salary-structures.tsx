@@ -93,7 +93,7 @@ const SalaryStructure = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: salaryStructure } = useGetSalaryStructures()
-  console.log("🚀 ~ SalaryStructure ~ salaryStructure:", salaryStructure)
+  console.log('🚀 ~ SalaryStructure ~ salaryStructure:', salaryStructure)
   const { data: companies } = useGetCompanies()
   const { data: salaryComponents } = useGetSalaryComponents()
 
@@ -163,7 +163,7 @@ const SalaryStructure = () => {
   const handleAddDetail = () => {
     const newDetail: CreateSalaryStructureType['salaryStructureDetails'][number] =
       {
-        salaryStructureId: null,
+        salaryStructureMasterId: null,
         salaryComponentId: 0,
         amount: 0,
         percentage: null,
@@ -179,6 +179,14 @@ const SalaryStructure = () => {
       ...prev,
       salaryStructureDetails: [...prev.salaryStructureDetails, newDetail],
     }))
+  }
+
+  const getComponentCalcType = (salaryComponentId: number) => {
+    return (
+      salaryComponents?.data?.find(
+        (sc: any) => sc.salaryComponentId === salaryComponentId
+      )?.calculationType ?? null
+    )
   }
 
   // ─── Reset / Close ────────────────────────────────────────────────────────
@@ -359,7 +367,7 @@ const SalaryStructure = () => {
 
   const handleEditClick = (item: any) => {
     setIsEditMode(true)
-    setEditingStructureId(item.salaryStructureMaster?.salaryStructureId || null)
+    setEditingStructureId(item.salaryStructureMaster?.salaryStructureMasterId || null)
     setFormData({
       salaryStructureMaster: {
         ...item.salaryStructureMaster,
@@ -393,8 +401,8 @@ const SalaryStructure = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <DollarSign className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <DollarSign className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Salary Structure</h2>
         </div>
@@ -409,7 +417,7 @@ const SalaryStructure = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add
@@ -420,7 +428,7 @@ const SalaryStructure = () => {
       {/* Table */}
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
@@ -480,14 +488,14 @@ const SalaryStructure = () => {
             ) : (
               paginatedStructures.map((item: any, index: number) => {
                 const structureId =
-                  item.salaryStructureMaster?.salaryStructureId
+                  item.salaryStructureMaster?.salaryStructureMasterId
                 const isExpanded = expandedRows.has(structureId)
                 const details: any[] = item.salaryStructureDetails || []
 
                 return (
                   <React.Fragment key={`fragment-${structureId ?? index}`}>
                     <TableRow
-                      className="cursor-pointer hover:bg-amber-50"
+                      className="cursor-pointer hover:bg-blue-50"
                       onClick={() => toggleRowExpand(structureId)}
                     >
                       <TableCell>
@@ -548,7 +556,7 @@ const SalaryStructure = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-amber-600 hover:text-amber-700"
+                            className="text-blue-600 hover:text-blue-700"
                             onClick={() => handleEditClick(item)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -559,7 +567,7 @@ const SalaryStructure = () => {
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setDeletingStructureId(
-                                item.salaryStructureMaster?.salaryStructureId ||
+                                item.salaryStructureMaster?.salaryStructureMasterId ||
                                   null
                               )
                               setIsDeleteDialogOpen(true)
@@ -574,7 +582,7 @@ const SalaryStructure = () => {
                     {isExpanded && (
                       <TableRow
                         key={`expand-${index}`}
-                        className="bg-amber-50/40"
+                        className="bg-blue-50/40"
                       >
                         <TableCell colSpan={9} className="py-3 px-6">
                           <div className="text-xs font-semibold text-gray-500 mb-2">
@@ -598,24 +606,69 @@ const SalaryStructure = () => {
                                     {d.salaryComponentName ||
                                       `Component #${d.salaryComponentId}`}
                                   </span>
-                                  <span className="text-gray-500">
-                                    Amount:{' '}
-                                    <span className="text-gray-800">
-                                      {d.amount}
+                                  <div
+                                    key={
+                                      d.salaryStructureDetailId ??
+                                      d.salaryComponentId
+                                    }
+                                    className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white"
+                                  >
+                                    <span className="font-medium w-36">
+                                      {d.salaryComponentName ||
+                                        `Component #${d.salaryComponentId}`}
                                     </span>
-                                  </span>
-                                  <span className="text-gray-500">
-                                    Percentage:{' '}
-                                    <span className="text-gray-800">
-                                      {d.percentage ?? '—'}
+
+                                    {/* ↓ replaces the three Amount/Percentage/Formula spans */}
+                                    {(() => {
+                                      const calcType = getComponentCalcType(
+                                        d.salaryComponentId
+                                      )
+                                      if (calcType === 'Fixed')
+                                        return (
+                                          <span className="text-gray-500">
+                                            Amount:{' '}
+                                            <span className="text-gray-800">
+                                              {d.amount}
+                                            </span>
+                                          </span>
+                                        )
+                                      if (calcType === 'Percentage')
+                                        return (
+                                          <span className="text-gray-500">
+                                            Percentage:{' '}
+                                            <span className="text-gray-800">
+                                              {d.percentage ?? '—'}%
+                                            </span>
+                                          </span>
+                                        )
+                                      if (calcType === 'Formula')
+                                        return (
+                                          <span className="text-gray-500">
+                                            Formula:{' '}
+                                            <span className="text-gray-800">
+                                              {d.formulaExpression || '—'}
+                                            </span>
+                                          </span>
+                                        )
+                                      return null
+                                    })()}
+
+                                    <span className="text-gray-500">
+                                      Calc Order:{' '}
+                                      <span className="text-gray-800">
+                                        {d.calculationOrder}
+                                      </span>
                                     </span>
-                                  </span>
-                                  <span className="text-gray-500">
-                                    Formula:{' '}
-                                    <span className="text-gray-800">
-                                      {d.formulaExpression || '—'}
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full font-medium ${
+                                        d.mandatory
+                                          ? 'bg-blue-100 text-blue-700'
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}
+                                    >
+                                      {d.mandatory ? 'Mandatory' : 'Optional'}
                                     </span>
-                                  </span>
+                                  </div>
                                   <span className="text-gray-500">
                                     Calc Order:{' '}
                                     <span className="text-gray-800">
@@ -889,7 +942,7 @@ const SalaryStructure = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-amber-600 border-amber-400 hover:bg-amber-50"
+                className="text-blue-600 border-blue-400 hover:bg-blue-50"
                 onClick={handleAddDetail}
               >
                 + Add Detail
@@ -906,9 +959,9 @@ const SalaryStructure = () => {
                     key={`${detail.salaryComponentId}-${idx}`}
                     className="border rounded-md p-3"
                   >
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                       {/* Salary Component */}
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5 md:col-span-2">
                         <span className="text-[10px] text-gray-400">
                           Salary Component
                         </span>
@@ -934,6 +987,11 @@ const SalaryStructure = () => {
                               : null
                           }
                           onChange={(value) => {
+                            const selected = salaryComponents?.data?.find(
+                              (sc: any) =>
+                                sc.salaryComponentId === Number(value?.id)
+                            )
+
                             setFormData((prev) => ({
                               ...prev,
                               salaryStructureDetails:
@@ -944,6 +1002,21 @@ const SalaryStructure = () => {
                                         salaryComponentId: value
                                           ? Number(value.id)
                                           : 0,
+                                        amount:
+                                          selected?.calculationType === 'Fixed'
+                                            ? (selected.amount ?? 0)
+                                            : 0,
+                                        percentage:
+                                          selected?.calculationType ===
+                                          'Percentage'
+                                            ? (selected.percentage ?? null)
+                                            : null,
+                                        formulaExpression:
+                                          selected?.calculationType ===
+                                          'Formula'
+                                            ? (selected.formulaExpression ??
+                                              null)
+                                            : null,
                                       }
                                     : d
                                 ),
@@ -953,89 +1026,132 @@ const SalaryStructure = () => {
                         />
                       </div>
 
-                      {/* Amount */}
+                      {/* Dynamic Value Field */}
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-gray-400">
-                          Amount
-                        </span>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          className="h-8 text-xs w-28"
-                          value={detail.amount}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              salaryStructureDetails:
-                                prev.salaryStructureDetails.map((d, i) =>
-                                  i === idx
-                                    ? { ...d, amount: Number(e.target.value) }
-                                    : d
-                                ),
-                            }))
-                          }
-                        />
-                      </div>
+                        {(() => {
+                          const calcType = getComponentCalcType(
+                            detail.salaryComponentId
+                          )
 
-                      {/* Percentage */}
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-gray-400">
-                          Percentage
-                        </span>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={0.01}
-                          className="h-8 text-xs w-24"
-                          value={detail.percentage ?? ''}
-                          placeholder="—"
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              salaryStructureDetails:
-                                prev.salaryStructureDetails.map((d, i) =>
-                                  i === idx
-                                    ? {
-                                        ...d,
-                                        percentage: e.target.value
-                                          ? Number(e.target.value)
-                                          : null,
-                                      }
-                                    : d
-                                ),
-                            }))
+                          if (calcType === 'Fixed') {
+                            return (
+                              <>
+                                <span className="text-[10px] text-gray-400">
+                                  Amount
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={0.01}
+                                  className="h-[37px] text-xs"
+                                  value={detail.amount}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      salaryStructureDetails:
+                                        prev.salaryStructureDetails.map(
+                                          (d, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...d,
+                                                  amount: Number(
+                                                    e.target.value
+                                                  ),
+                                                  percentage: null,
+                                                  formulaExpression: null,
+                                                }
+                                              : d
+                                        ),
+                                    }))
+                                  }
+                                />
+                              </>
+                            )
                           }
-                        />
-                      </div>
 
-                      {/* Formula Expression */}
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-gray-400">
-                          Formula
-                        </span>
-                        <Input
-                          type="text"
-                          className="h-8 text-xs w-36"
-                          value={detail.formulaExpression ?? ''}
-                          placeholder="e.g. BASIC * 0.12"
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              salaryStructureDetails:
-                                prev.salaryStructureDetails.map((d, i) =>
-                                  i === idx
-                                    ? {
-                                        ...d,
-                                        formulaExpression:
-                                          e.target.value || null,
-                                      }
-                                    : d
-                                ),
-                            }))
+                          if (calcType === 'Percentage') {
+                            return (
+                              <>
+                                <span className="text-[10px] text-gray-400">
+                                  Percentage (%)
+                                </span>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  step={0.01}
+                                  className="h-[37px] text-xs"
+                                  value={detail.percentage ?? ''}
+                                  placeholder="e.g. 10"
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      salaryStructureDetails:
+                                        prev.salaryStructureDetails.map(
+                                          (d, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...d,
+                                                  percentage: e.target.value
+                                                    ? Number(e.target.value)
+                                                    : null,
+                                                  amount: 0,
+                                                  formulaExpression: null,
+                                                }
+                                              : d
+                                        ),
+                                    }))
+                                  }
+                                />
+                              </>
+                            )
                           }
-                        />
+
+                          if (calcType === 'Formula') {
+                            return (
+                              <>
+                                <span className="text-[10px] text-gray-400">
+                                  Formula
+                                </span>
+                                <Input
+                                  type="text"
+                                  className="h-[37px] text-xs"
+                                  value={detail.formulaExpression ?? ''}
+                                  placeholder="e.g. BASIC * 0.12"
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      salaryStructureDetails:
+                                        prev.salaryStructureDetails.map(
+                                          (d, i) =>
+                                            i === idx
+                                              ? {
+                                                  ...d,
+                                                  formulaExpression:
+                                                    e.target.value || null,
+                                                  amount: 0,
+                                                  percentage: null,
+                                                }
+                                              : d
+                                        ),
+                                    }))
+                                  }
+                                />
+                              </>
+                            )
+                          }
+
+                          return (
+                            <>
+                              <span className="text-[10px] text-gray-400">
+                                Value
+                              </span>
+                              <div className="h-[37px] flex items-center text-xs text-gray-400 italic">
+                                Select a component first
+                              </div>
+                            </>
+                          )
+                        })()}
                       </div>
 
                       {/* Calculation Order */}
@@ -1046,7 +1162,7 @@ const SalaryStructure = () => {
                         <Input
                           type="number"
                           min={1}
-                          className="h-8 text-xs w-20"
+                          className="h-[37px] text-xs"
                           value={detail.calculationOrder}
                           onChange={(e) =>
                             setFormData((prev) => ({
@@ -1068,9 +1184,11 @@ const SalaryStructure = () => {
                       </div>
 
                       {/* Mandatory Switch */}
-                      <div className="flex flex-col gap-0.5 self-end pb-1">
+                      <div className="flex flex-col self-end">
+                        <span className="text-[10px] text-gray-400 pb-1">
+                          Mandatory
+                        </span>
                         <CustomSwitch
-                          label="Mandatory"
                           checked={detail.mandatory}
                           onChange={(value) =>
                             setFormData((prev) => ({
@@ -1084,24 +1202,29 @@ const SalaryStructure = () => {
                         />
                       </div>
 
-                      {/* Remove button */}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 ml-auto self-end"
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            salaryStructureDetails:
-                              prev.salaryStructureDetails.filter(
-                                (_, i) => i !== idx
-                              ),
-                          }))
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Remove */}
+                      <div className="flex flex-col gap-0.5 items-end justify-center">
+                        <span className="text-[10px] text-gray-400 pb-1 pr-2">
+                          Action
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 border"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              salaryStructureDetails:
+                                prev.salaryStructureDetails.filter(
+                                  (_, i) => i !== idx
+                                ),
+                            }))
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))

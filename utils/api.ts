@@ -57,6 +57,12 @@ import {
   CreateEmployeeLeaveAssignmentType,
   GetSalaryStructureType,
   CreateSalaryStructureType,
+  GetEmployeePreboardingType,
+  CreateEmployeePreboardingType,
+  GetChecklistType,
+  CreateChecklistType,
+  CreateEmployeePreboardingChecklistType,
+  GetEmployeePreboardingChecklistType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -670,6 +676,159 @@ export async function editShiftDayAndWeekDays(
 export async function deleteShiftDayAndWeekDays(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/shift/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//employee preboarding
+export async function getAllEmployeePreboardings(token: string) {
+  return fetchApi<GetEmployeePreboardingType[]>({
+    url: 'api/employeePreboarding/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createEmployeePreboarding(
+  data: CreateEmployeePreboardingType,
+  token: string
+) {
+  return fetchApi<CreateEmployeePreboardingType>({
+    url: 'api/employeePreboarding/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editEmployeePreboarding(
+  id: number,
+  data: GetEmployeePreboardingType,
+  token: string
+) {
+  return fetchApi<GetEmployeePreboardingType>({
+    url: `api/employeePreboarding/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteEmployeePreboarding(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/employeePreboarding/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//assign checklist to preboarding employee
+export async function createPreboardingEmployeeChecklist(
+  data: CreateEmployeePreboardingChecklistType,
+  token: string
+) {
+  return fetchApi<CreateEmployeePreboardingChecklistType>({
+    url: 'api/employeePreboarding/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//edit assigned checklist to preboarding employee
+export async function editEmployeePreboardingChecklist(
+  id: number,
+  data: GetEmployeePreboardingChecklistType,
+  token: string
+) {
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// get assigned checklist by preboarding employee id
+export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
+  return fetchApi<GetEmployeeType>({
+    url: `api/employeePreboarding/getById/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//checklist
+export async function getAllChecklists(token: string) {
+  return fetchApi<GetChecklistType[]>({
+    url: 'api/checklists/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createChecklist(
+  data: CreateChecklistType,
+  token: string
+) {
+  return fetchApi<CreateChecklistType>({
+    url: 'api/checklists/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editChecklist(
+  id: number,
+  data: GetChecklistType,
+  token: string
+) {
+  return fetchApi<GetChecklistType>({
+    url: `api/checklists/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteChecklist(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/checklists/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,

@@ -348,8 +348,8 @@ const EmployeeLones = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <Banknote className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <Banknote className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Employee Lones</h2>
         </div>
@@ -364,7 +364,7 @@ const EmployeeLones = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add
@@ -374,7 +374,7 @@ const EmployeeLones = () => {
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead className="w-8" />
               <TableHead>Sl No.</TableHead>
@@ -462,7 +462,7 @@ const EmployeeLones = () => {
                           }
                         >
                           {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-amber-600" />
+                            <ChevronDown className="h-4 w-4 text-blue-600" />
                           ) : (
                             <ChevronRight
                               className={`h-4 w-4 ${
@@ -518,16 +518,16 @@ const EmployeeLones = () => {
 
                     {/* Accordion: installments sub-table */}
                     {isExpanded && loneInstallments.length > 0 && (
-                      <TableRow className="bg-amber-50/60">
+                      <TableRow className="bg-blue-50/60">
                         <TableCell colSpan={9} className="p-0">
                           <div className="px-8 py-3">
-                            <p className="text-xs font-semibold text-amber-700 mb-2 uppercase tracking-wide">
+                            <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">
                               Installments for {lone.employeeLoneName}
                             </p>
 
                             <Table>
                               <TableHeader>
-                                <TableRow className="bg-amber-100/70">
+                                <TableRow className="bg-blue-100/70">
                                   <TableHead className="py-2 text-xs">
                                     Sl No.
                                   </TableHead>

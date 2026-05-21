@@ -106,6 +106,17 @@ import {
   createSalaryStructure,
   editSalaryStructure,
   deleteSalaryStructure,
+  getAllEmployeePreboardings,
+  createEmployeePreboarding,
+  editEmployeePreboarding,
+  deleteEmployeePreboarding,
+  getAllChecklists,
+  createChecklist,
+  editChecklist,
+  deleteChecklist,
+  getPreboardingEmployeeChecklistsById,
+  createPreboardingEmployeeChecklist,
+  editEmployeePreboardingChecklist,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -142,6 +153,12 @@ import {
   GetEmployeeLeaveAssignmentType,
   CreateSalaryStructureType,
   GetSalaryStructureType,
+  CreateEmployeePreboardingType,
+  GetEmployeePreboardingType,
+  CreateChecklistType,
+  GetChecklistType,
+  CreateEmployeePreboardingChecklistType,
+  GetEmployeePreboardingChecklistType,
 } from '@/utils/type'
 
 //roles
@@ -275,21 +292,43 @@ export const useDeleteCustomer = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteCustomer(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteCustomer(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete customer'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'Customer is deleted successfully.',
+        description: 'BusinessUnit is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['business-units'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -409,9 +448,24 @@ export const useDeleteBusinessUnit = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteBusinessUnit(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteBusinessUnit(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete business unit'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -422,8 +476,15 @@ export const useDeleteBusinessUnit = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -543,9 +604,24 @@ export const useDeleteTenant = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteTenant(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteTenant(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete tenant'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -556,8 +632,15 @@ export const useDeleteTenant = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -677,9 +760,24 @@ export const useDeleteDepartment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteDepartment(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteDepartment(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete department'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -690,8 +788,15 @@ export const useDeleteDepartment = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -805,21 +910,43 @@ export const useDeleteCompany = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteCompany(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteCompany(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete company'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Company is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -939,9 +1066,24 @@ export const useDeleteWorkStation = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteWorkStation(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteWorkStation(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete work station'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -952,8 +1094,15 @@ export const useDeleteWorkStation = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1073,9 +1222,24 @@ export const useDeleteDivision = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteDivision(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteDivision(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete division'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -1086,8 +1250,15 @@ export const useDeleteDivision = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1207,9 +1378,24 @@ export const useDeleteCostCenter = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteCostCenter(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteCostCenter(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete cost center'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -1220,8 +1406,15 @@ export const useDeleteCostCenter = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1341,21 +1534,43 @@ export const useDeleteDesignation = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteDesignation(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteDesignation(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete designation'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'designation is deleted successfully.',
+        description: 'Designation is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['designations'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1481,21 +1696,43 @@ export const useDeleteEmploymentType = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmploymentType(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmploymentType(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employment type'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'employee type is deleted successfully.',
+        description: 'Employment type is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['employmentTypes'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1633,9 +1870,24 @@ export const useDeleteShiftDayAndWeekDays = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteShiftDayAndWeekDays(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteShiftDayAndWeekDays(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete shift'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -1646,8 +1898,434 @@ export const useDeleteShiftDayAndWeekDays = ({
       reset()
       onClose()
     },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
+// employee-preboarding
+export const useGetAllEmployeePreboardings = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeePreboardings'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllEmployeePreboardings(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useCreateEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateEmployeePreboardingType) => {
+      if (!token) throw new Error('Token not found')
+      return createEmployeePreboarding(data, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding created successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
     onError: (error) => {
-      console.error('Error sending delete request:', error)
+      console.error('Create preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to create employee preboarding',
+      })
+    },
+  })
+}
+
+export const useEditEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetEmployeePreboardingType }) => {
+      if (!token) throw new Error('Token not found')
+      return editEmployeePreboarding(id, data, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Edit preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update employee preboarding',
+      })
+    },
+  })
+}
+
+export const useDeleteEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      if (!token) throw new Error('Token not found')
+      return deleteEmployeePreboarding(id, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Delete preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This record is needed elsewhere',
+      })
+    },
+  })
+}
+
+//checklists
+export const useGetChecklists = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['checklists'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllChecklists(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateChecklistType) => {
+      const res = await createChecklist(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create checklist',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Checklist created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetChecklistType
+    }) => {
+      return editChecklist(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update checklist',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteChecklist(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete checklist'
+        )
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['checklists'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employees', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getPreboardingEmployeeChecklistsById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useAddPreboardingEmployeeChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateEmployeePreboardingChecklistType) => {
+      const res = await createPreboardingEmployeeChecklist(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create checklist',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Checklist created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdatePreboardingEmployeeChecklists = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeePreboardingChecklistType
+    }) => {
+      return editEmployeePreboardingChecklist(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Checklist updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing checklist:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update checklist',
+      })
     },
   })
 
@@ -1772,21 +2450,43 @@ export const useDeleteEmployee = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployee(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployee(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employee'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'employee is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['employees'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -1955,9 +2655,24 @@ export const useDeleteHoliday = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteHoliday(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteHoliday(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete holiday'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -1968,8 +2683,15 @@ export const useDeleteHoliday = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -2089,9 +2811,24 @@ export const useDeleteLeaveType = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteLeaveType(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteLeaveType(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete leave type'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -2102,8 +2839,15 @@ export const useDeleteLeaveType = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -2223,9 +2967,24 @@ export const useDeleteLeavePolicys = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteLeavePolicy(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteLeavePolicy(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete leave policy'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -2236,8 +2995,15 @@ export const useDeleteLeavePolicys = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -2282,8 +3048,7 @@ export const useAddSalaryStructures = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description:
-            res.error.message || 'Failed to create salary structure',
+          description: res.error.message || 'Failed to create salary structure',
         })
         return
       }
@@ -2305,8 +3070,7 @@ export const useAddSalaryStructures = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Unexpected error occurred',
+        description: error?.message || 'Unexpected error occurred',
       })
     },
   })
@@ -2374,28 +3138,42 @@ export const useDeleteSalaryStructures = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteSalaryStructure(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteSalaryStructure(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete salary structure'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Salary structure deleted successfully.',
       })
-
-      queryClient.invalidateQueries({
-        queryKey: ['salaryStructure'],
-      })
+      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error deleting salary structure:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
       toast({
         title: 'Error',
         variant: 'destructive',
-        description: 'Failed to delete salary structure',
+        description: 'This data is needed elsewhere',
       })
     },
   })
@@ -2540,20 +3318,25 @@ export const useDeleteEmployeeLeaveAssignment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeLeaveAssignment(id, token)
-    },
-    onSuccess: (res) => {
-      if (res?.error) {
-        toast({
-          title: 'Error',
-          variant: 'destructive',
-          description:
-            res.error.message || 'Failed to delete employee leave assignment',
-        })
-        return
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployeeLeaveAssignment(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employee leave assignment'
+        )
       }
 
+      return res
+    },
+
+    onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Employee leave assignment deleted successfully.',
@@ -2563,13 +3346,14 @@ export const useDeleteEmployeeLeaveAssignment = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Failed to delete employee leave assignment',
+        description: 'This data is needed elsewhere',
       })
     },
   })
@@ -2700,28 +3484,50 @@ export const useDeleteEmployeeAttendance = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeAttendance(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployeeAttendance(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employee attendance'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'employee attendance is deleted successfully.',
+        description: 'Employee attendance deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['employeeAttendances'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
   return mutation
 }
 
-//other salary components
+//salary components
 export const useGetSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -2761,14 +3567,14 @@ export const useAddSalaryComponent = ({
           title: 'Error',
           variant: 'destructive',
           description:
-            res.error.message || 'Failed to create other salary component',
+            res.error.message || 'Failed to create salary component',
         })
         return
       }
 
       toast({
         title: 'Success',
-        description: 'Other salary component created successfully!',
+        description: 'Salary component created successfully!',
       })
 
       queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
@@ -2776,7 +3582,7 @@ export const useAddSalaryComponent = ({
       onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding other salary component:', error)
+      console.error('Error adding salary component:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -2813,7 +3619,7 @@ export const useUpdateSalaryComponent = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'other salary component edited successfully.',
+        description: 'Salary component edited successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
@@ -2821,7 +3627,7 @@ export const useUpdateSalaryComponent = ({
       onClose()
     },
     onError: (error) => {
-      console.error('Error editing other salary component:', error)
+      console.error('Error editing salary component:', error)
     },
   })
 
@@ -2841,21 +3647,43 @@ export const useDeleteSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteSalaryComponent(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteSalaryComponent(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete salary component'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'other salary component is deleted successfully.',
+        description: 'Salary component is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -2987,23 +3815,43 @@ export const useDeleteEmployeeSalaryComponent = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeSalaryComponent(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployeeSalaryComponent(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employee salary component'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'Employee other salary component is deleted successfully.',
+        description: 'Employee salary component is deleted successfully.',
       })
-      queryClient.invalidateQueries({
-        queryKey: ['employeeSalaryComponents'],
-      })
+      queryClient.invalidateQueries({ queryKey: ['employeeSalaryComponents'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -3123,21 +3971,43 @@ export const useDeleteSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteSalary(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteSalary(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete salary'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'salary is deleted successfully.',
+        description: 'Salary is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaries'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -3231,11 +4101,7 @@ export const useSkipLone = ({
       employeeSalaryComponentId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(
-        employeeSalaryComponentId,
-        updatedBy,
-        token
-      )
+      const res = await skipLone(employeeSalaryComponentId, updatedBy, token)
       return res
     },
     onSuccess: (res) => {
@@ -3332,21 +4198,43 @@ export const useDeleteLone = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteLone(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteLone(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete lone'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'lone is deleted successfully.',
+        description: 'Lone is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['lones'] })
 
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 
@@ -3482,9 +4370,24 @@ export const useDeleteEmployeeLeave = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id }: { id: number }) => {
-      return deleteEmployeeLeave(id, token)
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployeeLeave(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+            'Failed to delete employee leave'
+        )
+      }
+
+      return res
     },
+
     onSuccess: () => {
       toast({
         title: 'Success!',
@@ -3495,8 +4398,15 @@ export const useDeleteEmployeeLeave = ({
       reset()
       onClose()
     },
-    onError: (error) => {
-      console.error('Error sending delete request:', error)
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 

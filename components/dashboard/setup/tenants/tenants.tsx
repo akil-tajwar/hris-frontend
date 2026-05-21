@@ -213,8 +213,8 @@ const Tenants = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <Users className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <Users className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Tenants</h2>
         </div>
@@ -229,7 +229,7 @@ const Tenants = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add
@@ -239,7 +239,7 @@ const Tenants = () => {
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
@@ -294,7 +294,7 @@ const Tenants = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-amber-600 hover:text-amber-700"
+                        className="text-blue-600 hover:text-blue-700"
                         onClick={() => handleEditClick(tenant)}
                       >
                         <Edit2 className="h-4 w-4" />

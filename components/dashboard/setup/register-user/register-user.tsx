@@ -175,8 +175,8 @@ export default function RegisterUser() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="flex items-center gap-2 mb-4">
-        <div className="bg-amber-100 p-2 rounded-md">
-          <User className="text-amber-600" />
+        <div className="bg-blue-100 p-2 rounded-md">
+          <User className="text-blue-600" />
         </div>
         <h2 className="text-lg font-semibold">Register User</h2>
       </div>
@@ -395,7 +395,7 @@ export default function RegisterUser() {
 
             <Button
               type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
               disabled={isLoading || rolesLoading || tenantsLoading}
             >
               <LockIcon className="mr-2 h-4 w-4" />

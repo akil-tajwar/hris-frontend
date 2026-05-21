@@ -10,7 +10,7 @@ const HomeNavbar = () => {
         <Link href="/" className="cursor-pointer">
           <div className="flex items-center">
             <span className="text-2xl font-bold text-gray-800">Biz</span>
-            <span className="text-2xl font-bold text-yellow-500">Flow</span>
+            <span className="text-2xl font-bold text-blue-500">Flow</span>
           </div>
         </Link>
 
@@ -18,13 +18,13 @@ const HomeNavbar = () => {
         <div className="flex items-center space-x-4">
           <Link
             href="/"
-            className="bg-yellow-500 text-black lg:w-28 lg:h-10 w-24 h-7 text-sm lg:text-base flex justify-center items-center rounded-md hover:bg-yellow-600 transition-colors"
+            className="bg-blue-500 text-black lg:w-28 lg:h-10 w-24 h-7 text-sm lg:text-base flex justify-center items-center rounded-md hover:bg-blue-600 transition-colors"
           >
             Login
           </Link>
           <Link
             href="/dashboard/dashboard-overview"
-            className="bg-yellow-500 text-black lg:w-28 lg:h-10 w-24 h-7 text-sm lg:text-base flex justify-center items-center rounded-md hover:bg-yellow-600 transition-colors"
+            className="bg-blue-500 text-black lg:w-28 lg:h-10 w-24 h-7 text-sm lg:text-base flex justify-center items-center rounded-md hover:bg-blue-600 transition-colors"
           >
             Dashboard
           </Link>

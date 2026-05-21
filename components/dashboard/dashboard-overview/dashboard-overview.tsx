@@ -95,7 +95,7 @@ const DashboardOverview = () => {
       title: 'Total Employees',
       value: employees?.data?.length || 0,
       icon: User,
-      color: 'bg-amber-500',
+      color: 'bg-blue-500',
       onClick: undefined,
     },
     {

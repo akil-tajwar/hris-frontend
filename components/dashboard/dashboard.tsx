@@ -104,7 +104,7 @@ export default function Dashboard() {
             <tr className="border-b hover:bg-gray-50">
               <td className="py-3 px-4">Mobile App Development</td>
               <td className="py-3 px-4">
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">In Progress</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">In Progress</span>
               </td>
               <td className="py-3 px-4">Dev Team</td>
               <td className="py-3 px-4">Jan 15, 2024</td>
@@ -112,7 +112,7 @@ export default function Dashboard() {
             <tr className="border-b hover:bg-gray-50">
               <td className="py-3 px-4">Marketing Campaign</td>
               <td className="py-3 px-4">
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Planning</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Planning</span>
               </td>
               <td className="py-3 px-4">Marketing</td>
               <td className="py-3 px-4">Feb 1, 2024</td>
@@ -141,7 +141,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <span>Email Notifications</span>
               <div className="w-12 h-6 bg-gray-200 rounded-full relative">
-                <div className="w-6 h-6 bg-yellow-400 rounded-full absolute left-0 shadow"></div>
+                <div className="w-6 h-6 bg-blue-400 rounded-full absolute left-0 shadow"></div>
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -155,9 +155,9 @@ export default function Dashboard() {
         <div className="p-4 border rounded-lg">
           <h3 className="font-medium text-lg">Theme Preferences</h3>
           <div className="mt-2 flex gap-2">
-            <button className="w-8 h-8 bg-white border-2 border-yellow-400 rounded-full"></button>
+            <button className="w-8 h-8 bg-white border-2 border-blue-400 rounded-full"></button>
             <button className="w-8 h-8 bg-gray-800 rounded-full"></button>
-            <button className="w-8 h-8 bg-yellow-500 rounded-full"></button>
+            <button className="w-8 h-8 bg-blue-500 rounded-full"></button>
             <button className="w-8 h-8 bg-green-500 rounded-full"></button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setActiveComponent(1)}
                 className={`w-full text-left px-4 py-2 rounded-lg flex items-center ${
-                  activeComponent === 1 ? "bg-yellow-400 text-white" : "hover:bg-gray-100"
+                  activeComponent === 1 ? "bg-blue-400 text-white" : "hover:bg-gray-100"
                 }`}
               >
                 <span className="mr-3">📊</span>
@@ -189,7 +189,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setActiveComponent(2)}
                 className={`w-full text-left px-4 py-2 rounded-lg flex items-center ${
-                  activeComponent === 2 ? "bg-yellow-400 text-white" : "hover:bg-gray-100"
+                  activeComponent === 2 ? "bg-blue-400 text-white" : "hover:bg-gray-100"
                 }`}
               >
                 <span className="mr-3">📈</span>
@@ -200,7 +200,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setActiveComponent(3)}
                 className={`w-full text-left px-4 py-2 rounded-lg flex items-center ${
-                  activeComponent === 3 ? "bg-yellow-400 text-white" : "hover:bg-gray-100"
+                  activeComponent === 3 ? "bg-blue-400 text-white" : "hover:bg-gray-100"
                 }`}
               >
                 <span className="mr-3">📁</span>
@@ -211,7 +211,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setActiveComponent(4)}
                 className={`w-full text-left px-4 py-2 rounded-lg flex items-center ${
-                  activeComponent === 4 ? "bg-yellow-400 text-white" : "hover:bg-gray-100"
+                  activeComponent === 4 ? "bg-blue-400 text-white" : "hover:bg-gray-100"
                 }`}
               >
                 <span className="mr-3">⚙️</span>

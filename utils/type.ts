@@ -247,6 +247,89 @@ export const costCenterSchema = z.object({
 export type CreateCostCenterType = z.infer<typeof costCenterSchema>
 export type GetCostCenterType = z.infer<typeof costCenterSchema>
 
+//pre boarding
+export const employeePreboardingSchema = z.object({
+  preboardingId: z.number().optional(),
+  fullName: z.string(),
+  gender: z.enum(['Male', 'Female']),
+  dob: z.string(),
+  personalEmail: z.string(),
+  personalPhone: z.string(),
+  tentativeJoiningDate: z.string(),
+  companyId: z.number(),
+  departmentId: z.number(),
+  designationId: z.number(),
+  reportingAuthorityId: z.number(),
+  employmentTypeId: z.number(),
+  salaryStructureMasterId: z.number(),
+  offeredSalary: z.number(),
+  probationMonths: z.number(),
+  status: z.boolean().default(false),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateEmployeePreboardingType = z.infer<typeof employeePreboardingSchema>
+export type GetEmployeePreboardingType = z.infer<typeof employeePreboardingSchema> & {
+  preboardNo: string
+  companyName: string
+  departmentName: string
+  designationName: string
+  reportingAuthorityName: string
+  employmentTypeName: string
+  salaryStructureName: string
+}
+
+//checklist
+export const ChecklistSchema = z.object({
+  checklistMaster: z.object({
+    checklistMasterId: z.number().optional().nullable(),
+    checklistName: z.string(),
+    heading: z.string().optional(),
+    responsibleEmployeeId: z.number().optional(),
+    responsibleEmployeeName: z.string().optional().nullable(), // only for get
+    createdBy: z.number(),
+    createdAt: z.coerce.date(),
+    updatedBy: z.number().optional().nullable(),
+    updatedAt: z.coerce.date().optional().nullable(),
+  }),
+  checklistDetails: z.array(
+    z.object({
+      checklistDetailsId: z.number().optional(),
+      checklistDetailsName: z.string(),
+      checklistMasterId: z.number().nullable(),
+      responsibleEmployeeId: z.number(),
+      responsibleEmployeeName: z.string().optional().nullable(), // only for get
+      createdBy: z.number(),
+      createdAt: z.coerce.date(),
+      updatedBy: z.number().optional().nullable(),
+      updatedAt: z.coerce.date().optional().nullable(),
+    })
+  ),
+})
+export type GetChecklistType = z.infer<typeof ChecklistSchema>
+export type CreateChecklistType = z.infer<typeof ChecklistSchema>
+
+//employee preboarding checklist
+export const EmployeePreboardingChecklistSchema = z.object({
+  employeePreboardingChecklistId: z.number().optional().nullable(),
+  preboardingId: z.number(),
+  checklistDetailsId: z.number(),
+  responsibleEmployeeId: z.number(),
+  completionDate: z.coerce.date(),
+  status: z.boolean(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema>
+export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema> & {
+  responsibleEmployeeName: string
+  checklistDetailsName: string
+}
+
 //employee
 export const employeeSchema = z.object({
   employeeId: z.number().optional(),
@@ -606,6 +689,8 @@ export const salaryComponentSchema = z.object({
   salaryComponentId: z.number().optional(),
   componentName: z.string(),
   componentCode: z.string().max(20),
+  calculationType: z.enum(['Fixed', 'Percentage', 'Formula']),
+  amount: z.number().optional(),
   percentage: z.number().optional(),
   formulaExpression: z.string().max(255).optional(),
   taxable: z.boolean().default(false),
@@ -627,7 +712,7 @@ export type GetSalaryComponentType = z.infer<
 
 export const SalaryStructureSchema = z.object({
   salaryStructureMaster: z.object({
-    salaryStructureId: z.number().optional().nullable(),
+    salaryStructureMasterId: z.number().optional().nullable(),
     structureName: z.string(),
     structureCode: z.string().optional().nullable(),
     companyId: z.number(),
@@ -644,7 +729,7 @@ export const SalaryStructureSchema = z.object({
   salaryStructureDetails: z.array(
     z.object({
       salaryStructureDetailId: z.number().optional(),
-      salaryStructureId: z.number().optional().nullable(),
+      salaryStructureMasterId: z.number().optional().nullable(),
       salaryComponentId: z.number(),
       salaryComponentName: z.string().optional(), // only for get
       amount: z.number(),

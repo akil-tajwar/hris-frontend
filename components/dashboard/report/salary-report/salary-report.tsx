@@ -404,7 +404,7 @@ const SalaryReport = () => {
             <CardContent className="p-0">
               <div className="overflow-auto">
                 <Table>
-                  <TableHeader className="bg-amber-100 pdf-table-header">
+                  <TableHeader className="bg-blue-100 pdf-table-header">
                     <TableRow>
                       <TableHead className="font-bold">Employee Code</TableHead>
                       <TableHead className="font-bold">Employee Name</TableHead>
@@ -426,7 +426,7 @@ const SalaryReport = () => {
                       <TableHead className="font-bold">Net Salary</TableHead>
                     </TableRow>
 
-                    <TableRow className="bg-amber-50">
+                    <TableRow className="bg-blue-50">
                       {/* Empty cells for the non-rowspan columns */}
                       <TableHead></TableHead>
                       <TableHead></TableHead>

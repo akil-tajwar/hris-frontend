@@ -75,8 +75,8 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/business-units',
         },
         {
-            title: 'Divisions',
-            href: '/dashboard/setup/divisions',
+          title: 'Divisions',
+          href: '/dashboard/setup/divisions',
         },
         {
           title: 'Work Stations',
@@ -109,6 +109,14 @@ export function DashboardSidebar() {
       icon: UserCog,
       href: '/dashboard/employee-management',
       subItems: [
+        {
+          title: 'Checklists',
+          href: '/dashboard/employee-management/checklists',
+        },
+        {
+          title: 'Employee Preboardings',
+          href: '/dashboard/employee-management/employee-preboardings',
+        },
         {
           title: 'Create Employee',
           href: '/dashboard/employee-management/create-employee',
@@ -165,8 +173,8 @@ export function DashboardSidebar() {
         },
         {
           title: 'Salary',
-          href: '/dashboard/salary-management/salary',
-        }
+          href: '/dashboard/salary-management/salareis',
+        },
       ],
     },
     {
@@ -202,13 +210,13 @@ export function DashboardSidebar() {
   }
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b mt-16">
+    <Sidebar className="text-white">
+      <SidebarHeader className="border-b mt-16 bg-slate-800">
         <div className="p-2">
           <h1 className="text-xl font-bold">My Dashboard</h1>
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-slate-800">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -218,7 +226,7 @@ export function DashboardSidebar() {
                     // Regular menu item without submenu
                     <SidebarMenuButton
                       asChild
-                      className={`${isItemActive(item) ? 'bg-yellow-400 text-black hover:bg-yellow-400' : ''}  `}
+                      className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white !hover:bg-blue-500' : ''} `}
                     >
                       <Link href={item.href}>
                         <item.icon className="mr-2 w-4" />
@@ -233,7 +241,7 @@ export function DashboardSidebar() {
                     >
                       <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton
-                          className={`${isItemActive(item) ? 'bg-yellow-400 text-black hover:bg-yellow-400' : ''}  `}
+                          className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white hover:bg-blue-500' : ''} `}
                         >
                           <item.icon className="mr-2 w-4" />
                           <span>{item.title}</span>
@@ -246,7 +254,7 @@ export function DashboardSidebar() {
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 asChild
-                                className={`${pathname === subItem.href ? 'bg-gray-100 text-black' : ''}`}
+                                className={`text-white hover:bg-slate-700 hover:text-white ${pathname === subItem.href ? 'text-blue-300 hover:text-blue-300' : ''} `}
                               >
                                 <Link
                                   className="h-auto mt-2"

@@ -434,8 +434,8 @@ const LeaveTypes = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <BookOpen className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <BookOpen className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Leave Types</h2>
         </div>
@@ -450,7 +450,7 @@ const LeaveTypes = () => {
             />
           </div>
           <Button
-            className="bg-amber-500 hover:bg-amber-600 text-black"
+            className="bg-blue-500 hover:bg-blue-600 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add Leave Type
@@ -477,7 +477,7 @@ const LeaveTypes = () => {
               key={year}
               className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
             >
-              <div className="bg-amber-200 px-6 py-4 flex items-center gap-3">
+              <div className="bg-blue-200 px-6 py-4 flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-black" />
                 <h3 className="text-lg font-semibold text-black">
                   Year {year}
@@ -489,7 +489,7 @@ const LeaveTypes = () => {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="bg-amber-500 text-black"
+                  className="bg-blue-500 text-black"
                   onClick={() =>
                     handleCopyClick(parseInt(year), leaveTypesInYear)
                   }
@@ -500,7 +500,7 @@ const LeaveTypes = () => {
 
               <div className="bg-white">
                 <Table>
-                  <TableHeader className="bg-amber-50">
+                  <TableHeader className="bg-blue-50">
                     <TableRow>
                       <TableHead className="w-20">Sl No.</TableHead>
                       <TableHead
@@ -539,7 +539,7 @@ const LeaveTypes = () => {
                       (leaveType: GetLeaveTypeType, index) => (
                         <TableRow
                           key={leaveType.leaveTypeId || index}
-                          className="hover:bg-amber-50/50"
+                          className="hover:bg-blue-50/50"
                         >
                           <TableCell className="font-medium text-gray-600">
                             {index + 1}
@@ -583,7 +583,7 @@ const LeaveTypes = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                 onClick={() => handleEditClick(leaveType)}
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -1070,7 +1070,7 @@ const LeaveTypes = () => {
             <Button
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending || updateMutation.isPending
                 ? 'Saving...'
@@ -1089,7 +1089,7 @@ const LeaveTypes = () => {
       >
         <form onSubmit={handleCopySubmit} className="space-y-4 py-4">
           <div className="space-y-4">
-            <div className="bg-amber-50 p-4 rounded-lg">
+            <div className="bg-blue-50 p-4 rounded-lg">
               <p className="text-sm text-gray-700">
                 You are copying <strong>{leaveTypesToCopy.length}</strong> leave
                 type{leaveTypesToCopy.length !== 1 ? 's' : ''} from year{' '}
@@ -1129,7 +1129,7 @@ const LeaveTypes = () => {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="bg-amber-500 hover:bg-amber-600 text-black border-amber-500"
+                className="bg-blue-500 hover:bg-blue-600 text-black border-blue-500"
                 onClick={handleAddNewCopyLeaveType}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -1243,7 +1243,7 @@ const LeaveTypes = () => {
             <Button
               type="submit"
               disabled={addMutation.isPending || leaveTypesToCopy.length === 0}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending ? 'Copying...' : 'Copy Leave Types'}
             </Button>

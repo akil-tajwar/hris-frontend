@@ -10,7 +10,7 @@ export default function UnauthorizedAccess() {
       <p className="text-2xl mb-8 text-center">
         You are not authorized to access this page
       </p>
-      <Button asChild className='bg-yellow-400 hover:bg-yellow-500 text-black'>
+      <Button asChild className='bg-blue-400 hover:bg-blue-500 text-black'>
         <Link href="/dashboard/dashboard-overview">Return to Dashboard</Link>
       </Button>
     </div>

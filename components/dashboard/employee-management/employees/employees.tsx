@@ -320,8 +320,8 @@ const Employees = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <Users className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <Users className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Employees</h2>
         </div>
@@ -336,7 +336,7 @@ const Employees = () => {
             />
           </div>
           <Button
-            className="bg-amber-400 hover:bg-amber-500 text-black"
+            className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => setIsAssignPopupOpen(true)}
             disabled={selectedEmployees.length === 0}
           >
@@ -347,7 +347,7 @@ const Employees = () => {
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader className="bg-amber-100">
+          <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
@@ -355,7 +355,7 @@ const Employees = () => {
                   onCheckedChange={handleSelectAll}
                   aria-label="Select all employees"
                   className={
-                    isIndeterminate ? 'data-[state=checked]:bg-amber-600' : ''
+                    isIndeterminate ? 'data-[state=checked]:bg-blue-600' : ''
                   }
                 />
               </TableHead>
@@ -457,7 +457,7 @@ const Employees = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-amber-600 hover:text-amber-700"
+                          className="text-blue-600 hover:text-blue-700"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -646,7 +646,7 @@ const Employees = () => {
               </div>
             </div>
 
-            <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
               <p className="text-sm text-gray-700 font-medium">Summary</p>
               <div className="mt-2 space-y-1">
                 <p className="text-sm text-gray-600">
@@ -675,7 +675,7 @@ const Employees = () => {
             <Button
               type="submit"
               disabled={assignMutation.isPending}
-              className="bg-amber-400 hover:bg-amber-500 text-black"
+              className="bg-blue-400 hover:bg-blue-500 text-black"
             >
               {assignMutation.isPending ? 'Assigning...' : 'Assign'}
             </Button>

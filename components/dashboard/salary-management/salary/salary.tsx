@@ -311,8 +311,8 @@ const Salaries = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <DollarSign className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <DollarSign className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">Salaries</h2>
         </div>
@@ -327,7 +327,7 @@ const Salaries = () => {
             />
           </div>
           <Button
-            className="bg-amber-500 hover:bg-amber-600 text-black"
+            className="bg-blue-500 hover:bg-blue-600 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add Salary
@@ -355,7 +355,7 @@ const Salaries = () => {
               className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
             >
               {/* Group Header */}
-              <div className="bg-amber-200 px-6 py-4 flex items-center gap-3">
+              <div className="bg-blue-200 px-6 py-4 flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-black" />
                 <h3 className="text-lg font-semibold text-black">
                   {formatGroupLabel(key)}
@@ -369,7 +369,7 @@ const Salaries = () => {
               {/* Salary Table */}
               <div className="bg-white">
                 <Table>
-                  <TableHeader className="bg-amber-50">
+                  <TableHeader className="bg-blue-50">
                     <TableRow>
                       <TableHead className="w-10" />
                       <TableHead className="w-20">Sl No.</TableHead>
@@ -420,7 +420,7 @@ const Salaries = () => {
 
                         return (
                           <React.Fragment key={salaryId}>
-                            <TableRow className="hover:bg-amber-50/50">
+                            <TableRow className="hover:bg-blue-50/50">
                               <TableCell className="w-10 pr-0">
                                 {empComponents.length > 0 && (
                                   <button
@@ -429,12 +429,12 @@ const Salaries = () => {
                                         isExpanded ? null : salaryId
                                       )
                                     }
-                                    className="p-1 rounded hover:bg-amber-100 transition-colors"
+                                    className="p-1 rounded hover:bg-blue-100 transition-colors"
                                     title="View other salary components"
                                   >
                                     <ChevronDown
                                       className={cn(
-                                        'h-4 w-4 text-amber-600 transition-transform duration-200',
+                                        'h-4 w-4 text-blue-600 transition-transform duration-200',
                                         isExpanded && 'rotate-180'
                                       )}
                                     />
@@ -475,10 +475,10 @@ const Salaries = () => {
 
                             {/* Accordion row for main table */}
                             {isExpanded && (
-                              <TableRow className="bg-amber-50/40">
+                              <TableRow className="bg-blue-50/40">
                                 <TableCell colSpan={7} className="py-0 px-0">
-                                  <div className="pl-14 pr-6 py-4 border-t border-amber-100">
-                                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">
+                                  <div className="pl-14 pr-6 py-4 border-t border-blue-100">
+                                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">
                                       Other salary components —{' '}
                                       {salary.salary.salaryMonth}{' '}
                                       {salary.salary.salaryYear}
@@ -594,7 +594,7 @@ const Salaries = () => {
                                         })}
                                       </TableBody>
                                     </Table>
-                                    <div className="flex gap-6 mt-3 pt-2 border-t border-amber-100 text-sm">
+                                    <div className="flex gap-6 mt-3 pt-2 border-t border-blue-100 text-sm">
                                       <span className="text-green-700 font-medium">
                                         Total Allowances: +
                                         {allowanceTotal.toLocaleString()}
@@ -743,7 +743,7 @@ const Salaries = () => {
 
               <div className="border rounded-lg overflow-hidden">
                 <Table className="border">
-                  <TableHeader className="bg-amber-50">
+                  <TableHeader className="bg-blue-50">
                     <TableRow>
                       <TableHead className="w-10" />
                       <TableHead className="w-20">Sl No.</TableHead>
@@ -791,7 +791,7 @@ const Salaries = () => {
                         return (
                           <React.Fragment key={emp.employeeId}>
                             {/* Main Row */}
-                            <TableRow className="hover:bg-amber-50/50">
+                            <TableRow className="hover:bg-blue-50/50">
                               <TableCell className="w-10 pr-0">
                                 {empComponents.length > 0 && (
                                   <button
@@ -801,12 +801,12 @@ const Salaries = () => {
                                         isExpanded ? null : emp.employeeId
                                       )
                                     }
-                                    className="p-1 rounded hover:bg-amber-100 transition-colors"
+                                    className="p-1 rounded hover:bg-blue-100 transition-colors"
                                     title="View other salary components"
                                   >
                                     <ChevronDown
                                       className={cn(
-                                        'h-4 w-4 text-amber-600 transition-transform duration-200',
+                                        'h-4 w-4 text-blue-600 transition-transform duration-200',
                                         isExpanded && 'rotate-180'
                                       )}
                                     />
@@ -837,10 +837,10 @@ const Salaries = () => {
 
                             {/* Expanded Row */}
                             {isExpanded && (
-                              <TableRow className="bg-amber-50/40">
+                              <TableRow className="bg-blue-50/40">
                                 <TableCell colSpan={6} className="py-0 px-0">
-                                  <div className="pl-12 pr-4 py-3 border-t border-amber-100">
-                                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
+                                  <div className="pl-12 pr-4 py-3 border-t border-blue-100">
+                                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">
                                       Other salary components
                                     </p>
 
@@ -959,7 +959,7 @@ const Salaries = () => {
                                       </TableBody>
                                     </Table>
 
-                                    <div className="flex gap-6 mt-2 pt-2 border-t border-amber-100 text-sm">
+                                    <div className="flex gap-6 mt-2 pt-2 border-t border-blue-100 text-sm">
                                       <span className="text-green-700 font-medium">
                                         Total Allowances: +
                                         {allowanceTotal.toLocaleString()}
@@ -995,7 +995,7 @@ const Salaries = () => {
             <Button
               type="submit"
               disabled={addMutation.isPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending ? 'Saving...' : 'Save Salary'}
             </Button>

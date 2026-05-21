@@ -361,8 +361,8 @@ const EmployeeSalaryComponents = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
-          <div className="bg-amber-100 p-2 rounded-md">
-            <BadgeDollarSign className="text-amber-600" />
+          <div className="bg-blue-100 p-2 rounded-md">
+            <BadgeDollarSign className="text-blue-600" />
           </div>
           <h2 className="text-lg font-semibold">
             Employee Salary Components
@@ -379,7 +379,7 @@ const EmployeeSalaryComponents = () => {
             />
           </div>
           <Button
-            className="bg-amber-500 hover:bg-amber-600 text-black"
+            className="bg-blue-500 hover:bg-blue-600 text-black"
             onClick={() => setIsPopupOpen(true)}
           >
             Add Component
@@ -410,7 +410,7 @@ const EmployeeSalaryComponents = () => {
                 className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
               >
                 {/* Parent Accordion: Salary Month/Year */}
-                <AccordionTrigger className="bg-amber-200 px-6 py-4 hover:bg-amber-300 hover:no-underline">
+                <AccordionTrigger className="bg-blue-200 px-6 py-4 hover:bg-blue-300 hover:no-underline">
                   <div className="flex items-center gap-3 w-full">
                     <Calendar className="h-5 w-5 text-black flex-shrink-0" />
                     <h3 className="text-lg font-semibold text-black">
@@ -451,11 +451,11 @@ const EmployeeSalaryComponents = () => {
                         value={empGroup.empKey}
                         className="rounded-lg border border-gray-100 overflow-hidden"
                       >
-                        <AccordionTrigger className="bg-amber-50 px-5 py-3 hover:bg-amber-100 hover:no-underline [&[data-state=open]]:bg-amber-100">
+                        <AccordionTrigger className="bg-blue-50 px-5 py-3 hover:bg-blue-100 hover:no-underline [&[data-state=open]]:bg-blue-100">
                           <div className="flex items-center gap-3 w-full">
                             <div className="flex flex-col items-start gap-1">
                               <div className="flex items-center gap-2 pb-0.5">
-                                <span className="bg-amber-200 text-amber-900 text-xs font-semibold px-2 py-0.5 rounded">
+                                <span className="bg-blue-200 text-blue-900 text-xs font-semibold px-2 py-0.5 rounded">
                                   {empGroup.empCode}
                                 </span>
                                 <span className="font-semibold text-gray-900">
@@ -468,7 +468,7 @@ const EmployeeSalaryComponents = () => {
                               </div>
                             </div>
                             <div className="ml-auto flex items-center gap-3 mr-2">
-                              <span className="bg-amber-200/70 px-2.5 py-0.5 rounded-full text-xs font-medium text-amber-900">
+                              <span className="bg-blue-200/70 px-2.5 py-0.5 rounded-full text-xs font-medium text-blue-900">
                                 {empGroup.items.length}{' '}
                                 {empGroup.items.length === 1
                                   ? 'component'
@@ -492,7 +492,7 @@ const EmployeeSalaryComponents = () => {
 
                         <AccordionContent className="bg-white">
                           <Table>
-                            <TableHeader className="bg-amber-50/60">
+                            <TableHeader className="bg-blue-50/60">
                               <TableRow>
                                 <TableHead className="w-20">Sl No.</TableHead>
                                 <TableHead>Component Name</TableHead>
@@ -521,7 +521,7 @@ const EmployeeSalaryComponents = () => {
                                       item.employeeSalaryComponentId ||
                                       index
                                     }
-                                    className="hover:bg-amber-50/50"
+                                    className="hover:bg-blue-50/50"
                                   >
                                     <TableCell className="font-medium text-gray-600">
                                       {index + 1}
@@ -583,7 +583,7 @@ const EmployeeSalaryComponents = () => {
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                           onClick={() => handleEditClick(item)}
                                         >
                                           <Edit2 className="h-4 w-4" />
@@ -818,7 +818,7 @@ const EmployeeSalaryComponents = () => {
                   isAuthorized: checked ? 1 : 0,
                 }))
               }
-              className="data-[state=checked]:bg-amber-500"
+              className="data-[state=checked]:bg-blue-500"
             />
             <Label htmlFor="isAuthorized" className="cursor-pointer">
               Authorized
@@ -838,7 +838,7 @@ const EmployeeSalaryComponents = () => {
             <Button
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending || updateMutation.isPending
                 ? 'Saving...'
