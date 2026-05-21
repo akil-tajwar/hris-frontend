@@ -163,7 +163,7 @@ const SalaryStructure = () => {
   const handleAddDetail = () => {
     const newDetail: CreateSalaryStructureType['salaryStructureDetails'][number] =
       {
-        salaryStructureId: null,
+        salaryStructureMasterId: null,
         salaryComponentId: 0,
         amount: 0,
         percentage: null,
@@ -367,7 +367,7 @@ const SalaryStructure = () => {
 
   const handleEditClick = (item: any) => {
     setIsEditMode(true)
-    setEditingStructureId(item.salaryStructureMaster?.salaryStructureId || null)
+    setEditingStructureId(item.salaryStructureMaster?.salaryStructureMasterId || null)
     setFormData({
       salaryStructureMaster: {
         ...item.salaryStructureMaster,
@@ -488,7 +488,7 @@ const SalaryStructure = () => {
             ) : (
               paginatedStructures.map((item: any, index: number) => {
                 const structureId =
-                  item.salaryStructureMaster?.salaryStructureId
+                  item.salaryStructureMaster?.salaryStructureMasterId
                 const isExpanded = expandedRows.has(structureId)
                 const details: any[] = item.salaryStructureDetails || []
 
@@ -567,7 +567,7 @@ const SalaryStructure = () => {
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setDeletingStructureId(
-                                item.salaryStructureMaster?.salaryStructureId ||
+                                item.salaryStructureMaster?.salaryStructureMasterId ||
                                   null
                               )
                               setIsDeleteDialogOpen(true)

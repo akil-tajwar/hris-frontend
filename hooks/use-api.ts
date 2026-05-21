@@ -106,6 +106,10 @@ import {
   createSalaryStructure,
   editSalaryStructure,
   deleteSalaryStructure,
+  getAllEmployeePreboardings,
+  createEmployeePreboarding,
+  editEmployeePreboarding,
+  deleteEmployeePreboarding,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -142,6 +146,8 @@ import {
   GetEmployeeLeaveAssignmentType,
   CreateSalaryStructureType,
   GetSalaryStructureType,
+  CreateEmployeePreboardingType,
+  GetEmployeePreboardingType,
 } from '@/utils/type'
 
 //roles
@@ -1894,6 +1900,139 @@ export const useDeleteShiftDayAndWeekDays = ({
   })
 
   return mutation
+}
+
+// employee-preboarding
+export const useGetAllEmployeePreboardings = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeePreboardings'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllEmployeePreboardings(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useCreateEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateEmployeePreboardingType) => {
+      if (!token) throw new Error('Token not found')
+      return createEmployeePreboarding(data, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding created successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Create preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to create employee preboarding',
+      })
+    },
+  })
+}
+
+export const useEditEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetEmployeePreboardingType }) => {
+      if (!token) throw new Error('Token not found')
+      return editEmployeePreboarding(id, data, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Edit preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to update employee preboarding',
+      })
+    },
+  })
+}
+
+export const useDeleteEmployeePreboarding = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      if (!token) throw new Error('Token not found')
+      return deleteEmployeePreboarding(id, token)
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee preboarding deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['employeePreboardings'] })
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Delete preboarding error:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This record is needed elsewhere',
+      })
+    },
+  })
 }
 
 //employee

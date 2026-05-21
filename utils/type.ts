@@ -247,6 +247,40 @@ export const costCenterSchema = z.object({
 export type CreateCostCenterType = z.infer<typeof costCenterSchema>
 export type GetCostCenterType = z.infer<typeof costCenterSchema>
 
+//pre boarding
+export const employeePreboardingSchema = z.object({
+  preboardingId: z.number().optional(),
+  fullName: z.string(),
+  gender: z.enum(['Male', 'Female']),
+  dob: z.string(),
+  personalEmail: z.string(),
+  personalPhone: z.string(),
+  tentativeJoiningDate: z.string(),
+  companyId: z.number(),
+  departmentId: z.number(),
+  designationId: z.number(),
+  reportingAuthorityId: z.number(),
+  employmentTypeId: z.number(),
+  salaryStructureMasterId: z.number(),
+  offeredSalary: z.number(),
+  probationMonths: z.number(),
+  status: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateEmployeePreboardingType = z.infer<typeof employeePreboardingSchema>
+export type GetEmployeePreboardingType = z.infer<typeof employeePreboardingSchema> & {
+  preboardNo: string
+  companyName: string
+  departmentName: string
+  designationName: string
+  reportingAuthorityName: string
+  employmentTypeName: string
+  salaryStructureName: string
+}
+
 //employee
 export const employeeSchema = z.object({
   employeeId: z.number().optional(),
@@ -629,7 +663,7 @@ export type GetSalaryComponentType = z.infer<
 
 export const SalaryStructureSchema = z.object({
   salaryStructureMaster: z.object({
-    salaryStructureId: z.number().optional().nullable(),
+    salaryStructureMasterId: z.number().optional().nullable(),
     structureName: z.string(),
     structureCode: z.string().optional().nullable(),
     companyId: z.number(),
@@ -646,7 +680,7 @@ export const SalaryStructureSchema = z.object({
   salaryStructureDetails: z.array(
     z.object({
       salaryStructureDetailId: z.number().optional(),
-      salaryStructureId: z.number().optional().nullable(),
+      salaryStructureMasterId: z.number().optional().nullable(),
       salaryComponentId: z.number(),
       salaryComponentName: z.string().optional(), // only for get
       amount: z.number(),

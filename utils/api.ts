@@ -57,6 +57,8 @@ import {
   CreateEmployeeLeaveAssignmentType,
   GetSalaryStructureType,
   CreateSalaryStructureType,
+  GetEmployeePreboardingType,
+  CreateEmployeePreboardingType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -670,6 +672,60 @@ export async function editShiftDayAndWeekDays(
 export async function deleteShiftDayAndWeekDays(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/shift/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//employee preboarding
+export async function getAllEmployeePreboardings(token: string) {
+  return fetchApi<GetEmployeePreboardingType[]>({
+    url: 'api/employeePreboarding/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createEmployeePreboarding(
+  data: CreateEmployeePreboardingType,
+  token: string
+) {
+  return fetchApi<CreateEmployeePreboardingType>({
+    url: 'api/employeePreboarding/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editEmployeePreboarding(
+  id: number,
+  data: GetEmployeePreboardingType,
+  token: string
+) {
+  return fetchApi<GetEmployeePreboardingType>({
+    url: `api/employeePreboarding/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteEmployeePreboarding(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/employeePreboarding/delete/${id}`,
     method: 'DELETE',
     headers: {
       Authorization: token,
