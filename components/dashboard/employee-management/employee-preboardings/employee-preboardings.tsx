@@ -88,7 +88,7 @@ interface SelectedChecklistDetail {
   checklistDetailsId: number
   responsibleEmployeeId: number
   completionDate: string
-  status: string
+  status: boolean
   // existing record id for update
   employeePreboardingChecklistId?: number | null
 }
@@ -118,12 +118,10 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
   onSave,
   isSaving,
 }) => {
-  // Map of checklistDetailsId → selected detail state
   const [selected, setSelected] = useState<
     Record<number, SelectedChecklistDetail>
   >({})
 
-  // Initialise from existing assignments whenever popup opens
   useEffect(() => {
     if (!isOpen) return
     const init: Record<number, SelectedChecklistDetail> = {}
@@ -134,14 +132,14 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
         completionDate: a.completionDate
           ? new Date(a.completionDate).toISOString().slice(0, 10)
           : '',
-        status: a.status,
+        status:
+          typeof a.status === 'boolean' ? a.status : a.status !== 'Pending',
         employeePreboardingChecklistId: a.employeePreboardingChecklistId,
       }
     })
     setSelected(init)
   }, [isOpen, existingAssignments])
 
-  // Flatten all details from all checklists
   const allDetails = useMemo<ChecklistDetailRow[]>(() => {
     if (!checklists) return []
     return checklists.flatMap((cl) =>
@@ -162,7 +160,6 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
         delete next[detail.checklistDetailsId]
         return next
       }
-      // default: prefill from checklist detail's responsibleEmployeeId
       const existing = existingAssignments?.find(
         (a) => a.checklistDetailsId === detail.checklistDetailsId
       )
@@ -175,7 +172,7 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
           completionDate: existing?.completionDate
             ? new Date(existing.completionDate).toISOString().slice(0, 10)
             : '',
-          status: existing?.status ?? 'Pending',
+          status: existing?.status ?? false,
           employeePreboardingChecklistId:
             existing?.employeePreboardingChecklistId ?? null,
         },
@@ -186,7 +183,7 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
   const updateField = (
     id: number,
     field: keyof SelectedChecklistDetail,
-    value: string | number
+    value: string | number | boolean
   ) => {
     setSelected((prev) => ({
       ...prev,
@@ -212,7 +209,6 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
     onSave(bulk)
   }
 
-  // Group details by checklist master name
   const grouped = useMemo(() => {
     const map: Record<
       string,
@@ -253,14 +249,12 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
             key={group.masterName}
             className="border rounded-md overflow-hidden"
           >
-            {/* Group header */}
             <div className="bg-blue-50 px-4 py-2 border-b">
               <span className="font-semibold text-sm text-blue-800">
                 {group.masterName}
               </span>
             </div>
 
-            {/* Details table */}
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
@@ -269,9 +263,6 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
                   </th>
                   <th className="px-3 py-2 text-left font-medium text-gray-600">
                     Task
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium text-gray-600">
-                    Responsible
                   </th>
                   <th className="px-3 py-2 text-left font-medium text-gray-600">
                     Completion Date
@@ -288,11 +279,8 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
                   return (
                     <tr
                       key={detail.checklistDetailsId}
-                      className={`border-t transition-colors ${
-                        isChecked ? 'bg-blue-50/50' : 'hover:bg-gray-50'
-                      }`}
+                      className={`border-t transition-colors ${isChecked ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}
                     >
-                      {/* Checkbox */}
                       <td className="px-3 py-2">
                         <Checkbox
                           checked={isChecked}
@@ -300,43 +288,10 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
                         />
                       </td>
 
-                      {/* Task name */}
                       <td className="px-3 py-2 text-gray-800">
                         {detail.checklistDetailsName}
                       </td>
 
-                      {/* Responsible employee */}
-                      <td className="px-3 py-2">
-                        {isChecked ? (
-                          <select
-                            className="border rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            value={sel.responsibleEmployeeId}
-                            onChange={(e) =>
-                              updateField(
-                                detail.checklistDetailsId,
-                                'responsibleEmployeeId',
-                                Number(e.target.value)
-                              )
-                            }
-                          >
-                            <option value={0}>— Select —</option>
-                            {employees?.map((emp) => (
-                              <option
-                                key={emp.employeeId}
-                                value={emp.employeeId!}
-                              >
-                                {emp.empCode} - {emp.empFullName}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="text-gray-400 text-xs">
-                            {detail.responsibleEmployeeName ?? '—'}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Completion date */}
                       <td className="px-3 py-2">
                         {isChecked ? (
                           <Input
@@ -356,24 +311,19 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
                         )}
                       </td>
 
-                      {/* Status */}
                       <td className="px-3 py-2">
                         {isChecked ? (
-                          <select
-                            className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            value={sel.status}
-                            onChange={(e) =>
+                          <CustomSwitch
+                            label=""
+                            checked={sel.status}
+                            onChange={(value) =>
                               updateField(
                                 detail.checklistDetailsId,
                                 'status',
-                                e.target.value
+                                value
                               )
                             }
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Completed">Completed</option>
-                          </select>
+                          />
                         ) : (
                           <span className="text-gray-400 text-xs">—</span>
                         )}
@@ -387,7 +337,6 @@ const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
         ))}
       </div>
 
-      {/* Footer */}
       <div className="flex justify-between items-center pt-3 border-t">
         <span className="text-xs text-gray-500">
           {Object.keys(selected).length} task(s) selected
@@ -455,7 +404,9 @@ const EmployeePreboardings = () => {
     )
 
   const existingAssignments: GetEmployeePreboardingChecklistType[] | undefined =
-    existingChecklistData?.data
+    Array.isArray(existingChecklistData?.data)
+      ? (existingChecklistData.data as GetEmployeePreboardingChecklistType[])
+      : undefined
 
   const closeChecklistPopup = useCallback(() => {
     setIsChecklistPopupOpen(false)
@@ -494,7 +445,7 @@ const EmployeePreboardings = () => {
       salaryStructureMasterId: 0,
       offeredSalary: 0,
       probationMonths: 0,
-      status: 'Active',
+      status: true,
       createdBy: userData?.userId || 0,
     }),
     [userData?.userId]
@@ -742,12 +693,16 @@ const EmployeePreboardings = () => {
                     <TableCell>
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          preboarding.status === 'Active'
+                          String(preboarding.status) === 'Active'
                             ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {preboarding.status ?? 'Inactive'}
+                        {typeof preboarding.status === 'string'
+                          ? preboarding.status
+                          : preboarding.status
+                          ? 'Active'
+                          : 'Inactive'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -1206,11 +1161,11 @@ const EmployeePreboardings = () => {
             <div className="space-y-2 col-span-2">
               <CustomSwitch
                 label="Status"
-                checked={formData.status === 'Active'}
+                checked={formData.status === true}
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    status: value ? 'Active' : 'Inactive',
+                    status: value ? true : false,
                   }))
                 }
               />
@@ -1244,8 +1199,10 @@ const EmployeePreboardings = () => {
         isOpen={isChecklistPopupOpen}
         onClose={closeChecklistPopup}
         preboarding={activePreboarding}
-        checklists={checklists?.data}
-        employees={employees?.data}
+        checklists={checklists?.data?.filter(
+          (item): item is GetChecklistType => item != null
+        )}
+        employees={employees?.data ?? undefined}
         existingAssignments={existingAssignments}
         userId={userData?.userId ?? 0}
         onSave={handleChecklistSave}

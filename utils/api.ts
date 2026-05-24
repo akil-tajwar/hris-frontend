@@ -744,7 +744,7 @@ export async function createPreboardingEmployeeChecklist(
   token: string
 ) {
   return fetchApi<CreateEmployeePreboardingChecklistType>({
-    url: 'api/employeePreboarding/create',
+    url: 'api/employeePreboarding/assign',
     method: 'POST',
     body: data,
     headers: {
@@ -774,7 +774,7 @@ export async function editEmployeePreboardingChecklist(
 // get assigned checklist by preboarding employee id
 export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
   return fetchApi<GetEmployeeType>({
-    url: `api/employeePreboarding/getById/${id}`,
+    url: `api/employeePreboarding/get/${id}`,
     method: 'GET',
     headers: {
       Authorization: token,
