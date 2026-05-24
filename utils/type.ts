@@ -330,6 +330,16 @@ export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboar
   checklistDetailsName: string
 }
 
+export const notificationSchema = z.object({
+  notificationId: z.number().optional(),
+  employeeId: z.number(),
+  notification: z.string().max(255),
+  isRead: z.boolean().default(false),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+})
+export type GetNotificationType = z.infer<typeof notificationSchema>
+
 //employee
 export const employeeSchema = z.object({
   employeeId: z.number().optional(),

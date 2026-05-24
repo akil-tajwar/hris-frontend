@@ -63,6 +63,7 @@ import {
   CreateChecklistType,
   CreateEmployeePreboardingChecklistType,
   GetEmployeePreboardingChecklistType,
+  GetNotificationType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -778,6 +779,33 @@ export async function getPreboardingEmployeeChecklistsById(token: string, id: nu
     method: 'GET',
     headers: {
       Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//notifications
+export async function getNotificationsById(token: string, id: number) {
+  return fetchApi<GetNotificationType>({
+    url: `api/notifications/get/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function markAsRead(
+  data:number[],
+  token: string
+) {
+  return fetchApi<number[]>({
+    url: 'api/notifications/markAsRead',
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })

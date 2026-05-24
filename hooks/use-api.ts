@@ -117,6 +117,8 @@ import {
   getPreboardingEmployeeChecklistsById,
   createPreboardingEmployeeChecklist,
   editEmployeePreboardingChecklist,
+  getNotificationsById,
+  markAsRead,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -302,9 +304,7 @@ export const useDeleteCustomer = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete customer'
-        )
+        throw new Error('Failed to delete customer')
       }
 
       return res
@@ -458,9 +458,7 @@ export const useDeleteBusinessUnit = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete business unit'
-        )
+        throw new Error('Failed to delete business unit')
       }
 
       return res
@@ -614,9 +612,7 @@ export const useDeleteTenant = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete tenant'
-        )
+        throw new Error('Failed to delete tenant')
       }
 
       return res
@@ -770,9 +766,7 @@ export const useDeleteDepartment = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete department'
-        )
+        throw new Error('Failed to delete department')
       }
 
       return res
@@ -920,9 +914,7 @@ export const useDeleteCompany = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete company'
-        )
+        throw new Error('Failed to delete company')
       }
 
       return res
@@ -1076,9 +1068,7 @@ export const useDeleteWorkStation = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete work station'
-        )
+        throw new Error('Failed to delete work station')
       }
 
       return res
@@ -1232,9 +1222,7 @@ export const useDeleteDivision = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete division'
-        )
+        throw new Error('Failed to delete division')
       }
 
       return res
@@ -1388,9 +1376,7 @@ export const useDeleteCostCenter = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete cost center'
-        )
+        throw new Error('Failed to delete cost center')
       }
 
       return res
@@ -1544,9 +1530,7 @@ export const useDeleteDesignation = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete designation'
-        )
+        throw new Error('Failed to delete designation')
       }
 
       return res
@@ -1706,9 +1690,7 @@ export const useDeleteEmploymentType = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employment type'
-        )
+        throw new Error('Failed to delete employment type')
       }
 
       return res
@@ -1880,9 +1862,7 @@ export const useDeleteShiftDayAndWeekDays = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete shift'
-        )
+        throw new Error('Failed to delete shift')
       }
 
       return res
@@ -1981,7 +1961,13 @@ export const useEditEmployeePreboarding = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: GetEmployeePreboardingType }) => {
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeePreboardingType
+    }) => {
       if (!token) throw new Error('Token not found')
       return editEmployeePreboarding(id, data, token)
     },
@@ -2128,13 +2114,7 @@ export const useUpdateChecklists = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number
-      data: GetChecklistType
-    }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetChecklistType }) => {
       return editChecklist(id, data, token)
     },
     onSuccess: () => {
@@ -2185,9 +2165,7 @@ export const useDeleteChecklists = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete checklist'
-        )
+        throw new Error('Failed to delete checklist')
       }
 
       return res
@@ -2231,6 +2209,62 @@ export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
     enabled: !!token && id > 0,
     select: (data) => data,
   })
+}
+
+//notifications
+export const useGetNotificationsByUserId = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['notifications', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getNotificationsById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useMarksAsRead = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ data }: { data: number[] }) => {
+      return markAsRead(data, token)
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['notifications'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Error marking notifications as read:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to mark as read',
+      })
+    },
+  })
+
+  return mutation
 }
 
 export const useAddPreboardingEmployeeChecklists = ({
@@ -2460,9 +2494,7 @@ export const useDeleteEmployee = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employee'
-        )
+        throw new Error('Failed to delete employee')
       }
 
       return res
@@ -2665,9 +2697,7 @@ export const useDeleteHoliday = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete holiday'
-        )
+        throw new Error('Failed to delete holiday')
       }
 
       return res
@@ -2821,9 +2851,7 @@ export const useDeleteLeaveType = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete leave type'
-        )
+        throw new Error('Failed to delete leave type')
       }
 
       return res
@@ -2977,9 +3005,7 @@ export const useDeleteLeavePolicys = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete leave policy'
-        )
+        throw new Error('Failed to delete leave policy')
       }
 
       return res
@@ -3148,9 +3174,7 @@ export const useDeleteSalaryStructures = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete salary structure'
-        )
+        throw new Error('Failed to delete salary structure')
       }
 
       return res
@@ -3328,9 +3352,7 @@ export const useDeleteEmployeeLeaveAssignment = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employee leave assignment'
-        )
+        throw new Error('Failed to delete employee leave assignment')
       }
 
       return res
@@ -3494,9 +3516,7 @@ export const useDeleteEmployeeAttendance = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employee attendance'
-        )
+        throw new Error('Failed to delete employee attendance')
       }
 
       return res
@@ -3566,8 +3586,7 @@ export const useAddSalaryComponent = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description:
-            res.error.message || 'Failed to create salary component',
+          description: res.error.message || 'Failed to create salary component',
         })
         return
       }
@@ -3657,9 +3676,7 @@ export const useDeleteSalaryComponent = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete salary component'
-        )
+        throw new Error('Failed to delete salary component')
       }
 
       return res
@@ -3825,9 +3842,7 @@ export const useDeleteEmployeeSalaryComponent = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employee salary component'
-        )
+        throw new Error('Failed to delete employee salary component')
       }
 
       return res
@@ -3981,9 +3996,7 @@ export const useDeleteSalary = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete salary'
-        )
+        throw new Error('Failed to delete salary')
       }
 
       return res
@@ -4208,9 +4221,7 @@ export const useDeleteLone = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete lone'
-        )
+        throw new Error('Failed to delete lone')
       }
 
       return res
@@ -4380,9 +4391,7 @@ export const useDeleteEmployeeLeave = ({
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-            'Failed to delete employee leave'
-        )
+        throw new Error('Failed to delete employee leave')
       }
 
       return res
