@@ -289,6 +289,7 @@ export const ChecklistSchema = z.object({
     heading: z.string().optional(),
     responsibleEmployeeId: z.number().optional(),
     responsibleEmployeeName: z.string().optional().nullable(), // only for get
+    userId: z.number().optional(), // only for get
     createdBy: z.number(),
     createdAt: z.coerce.date(),
     updatedBy: z.number().optional().nullable(),
@@ -329,6 +330,16 @@ export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboar
   responsibleEmployeeName: string
   checklistDetailsName: string
 }
+
+export const notificationSchema = z.object({
+  notificationId: z.number().optional(),
+  employeeId: z.number(),
+  notification: z.string().max(255),
+  isRead: z.boolean().default(false),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+})
+export type GetNotificationType = z.infer<typeof notificationSchema>
 
 //employee
 export const employeeSchema = z.object({

@@ -63,6 +63,7 @@ import {
   CreateChecklistType,
   CreateEmployeePreboardingChecklistType,
   GetEmployeePreboardingChecklistType,
+  GetNotificationType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -744,7 +745,7 @@ export async function createPreboardingEmployeeChecklist(
   token: string
 ) {
   return fetchApi<CreateEmployeePreboardingChecklistType>({
-    url: 'api/employeePreboarding/create',
+    url: 'api/employeePreboarding/assign',
     method: 'POST',
     body: data,
     headers: {
@@ -774,10 +775,37 @@ export async function editEmployeePreboardingChecklist(
 // get assigned checklist by preboarding employee id
 export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
   return fetchApi<GetEmployeeType>({
-    url: `api/employeePreboarding/getById/${id}`,
+    url: `api/employeePreboarding/get/${id}`,
     method: 'GET',
     headers: {
       Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//notifications
+export async function getNotificationsById(token: string, id: number) {
+  return fetchApi<GetNotificationType>({
+    url: `api/notifications/get/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function markAsRead(
+  data:number[],
+  token: string
+) {
+  return fetchApi<number[]>({
+    url: 'api/notifications/markAsRead',
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })
@@ -832,6 +860,20 @@ export async function deleteChecklist(id: number, token: string) {
     method: 'DELETE',
     headers: {
       Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function completeChecklist(
+  checklistMasterId:number,
+  token: string
+) {
+  return fetchApi<number>({
+    url: `api/checklists/completeChecklist/${checklistMasterId}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })
