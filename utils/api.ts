@@ -865,6 +865,20 @@ export async function deleteChecklist(id: number, token: string) {
   })
 }
 
+export async function completeChecklist(
+  checklistMasterId:number,
+  token: string
+) {
+  return fetchApi<number>({
+    url: `api/checklists/completeChecklist/${checklistMasterId}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //employee
 export async function getAllEmployees(token: string) {
   return fetchApi<GetEmployeeType[]>({

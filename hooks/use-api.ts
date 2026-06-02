@@ -119,6 +119,7 @@ import {
   editEmployeePreboardingChecklist,
   getNotificationsById,
   markAsRead,
+  completeChecklist,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -2196,6 +2197,46 @@ export const useDeleteChecklists = ({
   return mutation
 }
 
+export const useCompleteChecklist = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ checklistMasterId }: { checklistMasterId: number }) => {
+      return completeChecklist(checklistMasterId, token)
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['checklists'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Error completing checklist:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to complete checklist',
+      })
+    },
+  })
+
+  return mutation
+}
+
 export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -2209,62 +2250,6 @@ export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
     enabled: !!token && id > 0,
     select: (data) => data,
   })
-}
-
-//notifications
-export const useGetNotificationsByUserId = (id: number) => {
-  const [token] = useAtom(tokenAtom)
-  useInitializeUser()
-
-  return useQuery({
-    queryKey: ['notifications', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getNotificationsById(token, id)
-    },
-    enabled: !!token && id > 0,
-    select: (data) => data,
-  })
-}
-
-export const useMarksAsRead = ({
-  onClose,
-  reset,
-}: {
-  onClose: () => void
-  reset: () => void
-}) => {
-  useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: ({ data }: { data: number[] }) => {
-      return markAsRead(data, token)
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['notifications'],
-      })
-
-      reset()
-      onClose()
-    },
-
-    onError: (error) => {
-      console.error('Error marking notifications as read:', error)
-
-      toast({
-        title: 'Error',
-        variant: 'destructive',
-        description: 'Failed to mark as read',
-      })
-    },
-  })
-
-  return mutation
 }
 
 export const useAddPreboardingEmployeeChecklists = ({
@@ -2359,6 +2344,62 @@ export const useUpdatePreboardingEmployeeChecklists = ({
         title: 'Error',
         variant: 'destructive',
         description: 'Failed to update checklist',
+      })
+    },
+  })
+
+  return mutation
+}
+
+//notifications
+export const useGetNotificationsByUserId = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['notifications', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getNotificationsById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useMarksAsRead = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ data }: { data: number[] }) => {
+      return markAsRead(data, token)
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['notifications'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Error marking notifications as read:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to mark as read',
       })
     },
   })

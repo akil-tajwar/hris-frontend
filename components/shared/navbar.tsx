@@ -10,7 +10,7 @@ import { useAtom } from 'jotai'
 import {
   useGetAllEmployees,
   useGetNotificationsByUserId,
-  useMarksAsRead, // ✅ ADDED ONLY
+  useMarksAsRead,
 } from '@/hooks/use-api'
 
 export default function Navbar() {
@@ -32,22 +32,98 @@ export default function Navbar() {
 
   const router = useRouter()
 
-  // Extract notifications array from response
   const notifications = Array.isArray(notificationsResponse?.data)
     ? notificationsResponse.data
     : []
 
-  // Calculate unread notifications count
   const unreadCount =
     notifications.filter((notif: any) => !notif.isRead).length || 0
 
-  // ✅ ADDED: mutation (NO UI CHANGE)
   const markAsReadMutation = useMarksAsRead({
     onClose: () => setIsNotificationOpen(false),
     reset: () => {},
   })
 
-  // Auto-refetch notifications every 30 seconds
+  // -------------------------
+  // ROUTING LOGIC (EXTENDABLE)
+  // -------------------------
+  const getNotificationRoute = (notification: any) => {
+    const msg = notification.notification?.toLowerCase() || ''
+
+    if (msg.includes("you've been assigned a checklist")) {
+      return '/dashboard/employee-management/checklists'
+    }
+
+    return '/dashboard'
+  }
+
+  // -------------------------
+  // CLICK NOTIFICATION
+  // -------------------------
+  const handleNotificationClick = async (notification: any) => {
+    setIsNotificationOpen(false)
+
+    try {
+      if (!notification.isRead) {
+        await markAsReadMutation.mutateAsync({
+          data: [notification.notificationId],
+        })
+      }
+
+      refetch()
+
+      const route = getNotificationRoute(notification)
+      router.push(route)
+    } catch (err) {
+      console.error(err)
+
+      const route = getNotificationRoute(notification)
+      router.push(route)
+    }
+  }
+
+  // -------------------------
+  // MARK ALL AS READ
+  // -------------------------
+  const handleMarkAllAsRead = async () => {
+    const allIds = notifications.map((n: any) => n.notificationId)
+
+    markAsReadMutation.mutate({
+      data: allIds,
+    })
+
+    refetch()
+  }
+
+  // -------------------------
+  // SIGN OUT (UNCHANGED)
+  // -------------------------
+  const handleSignOut = () => {
+    localStorage.removeItem('currentUser')
+    localStorage.removeItem('authToken')
+    setIsProfileOpen(false)
+    router.push('/')
+  }
+
+  const formatDate = (date: any) => {
+    if (!date) return 'Just now'
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const now = new Date()
+
+    const diffMs = now.getTime() - dateObj.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+
+    return dateObj.toLocaleDateString()
+  }
+
   useEffect(() => {
     const interval = setInterval(() => {
       if (userData?.userId) {
@@ -65,14 +141,12 @@ export default function Navbar() {
 
       if (!storedUserData || !storedToken) {
         router.push('/')
-        return
       }
     }
 
     checkUserData()
   }, [userData, token, router])
 
-  // Handle click outside for both dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -93,64 +167,14 @@ export default function Navbar() {
     }
 
     document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  const handleSignOut = () => {
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('authToken')
-    setIsProfileOpen(false)
-    router.push('/')
-  }
-
-  // ✅ FIXED: mark single notification (NO UI CHANGE)
-  const handleMarkAsRead = async (notificationId: number) => {
-    markAsReadMutation.mutate({
-      data: [notificationId],
-    })
-
-    refetch()
-  }
-
-  // ✅ FIXED: mark all notifications (NO UI CHANGE)
-  const handleMarkAllAsRead = async () => {
-    const allIds = notifications.map((n: any) => n.notificationId)
-
-    markAsReadMutation.mutate({
-      data: allIds,
-    })
-
-    refetch()
-  }
-
-  const handleNotificationClick = (notification: any) => {
-    setIsNotificationOpen(false)
-  }
-
-  const formatDate = (date: any) => {
-    if (!date) return 'Just now'
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    const now = new Date()
-    const diffMs = now.getTime() - dateObj.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins} min ago`
-    if (diffHours < 24)
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
-
-    return dateObj.toLocaleDateString()
-  }
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 border-b">
         <div className="flex items-center justify-between h-16">
+          {/* LOGO */}
           <div className="flex-shrink-0 flex items-center">
             <div className="flex items-center">
               <span className="text-2xl font-bold text-gray-800">Biz</span>
@@ -159,11 +183,11 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center ml-4 gap-2">
-            {/* Notification Bell Icon */}
+            {/* NOTIFICATION */}
             <div className="relative" ref={notificationRef}>
               <button
-                className="flex items-center justify-center w-10 h-10 text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition duration-500 ease-in-out relative"
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                className="relative w-10 h-10"
               >
                 <Bell className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
 
@@ -174,110 +198,73 @@ export default function Navbar() {
                 )}
               </button>
 
-              {/* Notification Dropdown (UNCHANGED UI) */}
               {isNotificationOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg z-50">
-                  <div className="py-2 rounded-md bg-white shadow-xs">
-                    <div className="px-4 py-2 border-b flex justify-between items-center">
-                      <h3 className="text-sm font-semibold text-gray-900">
-                        Notifications
-                      </h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-md z-50">
+                  <div className="px-4 py-2 border-b flex justify-between">
+                    <h3 className="text-sm font-semibold">Notifications</h3>
 
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={handleMarkAllAsRead}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          Mark all as read
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications && notifications.length > 0 ? (
-                        notifications.map((notification: any) => (
-                          <div
-                            key={notification.notificationId}
-                            className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
-                              !notification.isRead ? 'bg-blue-50' : ''
-                            }`}
-                            onClick={() =>
-                              handleNotificationClick(notification)
-                            }
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-sm text-gray-900">
-                                  {notification.notification}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {formatDate(notification.createdAt)}
-                                </p>
-                              </div>
-
-                              {!notification.isRead && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMarkAsRead(
-                                      notification.notificationId!
-                                    )
-                                  }}
-                                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 whitespace-nowrap"
-                                >
-                                  Mark read
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                          No notifications
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="px-4 py-2 border-t">
-                      <Link
-                        href="/notifications"
-                        className="text-xs text-blue-600 hover:text-blue-800 block text-center"
-                        onClick={() => setIsNotificationOpen(false)}
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-xs text-blue-600"
                       >
-                        View all notifications
-                      </Link>
-                    </div>
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification: any) => (
+                        <div
+                          key={notification.notificationId}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`px-4 py-3 border-b cursor-pointer hover:bg-gray-50 ${
+                            !notification.isRead ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <p className="text-sm text-gray-900">
+                            {notification.notification}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {formatDate(notification.createdAt)}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No notifications
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Profile Icon (UNCHANGED UI) */}
+            {/* PROFILE (UNCHANGED + LOGOUT KEPT) */}
             <div className="relative" ref={profileRef}>
               <button
-                className="flex items-center justify-center w-10 h-10 text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition duration-500 ease-in-out"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="w-10 h-10"
               >
                 <User2 className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
               </button>
 
               {isProfileOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg">
-                  <div className="py-1 rounded-md bg-white shadow-xs">
-                    <Link
-                      href="/change-password"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Change Password
-                    </Link>
+                <div className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md">
+                  <Link
+                    href="/change-password"
+                    className="block px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Change Password
+                  </Link>
 
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Sign out
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Sign out
+                  </button>
                 </div>
               )}
             </div>

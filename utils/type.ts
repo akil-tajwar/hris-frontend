@@ -289,6 +289,7 @@ export const ChecklistSchema = z.object({
     heading: z.string().optional(),
     responsibleEmployeeId: z.number().optional(),
     responsibleEmployeeName: z.string().optional().nullable(), // only for get
+    userId: z.number().optional(), // only for get
     createdBy: z.number(),
     createdAt: z.coerce.date(),
     updatedBy: z.number().optional().nullable(),
