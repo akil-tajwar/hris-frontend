@@ -2,10 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Bell, PlusCircle, User2 } from 'lucide-react'
-import { Bell, PlusCircle, User2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, List } from 'lucide-react'
 import { Search, List } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
