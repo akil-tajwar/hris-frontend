@@ -2,8 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Bell, PlusCircle, User2 } from 'lucide-react'
+import { Bell, PlusCircle, User2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Search, List } from 'lucide-react'
 import { Search, List } from 'lucide-react'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -147,8 +149,16 @@ export default function Navbar() {
     checkUserData()
   }, [userData, token, router])
 
+  // Handle click outside for both dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setIsNotificationOpen(false)
+      }
+
       if (
         notificationRef.current &&
         !notificationRef.current.contains(event.target as Node)
@@ -249,6 +259,7 @@ export default function Navbar() {
               >
                 <User2 className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
               </button>
+
 
               {isProfileOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md">
