@@ -175,7 +175,7 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
       title={`Assign Checklists — ${preboarding?.fullName ?? ''}`}
       size="sm:max-w-3xl"
     >
-      <div className="py-4 space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+      <div className="py-4 space-y-4  pr-1">
         {grouped.length === 0 && (
           <p className="text-sm text-gray-500 text-center py-8">
             No checklists available.

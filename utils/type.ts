@@ -435,7 +435,8 @@ export const employeeSchema = z.object({
   shift: z.string().optional(), // This might be a string representation
 
   // For creating employee with leave types
-  leaveTypeIds: z.array(z.number()).optional(),
+  leavePolicies: z.array(z.number()).optional(),
+  salaryStructures: z.array(z.number()).optional(),
 
   // Audit Fields
   createdBy: z.number(),

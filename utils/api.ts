@@ -697,6 +697,17 @@ export async function getAllEmployeePreboardings(token: string) {
   })
 }
 
+export async function getEmployeePreboardingById(token: string, id: number) {
+  return fetchApi<GetEmployeePreboardingType>({
+    url: `api/employeePreboarding/getPreboarding/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function createEmployeePreboarding(
   data: CreateEmployeePreboardingType,
   token: string
@@ -774,8 +785,8 @@ export async function editEmployeePreboardingChecklist(
 
 // get assigned checklist by preboarding employee id
 export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
-  return fetchApi<GetEmployeeType>({
-    url: `api/employeePreboarding/get/${id}`,
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/getChecklists/${id}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -903,6 +914,7 @@ export async function getEmployeeById(token: string, id: number) {
 }
 
 export async function createEmployee(formData: FormData, token: string) {
+  console.log("🚀 ~ createEmployee ~ formData:", formData)
   return fetchApiWithFile<CreateEmployeeType>({
     url: 'api/employees/create',
     method: 'POST',

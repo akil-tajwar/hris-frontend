@@ -120,6 +120,7 @@ import {
   getNotificationsById,
   markAsRead,
   completeChecklist,
+  getEmployeePreboardingById,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -1906,6 +1907,21 @@ export const useGetAllEmployeePreboardings = () => {
       return getAllEmployeePreboardings(token)
     },
     enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeePreboardingById = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeePreboardings', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getEmployeePreboardingById(token, id)
+    },
+    enabled: !!token && id > 0,
     select: (data) => data,
   })
 }

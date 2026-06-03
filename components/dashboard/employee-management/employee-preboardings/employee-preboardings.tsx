@@ -28,6 +28,7 @@ import {
   Edit2,
   Trash2,
   CheckCircle,
+  UserCheck,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
@@ -73,6 +74,7 @@ import {
 import { CustomCombobox } from '@/utils/custom-combobox'
 import CustomSwitch from '@/utils/custom-switch'
 import { ChecklistPopup } from './checklist-popup'
+import Link from 'next/link'
 
 const EmployeePreboardings = () => {
   useInitializeUser()
@@ -288,19 +290,31 @@ const EmployeePreboardings = () => {
   }, [addMutation.error, updateMutation.error])
 
   const handleEditClick = (preboarding: GetEmployeePreboardingType) => {
+    console.log({
+      departmentId: preboarding.departmentId, // what value + type?
+      designationId: preboarding.designationId,
+      reportingAuthorityId: preboarding.reportingAuthorityId,
+      employmentTypeId: preboarding.employmentTypeId,
+      salaryStructureMasterId: preboarding.salaryStructureMasterId,
+      companyId: preboarding.companyId, // this works — compare with others
+    })
     setFormData({
       fullName: preboarding.fullName,
       gender: preboarding.gender,
-      dob: preboarding.dob,
+      dob: preboarding.dob
+        ? new Date(preboarding.dob).toISOString().split('T')[0]
+        : '',
       personalEmail: preboarding.personalEmail,
       personalPhone: preboarding.personalPhone,
-      tentativeJoiningDate: preboarding.tentativeJoiningDate,
-      companyId: preboarding.companyId ?? 0,
-      departmentId: preboarding.departmentId ?? 0,
-      designationId: preboarding.designationId ?? 0,
-      reportingAuthorityId: preboarding.reportingAuthorityId ?? 0,
-      employmentTypeId: preboarding.employmentTypeId ?? 0,
-      salaryStructureMasterId: preboarding.salaryStructureMasterId ?? 0,
+      tentativeJoiningDate: preboarding.tentativeJoiningDate
+        ? new Date(preboarding.tentativeJoiningDate).toISOString().split('T')[0]
+        : '',
+      companyId: Number(preboarding.companyId ?? 0),
+      departmentId: Number(preboarding.departmentId ?? 0),
+      designationId: Number(preboarding.designationId ?? 0),
+      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? 0),
+      employmentTypeId: Number(preboarding.employmentTypeId ?? 0),
+      salaryStructureMasterId: Number(preboarding.salaryStructureMasterId ?? 0),
       offeredSalary: preboarding.offeredSalary ?? 0,
       probationMonths: preboarding.probationMonths ?? 0,
       status: preboarding.status ?? 'Active',
@@ -415,17 +429,29 @@ const EmployeePreboardings = () => {
                         {typeof preboarding.status === 'string'
                           ? preboarding.status
                           : preboarding.status
-                          ? 'Active'
-                          : 'Inactive'}
+                            ? 'Active'
+                            : 'Inactive'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/dashboard/employee-management/create-employee?preboardingId=${preboarding.preboardingId}`}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                            title="Make Employee"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         {/* Checklist (check) button */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-green-600 hover:text-green-700"
+                          className="text-purple-600 hover:text-purple-700"
                           title="Assign Checklists"
                           onClick={() => handleChecklistClick(preboarding)}
                         >
