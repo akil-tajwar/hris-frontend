@@ -119,8 +119,9 @@ import {
   editEmployeePreboardingChecklist,
   getNotificationsById,
   markAsRead,
-  completeChecklist,
+  completeEmployeePreboardingChecklist,
   getEmployeePreboardingById,
+  getPreboardingEmployeeChecklistsByUserId,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -2049,6 +2050,58 @@ export const useDeleteEmployeePreboarding = ({
   })
 }
 
+export const useCompleteEmployeePreboardingChecklist = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      employeePreboardingChecklistId,
+      completionDate,
+    }: {
+      employeePreboardingChecklistId: number
+      completionDate: string | Date
+    }) => {
+      return completeEmployeePreboardingChecklist(
+        {
+          employeePreboardingChecklistId,
+          completionDate,
+        },
+        token
+      )
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['preboardingChecklist'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error) => {
+      console.error('Error completing checklist:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to complete checklist',
+      })
+    },
+  })
+
+  return mutation
+}
+
 //checklists
 export const useGetChecklists = () => {
   const [token] = useAtom(tokenAtom)
@@ -2213,57 +2266,32 @@ export const useDeleteChecklists = ({
   return mutation
 }
 
-export const useCompleteChecklist = ({
-  onClose,
-  reset,
-}: {
-  onClose: () => void
-  reset: () => void
-}) => {
-  useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: ({ checklistMasterId }: { checklistMasterId: number }) => {
-      return completeChecklist(checklistMasterId, token)
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['checklists'],
-      })
-
-      reset()
-      onClose()
-    },
-
-    onError: (error) => {
-      console.error('Error completing checklist:', error)
-
-      toast({
-        title: 'Error',
-        variant: 'destructive',
-        description: 'Failed to complete checklist',
-      })
-    },
-  })
-
-  return mutation
-}
-
 export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useQuery({
-    queryKey: ['employees', id],
+    queryKey: ['preboardingChecklist', id],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getPreboardingEmployeeChecklistsById(token, id)
     },
     enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useGetPreboardingEmployeeChecklistsByUserId = (userId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['preboardingChecklist', userId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getPreboardingEmployeeChecklistsByUserId(token, userId)
+    },
+    enabled: !!token && userId > 0,
     select: (data) => data,
   })
 }

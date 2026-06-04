@@ -99,8 +99,8 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/shift-and-week-days',
         },
         {
-          title: 'Other Salary Components',
-          href: '/dashboard/setup/salary-components',
+          title: 'Pending Tasks',
+          href: '/dashboard/setup/pending-tasks',
         },
       ],
     },

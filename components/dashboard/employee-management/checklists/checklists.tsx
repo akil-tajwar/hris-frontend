@@ -44,7 +44,6 @@ import {
   useUpdateChecklists,
   useDeleteChecklists,
   useGetAllEmployees,
-  useCompleteChecklist,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -93,11 +92,6 @@ const Checklists = () => {
   const [editingChecklistId, setEditingChecklistId] = useState<number | null>(
     null
   )
-
-  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false)
-  const [completingChecklistId, setCompletingChecklistId] = useState<
-    number | null
-  >(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingChecklistId, setDeletingChecklistId] = useState<number | null>(
@@ -181,11 +175,6 @@ const Checklists = () => {
   })
 
   const deleteMutation = useDeleteChecklists({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-
-  const completeMutation = useCompleteChecklist({
     onClose: closePopup,
     reset: resetForm,
   })
@@ -447,24 +436,6 @@ const Checklists = () => {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex justify-end gap-2">
-                          {/* Complete */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-green-600 hover:text-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                            disabled={
-                              userData?.userId !== item.checklistMaster?.userId
-                            }
-                            onClick={() => {
-                              setCompletingChecklistId(
-                                item.checklistMaster?.checklistMasterId || null
-                              )
-                              setIsCompleteDialogOpen(true)
-                            }}
-                          >
-                            Complete
-                          </Button>
-
                           {/* Edit */}
                           <Button
                             variant="ghost"
@@ -799,39 +770,6 @@ const Checklists = () => {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={isCompleteDialogOpen}
-        onOpenChange={setIsCompleteDialogOpen}
-      >
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Complete Checklist</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark this checklist as complete? This
-              action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsCompleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (completingChecklistId) {
-                  completeMutation.mutate({
-                    checklistMasterId: completingChecklistId,
-                  })
-                }
-                setIsCompleteDialogOpen(false)
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              Complete
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

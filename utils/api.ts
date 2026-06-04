@@ -795,6 +795,33 @@ export async function getPreboardingEmployeeChecklistsById(token: string, id: nu
   })
 }
 
+// get assigned checklist by user id
+export async function getPreboardingEmployeeChecklistsByUserId(token: string, userId: number) {
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/getAssignedChecklistsByUser/${userId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function completeEmployeePreboardingChecklist(
+  data: { employeePreboardingChecklistId: number, completionDate: string | Date },
+  token: string
+) {
+  return fetchApi<number>({
+    url: 'api/employeePreboarding/completeChecklist/',
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //notifications
 export async function getNotificationsById(token: string, id: number) {
   return fetchApi<GetNotificationType>({
@@ -871,20 +898,6 @@ export async function deleteChecklist(id: number, token: string) {
     method: 'DELETE',
     headers: {
       Authorization: token,
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
-export async function completeChecklist(
-  checklistMasterId:number,
-  token: string
-) {
-  return fetchApi<number>({
-    url: `api/checklists/completeChecklist/${checklistMasterId}`,
-    method: 'PATCH',
-    headers: {
-      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })

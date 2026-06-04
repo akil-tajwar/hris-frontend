@@ -264,6 +264,7 @@ export const employeePreboardingSchema = z.object({
   salaryStructureMasterId: z.number(),
   offeredSalary: z.number(),
   probationMonths: z.number(),
+  isConfirmed: z.boolean().default(false),
   status: z.boolean().default(false),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -318,7 +319,8 @@ export const EmployeePreboardingChecklistSchema = z.object({
   preboardingId: z.number(),
   checklistDetailsId: z.number(),
   responsibleEmployeeId: z.number(),
-  completionDate: z.coerce.date(),
+  completionDate: z.coerce.date().nullable().optional(),
+  isComplete: z.boolean().default(false),
   status: z.boolean(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -329,6 +331,7 @@ export type CreateEmployeePreboardingChecklistType = z.infer<typeof EmployeePreb
 export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema> & {
   responsibleEmployeeName: string
   checklistDetailsName: string
+  preboardingFullName: string
 }
 
 export const notificationSchema = z.object({
@@ -437,6 +440,7 @@ export const employeeSchema = z.object({
   // For creating employee with leave types
   leavePolicies: z.array(z.number()).optional(),
   salaryStructures: z.array(z.number()).optional(),
+  preboardingId: z.number().optional(), //for just updating preboarding data
 
   // Audit Fields
   createdBy: z.number(),
