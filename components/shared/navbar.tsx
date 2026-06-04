@@ -51,7 +51,7 @@ export default function Navbar() {
     const msg = notification.notification?.toLowerCase() || ''
 
     if (msg.includes("you've been assigned a checklist")) {
-      return '/dashboard/employee-management/checklists'
+      return '/dashboard/setup/pending-tasks'
     }
 
     return '/dashboard'

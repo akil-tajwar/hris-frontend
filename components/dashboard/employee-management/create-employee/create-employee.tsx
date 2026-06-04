@@ -482,7 +482,7 @@ const CreateEmployee = () => {
   }, [router])
 
   const addMutation = useAddEmployee({ onClose: closePopup, reset: resetForm })
-  console.log("🚀 ~ CreateEmployee ~ addMutation:", addMutation)
+  console.log('🚀 ~ CreateEmployee ~ addMutation:', addMutation)
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1099,17 +1099,6 @@ const CreateEmployee = () => {
                 value={formData.doj ?? ''}
                 onChange={handleInputChange}
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="doc">Date of Confirmation</Label>
-              <Input
-                id="doc"
-                name="doc"
-                type="date"
-                value={formData.doc || ''}
-                onChange={handleInputChange}
               />
             </div>
 
@@ -1761,18 +1750,58 @@ const CreateEmployee = () => {
             employee.
           </p>
           <div className="grid gap-6 md:grid-cols-2">
-            <MultiSelectList
-              label="Leave Policies"
-              items={leavePolicyItems}
-              selectedIds={selectedLeavePolicies}
-              onChange={setSelectedLeavePolicies}
-            />
-            <MultiSelectList
-              label="Salary Structures"
-              items={salaryStructureItems}
-              selectedIds={selectedSalaryStructures}
-              onChange={setSelectedSalaryStructures}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="leavePolicyId">
+                Leave Policy <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={leavePolicyItems.map((p) => ({
+                  id: p.id.toString(),
+                  name: p.name,
+                }))}
+                value={
+                  selectedLeavePolicies[0]
+                    ? {
+                        id: selectedLeavePolicies[0].toString(),
+                        name:
+                          leavePolicyItems.find(
+                            (p) => p.id === selectedLeavePolicies[0]
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setSelectedLeavePolicies(value ? [Number(value.id)] : [])
+                }
+                placeholder="Select leave policy"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="salaryStructureId">
+                Salary Structure <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={salaryStructureItems.map((s) => ({
+                  id: s.id.toString(),
+                  name: s.name,
+                }))}
+                value={
+                  selectedSalaryStructures[0]
+                    ? {
+                        id: selectedSalaryStructures[0].toString(),
+                        name:
+                          salaryStructureItems.find(
+                            (s) => s.id === selectedSalaryStructures[0]
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setSelectedSalaryStructures(value ? [Number(value.id)] : [])
+                }
+                placeholder="Select salary structure"
+              />
+            </div>
           </div>
         </div>
 
