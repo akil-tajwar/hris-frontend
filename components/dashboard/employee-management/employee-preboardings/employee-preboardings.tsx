@@ -28,6 +28,7 @@ import {
   Edit2,
   Trash2,
   CheckCircle,
+  UserCheck,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
@@ -59,7 +60,6 @@ import {
   useGetChecklists,
   useGetPreboardingEmployeeChecklistsById,
   useAddPreboardingEmployeeChecklists,
-  useUpdatePreboardingEmployeeChecklists,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -73,12 +73,14 @@ import {
 import { CustomCombobox } from '@/utils/custom-combobox'
 import CustomSwitch from '@/utils/custom-switch'
 import { ChecklistPopup } from './checklist-popup'
+import Link from 'next/link'
 
 const EmployeePreboardings = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
   const { data: preboardings } = useGetAllEmployeePreboardings()
+  console.log('🚀 ~ EmployeePreboardings ~ preboardings:', preboardings)
   const { data: checklists } = useGetChecklists()
   const { data: companies } = useGetCompanies()
   const { data: departments } = useGetDepartments()
@@ -116,6 +118,10 @@ const EmployeePreboardings = () => {
     useGetPreboardingEmployeeChecklistsById(
       activePreboarding?.preboardingId ?? 0
     )
+  console.log(
+    '🚀 ~ EmployeePreboardings ~ existingChecklistData:',
+    existingChecklistData
+  )
 
   const existingAssignments: GetEmployeePreboardingChecklistType[] | undefined =
     Array.isArray(existingChecklistData?.data)
@@ -134,8 +140,6 @@ const EmployeePreboardings = () => {
 
   const handleChecklistSave = useCallback(
     (bulk: CreateEmployeePreboardingChecklistType[]) => {
-      // Always call the "add/upsert" endpoint with the full array.
-      // Adjust to updateMutation if your backend distinguishes create vs update.
       addChecklistMutation.mutate(bulk as any)
     },
     [addChecklistMutation]
@@ -227,14 +231,34 @@ const EmployeePreboardings = () => {
   const sortedPreboardings = useMemo(() => {
     return [...filteredPreboardings].sort(
       (a: GetEmployeePreboardingType, b: GetEmployeePreboardingType) => {
-        const aValue = a.fullName ?? ''
-        const bValue = b.fullName ?? ''
+        let aValue = a[sortColumn]
+        let bValue = b[sortColumn]
+
+        // Handle null/undefined values
+        if (aValue == null) aValue = ''
+        if (bValue == null) bValue = ''
+
+        // Handle different types
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+        }
+
+        // Handle dates
+        if (sortColumn === 'tentativeJoiningDate' || sortColumn === 'dob') {
+          const aDate = aValue ? new Date(aValue as string).getTime() : 0
+          const bDate = bValue ? new Date(bValue as string).getTime() : 0
+          return sortDirection === 'asc' ? aDate - bDate : bDate - aDate
+        }
+
+        // Handle strings
+        const aString = String(aValue).toLowerCase()
+        const bString = String(bValue).toLowerCase()
         return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
+          ? aString.localeCompare(bString)
+          : bString.localeCompare(aString)
       }
     )
-  }, [filteredPreboardings, sortDirection])
+  }, [filteredPreboardings, sortColumn, sortDirection])
 
   const paginatedPreboardings = useMemo(() => {
     const startIndex = (currentPage - 1) * preboardingsPerPage
@@ -291,18 +315,23 @@ const EmployeePreboardings = () => {
     setFormData({
       fullName: preboarding.fullName,
       gender: preboarding.gender,
-      dob: preboarding.dob,
+      dob: preboarding.dob
+        ? new Date(preboarding.dob).toISOString().split('T')[0]
+        : '',
       personalEmail: preboarding.personalEmail,
       personalPhone: preboarding.personalPhone,
-      tentativeJoiningDate: preboarding.tentativeJoiningDate,
-      companyId: preboarding.companyId ?? 0,
-      departmentId: preboarding.departmentId ?? 0,
-      designationId: preboarding.designationId ?? 0,
-      reportingAuthorityId: preboarding.reportingAuthorityId ?? 0,
-      employmentTypeId: preboarding.employmentTypeId ?? 0,
-      salaryStructureMasterId: preboarding.salaryStructureMasterId ?? 0,
+      tentativeJoiningDate: preboarding.tentativeJoiningDate
+        ? new Date(preboarding.tentativeJoiningDate).toISOString().split('T')[0]
+        : '',
+      companyId: Number(preboarding.companyId ?? 0),
+      departmentId: Number(preboarding.departmentId ?? 0),
+      designationId: Number(preboarding.designationId ?? 0),
+      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? 0),
+      employmentTypeId: Number(preboarding.employmentTypeId ?? 0),
+      salaryStructureMasterId: Number(preboarding.salaryStructureMasterId ?? 0),
       offeredSalary: preboarding.offeredSalary ?? 0,
       probationMonths: preboarding.probationMonths ?? 0,
+      isConfirmed: preboarding.isConfirmed ?? false,
       status: preboarding.status ?? 'Active',
       createdBy: userData?.userId || 0,
     })
@@ -349,37 +378,62 @@ const EmployeePreboardings = () => {
           <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
-              <TableHead>Preboard No.</TableHead>
+              <TableHead
+                onClick={() => handleSort('preboardNo')}
+                className="cursor-pointer "
+              >
+                Preboard No. <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead
                 onClick={() => handleSort('fullName')}
-                className="cursor-pointer"
+                className="cursor-pointer "
               >
                 Full Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Designation</TableHead>
-              <TableHead>Tentative Joining</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead
+                onClick={() => handleSort('gender')}
+                className="cursor-pointer "
+              >
+                Gender <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('departmentName')}
+                className="cursor-pointer "
+              >
+                Department <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('designationName')}
+                className="cursor-pointer "
+              >
+                Designation <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('tentativeJoiningDate')}
+                className="cursor-pointer "
+              >
+                Tentative Joining{' '}
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!preboardings || preboardings.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   Loading preboardings...
                 </TableCell>
               </TableRow>
             ) : !preboardings.data || preboardings.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   No preboardings found
                 </TableCell>
               </TableRow>
             ) : paginatedPreboardings.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   No preboardings match your search
                 </TableCell>
               </TableRow>
@@ -404,35 +458,33 @@ const EmployeePreboardings = () => {
                           ).toLocaleDateString()
                         : '—'}
                     </TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          String(preboarding.status) === 'Active'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {typeof preboarding.status === 'string'
-                          ? preboarding.status
-                          : preboarding.status
-                          ? 'Active'
-                          : 'Inactive'}
-                      </span>
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {/* Checklist (check) button */}
+                        <Link
+                          href={`/dashboard/employee-management/create-employee?preboardingId=${preboarding.preboardingId}`}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`${
+                              preboarding.isConfirmed === false
+                                ? 'text-green-600 hover:text-green-700'
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            title="Make Employee"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-green-600 hover:text-green-700"
+                          className="text-purple-600 hover:text-purple-700"
                           title="Assign Checklists"
                           onClick={() => handleChecklistClick(preboarding)}
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
-
-                        {/* Edit button */}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -442,8 +494,6 @@ const EmployeePreboardings = () => {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-
-                        {/* Delete button */}
                         <Button
                           variant="ghost"
                           size="sm"

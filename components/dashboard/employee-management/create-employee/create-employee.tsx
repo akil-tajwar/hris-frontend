@@ -1,4 +1,5 @@
 'use client'
+
 import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,7 @@ import {
 import { User, Upload, Download } from 'lucide-react'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import {
   useAddEmployee,
@@ -29,11 +30,16 @@ import {
   useGetAllEmployees,
   useGetRoles,
   useGetTenants,
+  useGetPreboardingEmployeeChecklistsById,
+  useGetEmployeePreboardingById,
+  useGetLeavePolicies,
+  useGetSalaryStructures,
 } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
 import { saveAs } from 'file-saver'
+import { GetLeavePolicyType, GetSalaryStructureType } from '@/utils/type'
 
 // ── Static column definitions ─────────────────────────────────────────────────
 const STATIC_COLUMNS = [
@@ -85,17 +91,10 @@ const STATIC_COLUMNS = [
     width: 24,
     required: true,
   },
-  {
-    header: 'Shift',
-    key: 'shiftId',
-    width: 36,
-    required: false,
-  },
+  { header: 'Shift', key: 'shiftId', width: 36, required: false },
 ]
 
 // ── Local form types ──────────────────────────────────────────────────────────
-// CreateEmployeeType from the schema is { employeeData: ..., userData: ... }.
-// We manage the two parts separately in state, so we define flat local types.
 type EmployeeFormData = {
   empFullName: string
   empShortName: string | null
@@ -174,10 +173,125 @@ const formatShift = (
   return `${shiftName} (${startTime}-${endTime})`
 }
 
+// ── Multi-select checklist ────────────────────────────────────────────────────
+type MultiSelectItem = { id: number; name: string }
+
+const MultiSelectList = ({
+  label,
+  items,
+  selectedIds,
+  onChange,
+}: {
+  label: string
+  items: MultiSelectItem[]
+  selectedIds: number[]
+  onChange: (ids: number[]) => void
+}) => {
+  const toggle = (id: number) => {
+    onChange(
+      selectedIds.includes(id)
+        ? selectedIds.filter((x) => x !== id)
+        : [...selectedIds, id]
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="border rounded-md p-3 bg-white max-h-48 overflow-y-auto space-y-1">
+        {items.length === 0 && (
+          <p className="text-sm text-gray-400 italic">No options available</p>
+        )}
+        {items.map((item) => {
+          const checked = selectedIds.includes(item.id)
+          return (
+            <label
+              key={item.id}
+              className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded text-sm transition-colors ${
+                checked ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                className="accent-blue-600"
+                checked={checked}
+                onChange={() => toggle(item.id)}
+              />
+              {item.name}
+            </label>
+          )
+        })}
+      </div>
+      {selectedIds.length > 0 && (
+        <p className="text-xs text-blue-600">{selectedIds.length} selected</p>
+      )}
+    </div>
+  )
+}
+
+// ── Empty form default ────────────────────────────────────────────────────────
+const buildEmptyForm = (userId: number): EmployeeFormData => ({
+  empFullName: '',
+  empShortName: null,
+  dob: '',
+  gender: 'Male',
+  nationality: null,
+  nationalIdNo: null,
+  maritalStatus: null,
+  religion: null,
+  bloodGroup: null,
+  photoUrl: null,
+  cvUrl: null,
+  certificateUrl: null,
+  workEmail: '',
+  privateEmail: null,
+  homePhone: null,
+  personalPhone: null,
+  officialPhone: '',
+  presentAddress: '',
+  permanentAddress: null,
+  country: null,
+  city: null,
+  zipCode: null,
+  emergencyContactName: null,
+  emergencyContactPhone: null,
+  emergencyContactRelation: null,
+  qualification: 'Graduate',
+  instituteName: null,
+  subjectName: null,
+  startDate: null,
+  endDate: null,
+  result: null,
+  dependentsName: null,
+  dependentRelation: null,
+  empCode: '',
+  doj: new Date().toISOString().split('T')[0],
+  doc: null,
+  basicSalary: 0,
+  isActive: true,
+  departmentId: 0,
+  designationId: 0,
+  employmentTypeId: 0,
+  shiftId: 0,
+  companyId: 0,
+  workStationId: 0,
+  divisionId: 0,
+  costCenterId: 0,
+  reportingAuthorityId: null,
+  createdBy: userId,
+})
+
 const CreateEmployee = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
   const router = useRouter()
+
+  const searchParams = useSearchParams()
+  const preboardingId = searchParams.get('preboardingId')
+
+  const { data: preboarding } = useGetEmployeePreboardingById(
+    Number(preboardingId)
+  )
 
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
@@ -190,79 +304,28 @@ const CreateEmployee = () => {
   const { data: employees } = useGetAllEmployees()
   const { data: roles } = useGetRoles()
   const { data: tenants } = useGetTenants()
+  const { data: leavePoliciesResponse } = useGetLeavePolicies()
+  const { data: salaryStructuresResponse } = useGetSalaryStructures()
 
   const [error, setError] = useState<string | null>(null)
   const [isImportPopupOpen, setIsImportPopupOpen] = useState(false)
 
   const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null)
-  const [cvUrl, setCvFile] = useState<File | null>(null)
+  const [cvFile, setCvFile] = useState<File | null>(null)
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
 
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    // Personal
-    empFullName: '',
-    empShortName: null,
-    dob: '',
-    gender: 'Male',
-    nationality: null,
-    nationalIdNo: null,
-    maritalStatus: null,
-    religion: null,
-    bloodGroup: null,
-    photoUrl: null,
-    cvUrl: null,
+  // ── Leave & salary selection (separate from formData) ────────────────────
+  const [selectedLeavePolicies, setSelectedLeavePolicies] = useState<number[]>(
+    []
+  )
+  const [selectedSalaryStructures, setSelectedSalaryStructures] = useState<
+    number[]
+  >([])
 
-    // Contact
-    workEmail: '',
-    privateEmail: null,
-    homePhone: null,
-    personalPhone: null,
-    officialPhone: '',
+  const [formData, setFormData] = useState<EmployeeFormData>(() =>
+    buildEmptyForm(userData?.userId || 0)
+  )
 
-    // Address
-    presentAddress: '',
-    permanentAddress: null,
-    country: null,
-    city: null,
-    zipCode: null,
-
-    // Emergency Contact
-    emergencyContactName: null,
-    emergencyContactPhone: null,
-    emergencyContactRelation: null,
-
-    // Education
-    qualification: 'Graduate',
-    instituteName: null,
-    subjectName: null,
-    startDate: null,
-    endDate: null,
-    result: null,
-    certificateUrl: null,
-
-    // Dependent
-    dependentsName: null,
-    dependentRelation: null,
-
-    // Official
-    empCode: '',
-    doj: new Date().toISOString().split('T')[0],
-    doc: null,
-    basicSalary: 0,
-    isActive: true,
-    departmentId: 0,
-    designationId: 0,
-    employmentTypeId: 0,
-    shiftId: 0,
-    companyId: 0,
-    workStationId: 0,
-    divisionId: 0,
-    costCenterId: 0,
-    reportingAuthorityId: 0,
-    createdBy: userData?.userId || 0,
-  })
-
-  // ── User form state ───────────────────────────────────────────────────────
   const [userFormData, setUserFormData] = useState<UserFormData>({
     username: '',
     password: '',
@@ -273,7 +336,67 @@ const CreateEmployee = () => {
     active: true,
   })
 
-  // ── Input handlers ──────────────────────────────────────────────────────────
+  // ── Sync createdBy when userData loads ───────────────────────────────────
+  useEffect(() => {
+    if (userData?.userId) {
+      setFormData((prev) => ({ ...prev, createdBy: userData.userId }))
+    }
+  }, [userData?.userId])
+
+  // ── Pre-fill from preboarding ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!preboarding) return
+
+    setFormData((prev) => ({
+      ...prev,
+      empFullName: preboarding.data?.fullName ?? prev.empFullName,
+      gender: (preboarding.data?.gender as 'Male' | 'Female') ?? prev.gender,
+      dob: preboarding.data?.dob
+        ? new Date(preboarding.data.dob).toISOString().split('T')[0]
+        : '',
+      workEmail: preboarding.data?.personalEmail ?? prev.workEmail,
+      personalPhone: preboarding.data?.personalPhone ?? prev.personalPhone,
+      doj: preboarding.data?.tentativeJoiningDate
+        ? new Date(preboarding.data.tentativeJoiningDate)
+            .toISOString()
+            .split('T')[0]
+        : prev.doj,
+      companyId: preboarding.data?.companyId ?? prev.companyId,
+      departmentId: preboarding.data?.departmentId ?? prev.departmentId,
+      designationId: preboarding.data?.designationId ?? prev.designationId,
+      reportingAuthorityId:
+        preboarding.data?.reportingAuthorityId ?? prev.reportingAuthorityId,
+      employmentTypeId:
+        preboarding.data?.employmentTypeId ?? prev.employmentTypeId,
+      basicSalary: preboarding.data?.offeredSalary ?? prev.basicSalary,
+    }))
+
+    // Pre-select the salary structure from preboarding
+    if (preboarding.data?.salaryStructureMasterId) {
+      setSelectedSalaryStructures([preboarding.data.salaryStructureMasterId])
+    }
+  }, [preboarding])
+
+  // ── Derive checklist items from typed API responses ───────────────────────
+  const leavePolicyItems: MultiSelectItem[] = (
+    (leavePoliciesResponse?.data ?? []) as GetLeavePolicyType[]
+  )
+    .filter((p) => p.leavePolicyMaster.leavePolicyMasterId != null)
+    .map((p) => ({
+      id: p.leavePolicyMaster.leavePolicyMasterId as number,
+      name: p.leavePolicyMaster.policyName,
+    }))
+
+  const salaryStructureItems: MultiSelectItem[] = (
+    (salaryStructuresResponse?.data ?? []) as GetSalaryStructureType[]
+  )
+    .filter((s) => s.salaryStructureMaster.salaryStructureMasterId != null)
+    .map((s) => ({
+      id: s.salaryStructureMaster.salaryStructureMasterId as number,
+      name: s.salaryStructureMaster.structureName,
+    }))
+
+  // ── Input handlers ────────────────────────────────────────────────────────
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -332,58 +455,9 @@ const CreateEmployee = () => {
     }
   }
 
-  // ── Reset / close ───────────────────────────────────────────────────────────
+  // ── Reset ─────────────────────────────────────────────────────────────────
   const resetForm = () => {
-    setFormData({
-      empFullName: '',
-      empShortName: null,
-      dob: '',
-      gender: 'Male',
-      nationality: null,
-      nationalIdNo: null,
-      maritalStatus: null,
-      religion: null,
-      bloodGroup: null,
-      photoUrl: null,
-      cvUrl: null,
-      workEmail: '',
-      privateEmail: null,
-      homePhone: null,
-      personalPhone: null,
-      officialPhone: '',
-      presentAddress: '',
-      permanentAddress: null,
-      country: null,
-      city: null,
-      zipCode: null,
-      emergencyContactName: null,
-      emergencyContactPhone: null,
-      emergencyContactRelation: null,
-      qualification: 'Graduate',
-      instituteName: null,
-      subjectName: null,
-      startDate: null,
-      endDate: null,
-      result: null,
-      certificateUrl: null,
-      dependentsName: null,
-      dependentRelation: null,
-      empCode: '',
-      doj: new Date().toISOString().split('T')[0],
-      doc: null,
-      basicSalary: 0,
-      isActive: true,
-      departmentId: 0,
-      designationId: 0,
-      employmentTypeId: 0,
-      shiftId: 0,
-      companyId: 0,
-      workStationId: 0,
-      divisionId: 0,
-      costCenterId: 0,
-      reportingAuthorityId: 0,
-      createdBy: userData?.userId || 0,
-    })
+    setFormData(buildEmptyForm(userData?.userId || 0))
     setUserFormData({
       username: '',
       password: '',
@@ -396,6 +470,8 @@ const CreateEmployee = () => {
     setEmployeePhotoFile(null)
     setCvFile(null)
     setCertificateFile(null)
+    setSelectedLeavePolicies([])
+    setSelectedSalaryStructures([])
     setError(null)
     router.push('/dashboard/employee-management/employees')
   }
@@ -406,13 +482,13 @@ const CreateEmployee = () => {
   }, [router])
 
   const addMutation = useAddEmployee({ onClose: closePopup, reset: resetForm })
+  console.log('🚀 ~ CreateEmployee ~ addMutation:', addMutation)
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    // Employee validations
     if (!formData.empFullName.trim()) return setError('Please enter full name')
     if (!formData.officialPhone.trim())
       return setError('Please enter official phone')
@@ -437,8 +513,6 @@ const CreateEmployee = () => {
       return setError('Please select division')
     if (!formData.costCenterId || formData.costCenterId <= 0)
       return setError('Please select cost center')
-
-    // User validations
     if (!userFormData.username.trim()) return setError('Please enter username')
     if (!userFormData.email.trim()) return setError('Please enter user email')
     if (!userFormData.password.trim()) return setError('Please enter password')
@@ -460,6 +534,8 @@ const CreateEmployee = () => {
         cvUrl: null,
         certificateUrl: null,
         createdBy: userData?.userId || 0,
+        leavePolicies: selectedLeavePolicies,
+        salaryStructures: selectedSalaryStructures,
       })
     )
     form.append(
@@ -476,7 +552,7 @@ const CreateEmployee = () => {
       })
     )
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
-    if (cvUrl) form.append('cvUrl', cvUrl)
+    if (cvFile) form.append('cvUrl', cvFile)
     if (certificateFile) form.append('certificateUrl', certificateFile)
 
     try {
@@ -491,7 +567,7 @@ const CreateEmployee = () => {
     }
   }
 
-  // ── Download Template ────────────────────────────────────────────────────────
+  // ── Download Template ─────────────────────────────────────────────────────
   const handleDownloadTemplate = async () => {
     const ExcelJS = (await import('exceljs')).default
     const workbook = new ExcelJS.Workbook()
@@ -553,7 +629,6 @@ const CreateEmployee = () => {
         right: { style: 'thin' },
       }
     })
-
     headerRow.height = 36
 
     const hintRow = sheet.getRow(2)
@@ -571,7 +646,6 @@ const CreateEmployee = () => {
         right: { style: 'thin' },
       }
     })
-
     hintRow.height = 14
 
     for (let row = 3; row <= 201; row++) {
@@ -710,18 +784,12 @@ const CreateEmployee = () => {
           const key = keys.find((k) => normalizeKey(k) === colHeader.trim())
           return key ? row[key] : undefined
         }
-
         const parseId = (label: string) => {
           const parts = String(label ?? '').split(' | ')
           return parts.length >= 2 ? Number(parts[parts.length - 1]) : null
         }
-
         const normalizeDate = (raw: any): string => {
-          if (!raw) return ''
-          const s = String(raw)
-          if (s.includes('-')) return s
-          const d = new Date(s)
-          return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : s
+          return raw ? new Date(raw).toISOString().split('T')[0] : ''
         }
 
         return {
@@ -758,6 +826,8 @@ const CreateEmployee = () => {
           employmentTypeId: parseId(get('Employment Type')) ?? 0,
           shiftId: parseId(get('Shift')) ?? null,
           createdBy: userData?.userId || 0,
+          leavePolicies: [],
+          salaryStructures: [],
         }
       })
 
@@ -791,7 +861,7 @@ const CreateEmployee = () => {
     }
   }, [addMutation.error])
 
-  // ── JSX ─────────────────────────────────────────────────────────────────────
+  // ── JSX ───────────────────────────────────────────────────────────────────
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -799,7 +869,17 @@ const CreateEmployee = () => {
           <div className="bg-blue-100 p-2 rounded-md">
             <User className="text-blue-600" />
           </div>
-          <h2 className="text-lg font-semibold">Create Employee</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Create Employee</h2>
+            {preboardingId && preboarding && (
+              <p className="text-xs text-blue-600 mt-0.5">
+                Pre-filled from preboarding:{' '}
+                <span className="font-medium">
+                  {preboarding.data?.preboardNo}
+                </span>
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -1019,17 +1099,6 @@ const CreateEmployee = () => {
                 value={formData.doj ?? ''}
                 onChange={handleInputChange}
                 required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="doc">Date of Confirmation</Label>
-              <Input
-                id="doc"
-                name="doc"
-                type="date"
-                value={formData.doc || ''}
-                onChange={handleInputChange}
               />
             </div>
 
@@ -1313,7 +1382,11 @@ const CreateEmployee = () => {
                             (t) => t.shift.shiftId === formData.shiftId
                           )
                           return t
-                            ? formatShift(t.shift.shiftName, t.shift.startTime, t.shift.endTime)
+                            ? formatShift(
+                                t.shift.shiftName,
+                                t.shift.startTime,
+                                t.shift.endTime
+                              )
                             : ''
                         })(),
                       }
@@ -1374,9 +1447,9 @@ const CreateEmployee = () => {
                 onChange={handleCvChange}
                 className="text-sm"
               />
-              {cvUrl && (
+              {cvFile && (
                 <p className="text-xs text-green-600">
-                  ✓ CV selected: {cvUrl.name}
+                  ✓ CV selected: {cvFile.name}
                 </p>
               )}
             </div>
@@ -1500,7 +1573,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="dependentRelation">Relation</Label>
               <Input
@@ -1530,7 +1602,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
               <Input
@@ -1541,7 +1612,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="emergencyContactRelation">Relation</Label>
               <Input
@@ -1571,7 +1641,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="privateEmail">Private Email</Label>
               <Input
@@ -1582,7 +1651,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="officialPhone">
                 Official Phone <span className="text-red-500">*</span>
@@ -1596,7 +1664,6 @@ const CreateEmployee = () => {
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="personalPhone">Personal Phone</Label>
               <Input
@@ -1607,7 +1674,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="homePhone">Home Phone</Label>
               <Input
@@ -1618,7 +1684,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="presentAddress">
                 Present Address <span className="text-red-500">*</span>
@@ -1632,7 +1697,6 @@ const CreateEmployee = () => {
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="permanentAddress">Permanent Address</Label>
               <Input
@@ -1643,7 +1707,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>
               <Input
@@ -1654,7 +1717,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="city">City</Label>
               <Input
@@ -1665,7 +1727,6 @@ const CreateEmployee = () => {
                 onChange={handleInputChange}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="zipCode">Zip Code</Label>
               <Input
@@ -1679,7 +1740,72 @@ const CreateEmployee = () => {
           </div>
         </div>
 
-        {/* ── 7. User Account Information ── */}
+        {/* ── 7. Leave Policies & Salary Structures ── */}
+        <div className="border p-8 rounded-lg bg-slate-100">
+          <h3 className="text-md font-semibold mb-1">
+            Leave Policies &amp; Salary Structures
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Assign leave policies and salary structures that will apply to this
+            employee.
+          </p>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="leavePolicyId">
+                Leave Policy <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={leavePolicyItems.map((p) => ({
+                  id: p.id.toString(),
+                  name: p.name,
+                }))}
+                value={
+                  selectedLeavePolicies[0]
+                    ? {
+                        id: selectedLeavePolicies[0].toString(),
+                        name:
+                          leavePolicyItems.find(
+                            (p) => p.id === selectedLeavePolicies[0]
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setSelectedLeavePolicies(value ? [Number(value.id)] : [])
+                }
+                placeholder="Select leave policy"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="salaryStructureId">
+                Salary Structure <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={salaryStructureItems.map((s) => ({
+                  id: s.id.toString(),
+                  name: s.name,
+                }))}
+                value={
+                  selectedSalaryStructures[0]
+                    ? {
+                        id: selectedSalaryStructures[0].toString(),
+                        name:
+                          salaryStructureItems.find(
+                            (s) => s.id === selectedSalaryStructures[0]
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setSelectedSalaryStructures(value ? [Number(value.id)] : [])
+                }
+                placeholder="Select salary structure"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── 8. User Account Information ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-1">
             User Account Information
@@ -1701,7 +1827,6 @@ const CreateEmployee = () => {
                 placeholder="Enter username"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="userEmail">
                 Email <span className="text-red-500">*</span>
@@ -1715,7 +1840,6 @@ const CreateEmployee = () => {
                 placeholder="Enter email"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">
                 Password <span className="text-red-500">*</span>
@@ -1729,7 +1853,6 @@ const CreateEmployee = () => {
                 placeholder="Min. 6 characters"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">
                 Confirm Password <span className="text-red-500">*</span>
@@ -1743,7 +1866,6 @@ const CreateEmployee = () => {
                 placeholder="Re-enter password"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="roleId">
                 Role <span className="text-red-500">*</span>
@@ -1775,7 +1897,6 @@ const CreateEmployee = () => {
                 placeholder="Select role"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="tenantId">
                 Tenant <span className="text-red-500">*</span>
@@ -1807,7 +1928,6 @@ const CreateEmployee = () => {
                 placeholder="Select tenant"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="userActive">Account Status</Label>
               <Select

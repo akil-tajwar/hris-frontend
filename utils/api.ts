@@ -697,6 +697,17 @@ export async function getAllEmployeePreboardings(token: string) {
   })
 }
 
+export async function getEmployeePreboardingById(token: string, id: number) {
+  return fetchApi<GetEmployeePreboardingType>({
+    url: `api/employeePreboarding/getPreboarding/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function createEmployeePreboarding(
   data: CreateEmployeePreboardingType,
   token: string
@@ -774,11 +785,38 @@ export async function editEmployeePreboardingChecklist(
 
 // get assigned checklist by preboarding employee id
 export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
-  return fetchApi<GetEmployeeType>({
-    url: `api/employeePreboarding/get/${id}`,
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/getChecklists/${id}`,
     method: 'GET',
     headers: {
       Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// get assigned checklist by user id
+export async function getPreboardingEmployeeChecklistsByUserId(token: string, userId: number) {
+  return fetchApi<GetEmployeePreboardingChecklistType>({
+    url: `api/employeePreboarding/getAssignedChecklistsByUser/${userId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function completeEmployeePreboardingChecklist(
+  data: { employeePreboardingChecklistId: number, completionDate: string | Date },
+  token: string
+) {
+  return fetchApi<number>({
+    url: 'api/employeePreboarding/completeChecklist/',
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
       'Content-Type': 'application/json',
     },
   })
@@ -865,20 +903,6 @@ export async function deleteChecklist(id: number, token: string) {
   })
 }
 
-export async function completeChecklist(
-  checklistMasterId:number,
-  token: string
-) {
-  return fetchApi<number>({
-    url: `api/checklists/completeChecklist/${checklistMasterId}`,
-    method: 'PATCH',
-    headers: {
-      Authorization: `${token}`,
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
 //employee
 export async function getAllEmployees(token: string) {
   return fetchApi<GetEmployeeType[]>({
@@ -903,6 +927,7 @@ export async function getEmployeeById(token: string, id: number) {
 }
 
 export async function createEmployee(formData: FormData, token: string) {
+  console.log("🚀 ~ createEmployee ~ formData:", formData)
   return fetchApiWithFile<CreateEmployeeType>({
     url: 'api/employees/create',
     method: 'POST',
