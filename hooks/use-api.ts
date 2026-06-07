@@ -122,6 +122,18 @@ import {
   completeEmployeePreboardingChecklist,
   getEmployeePreboardingById,
   getPreboardingEmployeeChecklistsByUserId,
+  getAllAssetCategories,
+  getAssetCategoryById,
+  createAssetCategory,
+  editAssetCategory,
+  deleteAssetCategory,
+  getAllAssets,
+  getAssetById,
+  createAsset,
+  editAsset,
+  deleteAsset,
+  assignAsset,
+  getLatestAssetTransactions,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -164,6 +176,12 @@ import {
   GetChecklistType,
   CreateEmployeePreboardingChecklistType,
   GetEmployeePreboardingChecklistType,
+  CreateAssetCategoryType,
+  GetAssetCategoryType,
+  CreateAssetType,
+  GetAssetType,
+  CreateAssetTransactionType,
+  GetAssetTransactionType,
 } from '@/utils/type'
 
 //roles
@@ -3467,6 +3485,400 @@ export const useDeleteEmployeeLeaveAssignment = ({
 
   return mutation
 }
+
+export const useGetAllAssetCategories = () => {
+  const [token] = useAtom(tokenAtom);
+  useInitializeUser();
+
+  return useQuery({
+    queryKey: ['assetCategories'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      return getAllAssetCategories(token);
+    },
+    enabled: !!token,
+    select: (data) => data,
+  });
+};
+
+export const useGetAssetCategoryById = (id: number) => {
+  const [token] = useAtom(tokenAtom);
+  useInitializeUser();
+
+  return useQuery({
+    queryKey: ['assetCategory', id],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      return getAssetCategoryById(token, id);
+    },
+    enabled: !!token && !!id,
+    select: (data) => data,
+  });
+};
+
+export const useAddAssetCategory = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateAssetCategoryType) => {
+      const res = await createAssetCategory(data, token);
+      return res;
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create asset category',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Asset category created successfully!',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error adding asset category:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+export const useUpdateAssetCategory = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetAssetCategoryType }) => {
+      return editAssetCategory(id, data, token);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Asset category edited successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
+      reset();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error editing asset category:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to edit asset category',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+export const useDeleteAssetCategory = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteAssetCategory(id, token);
+      console.log('DELETE RESPONSE:', res);
+      const apiError = res?.error || (res?.data === null && res?.error?.message);
+      const successFlag = (res?.error?.details as any)?.success;
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete asset category');
+      }
+      return res;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Asset category deleted successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Delete error:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+// ==================== ASSETS ====================
+
+export const useGetAllAssets = () => {
+  const [token] = useAtom(tokenAtom);
+  useInitializeUser();
+
+  return useQuery({
+    queryKey: ['assets'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      return getAllAssets(token);
+    },
+    enabled: !!token,
+    select: (data) => data,
+  });
+};
+
+export const useGetLatestAssetTransactions = () => {
+  const [token] = useAtom(tokenAtom);
+  useInitializeUser();
+
+  return useQuery({
+    queryKey: ['assetTransactions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      return getLatestAssetTransactions(token);
+    },
+    enabled: !!token,
+    select: (data) => data,
+  });
+};
+
+export const useGetAssetById = (id: number) => {
+  const [token] = useAtom(tokenAtom);
+  useInitializeUser();
+
+  return useQuery({
+    queryKey: ['asset', id],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found');
+      }
+      return getAssetById(token, id);
+    },
+    enabled: !!token && !!id,
+    select: (data) => data,
+  });
+};
+
+export const useAddAsset = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateAssetType) => {
+      const res = await createAsset(data, token);
+      return res;
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create asset',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Asset created successfully!',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error adding asset:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+export const useUpdateAsset = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetAssetType }) => {
+      return editAsset(id, data, token);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Asset edited successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      reset();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error editing asset:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'Failed to edit asset',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+export const useDeleteAsset = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteAsset(id, token);
+      console.log('DELETE RESPONSE:', res);
+      const apiError = res?.error || (res?.data === null && res?.error?.message);
+      const successFlag = (res?.error?.details as any)?.success;
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete asset');
+      }
+      return res;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Asset deleted successfully.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Delete error:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      });
+    },
+  });
+
+  return mutation;
+};
+
+export const useAssignAsset = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void;
+  reset: () => void;
+}) => {
+  useInitializeUser();
+  const [token] = useAtom(tokenAtom);
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateAssetTransactionType) => {
+      const res = await assignAsset(data, token);
+      return res;
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to assign asset',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Asset assigned successfully!',
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['assetTransactions'] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error('Error assigning asset:', error);
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      });
+    },
+  });
+
+  return mutation;
+};
 
 //employee attendances
 export const useGetEmployeeAttendances = () => {

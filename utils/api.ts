@@ -64,6 +64,12 @@ import {
   CreateEmployeePreboardingChecklistType,
   GetEmployeePreboardingChecklistType,
   GetNotificationType,
+  GetAssetCategoryType,
+  CreateAssetCategoryType,
+  GetAssetType,
+  CreateAssetType,
+  CreateAssetTransactionType,
+  GetAssetTransactionType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -158,7 +164,10 @@ export async function getAllBusinessUnits(token: string) {
   })
 }
 
-export async function createBusinessUnit(data: CreateBusinessUnitType, token: string) {
+export async function createBusinessUnit(
+  data: CreateBusinessUnitType,
+  token: string
+) {
   return fetchApi<CreateBusinessUnitType>({
     url: 'api/business-units/create',
     method: 'POST',
@@ -784,7 +793,10 @@ export async function editEmployeePreboardingChecklist(
 }
 
 // get assigned checklist by preboarding employee id
-export async function getPreboardingEmployeeChecklistsById(token: string, id: number) {
+export async function getPreboardingEmployeeChecklistsById(
+  token: string,
+  id: number
+) {
   return fetchApi<GetEmployeePreboardingChecklistType>({
     url: `api/employeePreboarding/getChecklists/${id}`,
     method: 'GET',
@@ -796,7 +808,10 @@ export async function getPreboardingEmployeeChecklistsById(token: string, id: nu
 }
 
 // get assigned checklist by user id
-export async function getPreboardingEmployeeChecklistsByUserId(token: string, userId: number) {
+export async function getPreboardingEmployeeChecklistsByUserId(
+  token: string,
+  userId: number
+) {
   return fetchApi<GetEmployeePreboardingChecklistType>({
     url: `api/employeePreboarding/getAssignedChecklistsByUser/${userId}`,
     method: 'GET',
@@ -808,7 +823,10 @@ export async function getPreboardingEmployeeChecklistsByUserId(token: string, us
 }
 
 export async function completeEmployeePreboardingChecklist(
-  data: { employeePreboardingChecklistId: number, completionDate: string | Date },
+  data: {
+    employeePreboardingChecklistId: number
+    completionDate: string | Date
+  },
   token: string
 ) {
   return fetchApi<number>({
@@ -817,6 +835,171 @@ export async function completeEmployeePreboardingChecklist(
     body: data,
     headers: {
       Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getAllAssetCategories(token: string) {
+  return fetchApi<GetAssetCategoryType[]>({
+    url: 'api/assetCategory/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getAssetCategoryById(token: string, id: number) {
+  return fetchApi<GetAssetCategoryType>({
+    url: `api/assetCategory/getPreboarding/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createAssetCategory(
+  data: CreateAssetCategoryType,
+  token: string
+) {
+  return fetchApi<CreateAssetCategoryType>({
+    url: 'api/assetCategory/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editAssetCategory(
+  id: number,
+  data: GetAssetCategoryType,
+  token: string
+) {
+  return fetchApi<GetAssetCategoryType>({
+    url: `api/assetCategory/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteAssetCategory(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/assetCategory/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//assets
+export async function getAllAssets(token: string) {
+  return fetchApi<GetAssetType[]>({
+    url: 'api/assets/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getLatestAssetTransactions(token: string) {
+  return fetchApi<GetAssetTransactionType[]>({
+    url: 'api/assets/getLatestTransactions',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getAssetById(token: string, id: number) {
+  return fetchApi<GetAssetType>({
+    url: `api/assets/getPreboarding/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createAsset(data: CreateAssetType, token: string) {
+  return fetchApi<CreateAssetType>({
+    url: 'api/assets/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editAsset(id: number, data: GetAssetType, token: string) {
+  return fetchApi<GetAssetType>({
+    url: `api/assets/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteAsset(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/assets/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//assign asset to employee
+export async function assignAsset(
+  data: CreateAssetTransactionType,
+  token: string
+) {
+  return fetchApi<CreateAssetTransactionType>({
+    url: 'api/assets/assign',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editAssignedAsset(
+  token: string,
+  assetTransactionId: number,
+  data: GetAssetTransactionType
+) {
+  return fetchApi<GetAssetTransactionType>({
+    url: `api/assets/assign/edit/${assetTransactionId}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: token,
       'Content-Type': 'application/json',
     },
   })
@@ -834,10 +1017,7 @@ export async function getNotificationsById(token: string, id: number) {
   })
 }
 
-export async function markAsRead(
-  data:number[],
-  token: string
-) {
+export async function markAsRead(data: number[], token: string) {
   return fetchApi<number[]>({
     url: 'api/notifications/markAsRead',
     method: 'PATCH',
@@ -927,7 +1107,7 @@ export async function getEmployeeById(token: string, id: number) {
 }
 
 export async function createEmployee(formData: FormData, token: string) {
-  console.log("🚀 ~ createEmployee ~ formData:", formData)
+  console.log('🚀 ~ createEmployee ~ formData:', formData)
   return fetchApiWithFile<CreateEmployeeType>({
     url: 'api/employees/create',
     method: 'POST',
@@ -1354,7 +1534,6 @@ export async function deleteSalaryStructure(id: number, token: string) {
   })
 }
 
-
 //employee other salary components
 export async function getAllEmployeeSalaryComponents(token: string) {
   return fetchApi<GetEmployeeSalaryComponentType[]>({
@@ -1398,10 +1577,7 @@ export async function editEmployeeSalaryComponent(
   })
 }
 
-export async function deleteEmployeeSalaryComponent(
-  id: number,
-  token: string
-) {
+export async function deleteEmployeeSalaryComponent(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/employeeSalaryComponents/delete/${id}`,
     method: 'DELETE',

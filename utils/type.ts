@@ -851,6 +851,70 @@ export type GetEmployeeSalaryComponentType = z.infer<
   isLateEarlyOutFee: number
 }
 
+export const assetCategorySchema = z.object({
+  assetCategoryId: z.number().optional(),
+  categoryName: z.string(),
+  createdBy: z.number(),
+  createdAt: z.date(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().nullable(),
+});
+export type CreateAssetCategoryType = z.infer<typeof assetCategorySchema>
+export type GetAssetCategoryType = z.infer<typeof assetCategorySchema>
+
+export const assetsSchema = z.object({
+  assetId: z.number().optional(),
+  assetCode: z.string(),
+  assetName: z.string(),
+  categoryId: z.number(),
+  serialNumber: z.string().nullable(),
+  purchaseDate: z.date().nullable(),
+  purchaseValue: z.number().nullable(),
+  currentStatus: z.enum(['AVAILABLE', 'ASSIGNED', 'DAMAGE', 'LOST', 'SCRAPPED']),
+  createdBy: z.number(),
+  createdAt: z.date(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().nullable(),
+});
+export type CreateAssetType = z.infer<typeof assetsSchema>
+export type GetAssetType = z.infer<typeof assetsSchema> & {
+  categoryName: string
+}
+
+export const assetTransactionsSchema = z.object({
+  assetTransactionId: z.number().optional(),
+  assetId: z.number(),
+  employeeId: z.number(),
+  transactionType: z.enum(['ISSUE', 'RETURN', 'TRANSFER', 'LOST', 'DAMAGE', 'REPLACEMENT']),
+  transactionDate: z.date(),
+  remarks: z.string().nullable(),
+  approvedBy: z.number().nullable(),
+  createdBy: z.number(),
+  createdAt: z.date(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().nullable(),
+});
+export type CreateAssetTransactionType = z.infer<typeof assetTransactionsSchema>
+export type GetAssetTransactionType = z.infer<typeof assetTransactionsSchema>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const employeeLonesSchema = z.object({
   employeeLoneId: z.number().optional(),
   employeeLoneName: z.string().min(1),
