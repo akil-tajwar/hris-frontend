@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
+  Briefcase,
   ChevronDown,
   DollarSign,
   FileChartColumn,
@@ -136,6 +137,21 @@ export function DashboardSidebar() {
         {
           title: 'Employee Lones',
           href: '/dashboard/employee-management/employee-lones',
+        },
+      ],
+    },
+    {
+      title: 'Asset Management',
+      icon: Briefcase,
+      href: '/dashboard/asset-management',
+      subItems: [
+        {
+          title: 'Asset Category',
+          href: '/dashboard/asset-management/asset-category',
+        },
+        {
+          title: 'Assets',
+          href: '/dashboard/asset-management/assets',
         },
       ],
     },
