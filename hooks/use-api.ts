@@ -134,6 +134,11 @@ import {
   deleteAsset,
   assignAsset,
   getLatestAssetTransactions,
+  getAllAttendancePolicies,
+  getAttendancePolicyById,
+  createAttendancePolicy,
+  editAttendancePolicy,
+  deleteAttendancePolicy,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -182,6 +187,8 @@ import {
   GetAssetType,
   CreateAssetTransactionType,
   GetAssetTransactionType,
+  CreateAttendancePolicyType,
+  GetAttendancePolicyType,
 } from '@/utils/type'
 
 //roles
@@ -4997,5 +5004,160 @@ export const useGetEmployeeAttendanceSummary = () => {
     },
     enabled: !!token,
     select: (data) => data,
+  })
+}
+
+
+
+
+
+
+// attendance policy
+export const useGetAttendancePolicies = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendancePolicies'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllAttendancePolicies(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetAttendancePolicyById = (id: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendancePolicy', id],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAttendancePolicyById(token, id)
+    },
+    enabled: !!token && id > 0,
+    select: (data) => data,
+  })
+}
+
+export const useAddAttendancePolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateAttendancePolicyType) => {
+      const res = await createAttendancePolicy(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create attendance policy',
+        })
+        return
+      }
+      toast({
+        title: 'Success',
+        description: 'Attendance policy created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendancePolicies'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+}
+
+export const useUpdateAttendancePolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetAttendancePolicyType }) => {
+      return editAttendancePolicy(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Attendance policy updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendancePolicies'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Failed to update attendance policy',
+      })
+    },
+  })
+}
+
+export const useDeleteAttendancePolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteAttendancePolicy(id, token)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete attendance policy')
+      }
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Attendance policy deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendancePolicies'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
   })
 }

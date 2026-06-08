@@ -70,6 +70,8 @@ import {
   CreateAssetType,
   CreateAssetTransactionType,
   GetAssetTransactionType,
+  GetAttendancePolicyType,
+  CreateAttendancePolicyType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1832,6 +1834,73 @@ export async function getEmployeeAttendanceSummary(token: string) {
   return fetchApi<GetEmployeeAttendanceSummaryType[]>({
     url: 'api/dashboard/attendance-summary',
     method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+
+
+// attendance policy
+export async function getAllAttendancePolicies(token: string) {
+  return fetchApi<GetAttendancePolicyType[]>({
+    url: 'api/attendancePolicies/getAll',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getAttendancePolicyById(token: string, id: number) {
+  return fetchApi<GetAttendancePolicyType>({
+    url: `api/attendancePolicies/getById/${id}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createAttendancePolicy(
+  data: CreateAttendancePolicyType,
+  token: string
+) {
+  return fetchApi<CreateAttendancePolicyType>({
+    url: 'api/attendancePolicies/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editAttendancePolicy(
+  id: number,
+  data: GetAttendancePolicyType,
+  token: string
+) {
+  return fetchApi<GetAttendancePolicyType>({
+    url: `api/attendancePolicies/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteAttendancePolicy(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/attendancePolicies/delete/${id}`,
+    method: 'DELETE',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

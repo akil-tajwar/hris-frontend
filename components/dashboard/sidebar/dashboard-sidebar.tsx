@@ -111,6 +111,10 @@ export function DashboardSidebar() {
       href: '/dashboard/employee-management',
       subItems: [
         {
+          title: 'Attendance Policies',
+          href: '/dashboard/employee-management/attendance-policies',
+        },
+        {
           title: 'Checklists',
           href: '/dashboard/employee-management/checklists',
         },
