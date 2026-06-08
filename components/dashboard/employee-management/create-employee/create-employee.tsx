@@ -149,6 +149,8 @@ type EmployeeFormData = {
   divisionId: number
   costCenterId: number
   reportingAuthorityId: number | null
+  leavePolicyMasterId: number | null
+  salaryStructureMasterId: number | null
   createdBy: number
 }
 
@@ -175,59 +177,6 @@ const formatShift = (
 
 // ── Multi-select checklist ────────────────────────────────────────────────────
 type MultiSelectItem = { id: number; name: string }
-
-const MultiSelectList = ({
-  label,
-  items,
-  selectedIds,
-  onChange,
-}: {
-  label: string
-  items: MultiSelectItem[]
-  selectedIds: number[]
-  onChange: (ids: number[]) => void
-}) => {
-  const toggle = (id: number) => {
-    onChange(
-      selectedIds.includes(id)
-        ? selectedIds.filter((x) => x !== id)
-        : [...selectedIds, id]
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="border rounded-md p-3 bg-white max-h-48 overflow-y-auto space-y-1">
-        {items.length === 0 && (
-          <p className="text-sm text-gray-400 italic">No options available</p>
-        )}
-        {items.map((item) => {
-          const checked = selectedIds.includes(item.id)
-          return (
-            <label
-              key={item.id}
-              className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded text-sm transition-colors ${
-                checked ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                className="accent-blue-600"
-                checked={checked}
-                onChange={() => toggle(item.id)}
-              />
-              {item.name}
-            </label>
-          )
-        })}
-      </div>
-      {selectedIds.length > 0 && (
-        <p className="text-xs text-blue-600">{selectedIds.length} selected</p>
-      )}
-    </div>
-  )
-}
 
 // ── Empty form default ────────────────────────────────────────────────────────
 const buildEmptyForm = (userId: number): EmployeeFormData => ({
@@ -278,6 +227,8 @@ const buildEmptyForm = (userId: number): EmployeeFormData => ({
   divisionId: 0,
   costCenterId: 0,
   reportingAuthorityId: null,
+  leavePolicyMasterId: null,
+  salaryStructureMasterId: null,
   createdBy: userId,
 })
 
@@ -292,6 +243,7 @@ const CreateEmployee = () => {
   const { data: preboarding } = useGetEmployeePreboardingById(
     Number(preboardingId)
   )
+  console.log('🚀 ~ CreateEmployee ~ preboarding:', preboarding)
 
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
@@ -313,14 +265,6 @@ const CreateEmployee = () => {
   const [employeePhotoFile, setEmployeePhotoFile] = useState<File | null>(null)
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
-
-  // ── Leave & salary selection (separate from formData) ────────────────────
-  const [selectedLeavePolicies, setSelectedLeavePolicies] = useState<number[]>(
-    []
-  )
-  const [selectedSalaryStructures, setSelectedSalaryStructures] = useState<
-    number[]
-  >([])
 
   const [formData, setFormData] = useState<EmployeeFormData>(() =>
     buildEmptyForm(userData?.userId || 0)
@@ -368,13 +312,11 @@ const CreateEmployee = () => {
         preboarding.data?.reportingAuthorityId ?? prev.reportingAuthorityId,
       employmentTypeId:
         preboarding.data?.employmentTypeId ?? prev.employmentTypeId,
+      salaryStructureMasterId:
+        preboarding.data?.salaryStructureMasterId ??
+        prev.salaryStructureMasterId,
       basicSalary: preboarding.data?.offeredSalary ?? prev.basicSalary,
     }))
-
-    // Pre-select the salary structure from preboarding
-    if (preboarding.data?.salaryStructureMasterId) {
-      setSelectedSalaryStructures([preboarding.data.salaryStructureMasterId])
-    }
   }, [preboarding])
 
   // ── Derive checklist items from typed API responses ───────────────────────
@@ -470,8 +412,6 @@ const CreateEmployee = () => {
     setEmployeePhotoFile(null)
     setCvFile(null)
     setCertificateFile(null)
-    setSelectedLeavePolicies([])
-    setSelectedSalaryStructures([])
     setError(null)
     router.push('/dashboard/employee-management/employees')
   }
@@ -534,8 +474,7 @@ const CreateEmployee = () => {
         cvUrl: null,
         certificateUrl: null,
         createdBy: userData?.userId || 0,
-        leavePolicies: selectedLeavePolicies,
-        salaryStructures: selectedSalaryStructures,
+        preboardingId: preboardingId ? Number(preboardingId) : null,
       })
     )
     form.append(
@@ -826,8 +765,8 @@ const CreateEmployee = () => {
           employmentTypeId: parseId(get('Employment Type')) ?? 0,
           shiftId: parseId(get('Shift')) ?? null,
           createdBy: userData?.userId || 0,
-          leavePolicies: [],
-          salaryStructures: [],
+          leavePolicyMasterId: null,
+          salaryStructureMasterId: null,
         }
       })
 
@@ -1760,18 +1699,21 @@ const CreateEmployee = () => {
                   name: p.name,
                 }))}
                 value={
-                  selectedLeavePolicies[0]
+                  formData.leavePolicyMasterId
                     ? {
-                        id: selectedLeavePolicies[0].toString(),
+                        id: formData.leavePolicyMasterId.toString(),
                         name:
                           leavePolicyItems.find(
-                            (p) => p.id === selectedLeavePolicies[0]
+                            (p) => p.id === formData.leavePolicyMasterId
                           )?.name || '',
                       }
                     : null
                 }
                 onChange={(value) =>
-                  setSelectedLeavePolicies(value ? [Number(value.id)] : [])
+                  handleSelectChange(
+                    'leavePolicyMasterId',
+                    value ? String(value.id) : '0'
+                  )
                 }
                 placeholder="Select leave policy"
               />
@@ -1786,18 +1728,21 @@ const CreateEmployee = () => {
                   name: s.name,
                 }))}
                 value={
-                  selectedSalaryStructures[0]
+                  formData.salaryStructureMasterId
                     ? {
-                        id: selectedSalaryStructures[0].toString(),
+                        id: formData.salaryStructureMasterId.toString(),
                         name:
                           salaryStructureItems.find(
-                            (s) => s.id === selectedSalaryStructures[0]
+                            (s) => s.id === formData.salaryStructureMasterId
                           )?.name || '',
                       }
                     : null
                 }
                 onChange={(value) =>
-                  setSelectedSalaryStructures(value ? [Number(value.id)] : [])
+                  handleSelectChange(
+                    'salaryStructureMasterId',
+                    value ? String(value.id) : '0'
+                  )
                 }
                 placeholder="Select salary structure"
               />
