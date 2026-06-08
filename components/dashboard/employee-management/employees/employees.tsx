@@ -1,6 +1,6 @@
 'use client'
 
-import type React from 'react'
+import React from 'react'
 import { useCallback, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,7 @@ import {
   Briefcase,
   ChevronDown,
   ChevronRight,
+  UserCheck,
 } from 'lucide-react'
 import type { GetEmployeeType, GetAssetTransactionType } from '@/utils/type'
 import {
@@ -38,6 +39,7 @@ import {
   useGetDepartments,
   useGetDesignations,
   useDeleteEmployee,
+  useGetEmploymentTypes,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -50,13 +52,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import Link from 'next/link'
 import AssignAssetPopup from './assign-asset-popup'
+import ProbationPromotionPopup from './probation-promotion-popup'
 
 const Employees = () => {
   const { data: employees } = useGetAllEmployees()
+  console.log("🚀 ~ Employees ~ employees:", employees)
   const { data: allAssets } = useGetAllAssets()
   const { data: assetTransactions } = useGetLatestAssetTransactions()
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
+  const { data: employmentTypes } = useGetEmploymentTypes()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [employeesPerPage] = useState(10)
@@ -71,6 +76,13 @@ const Employees = () => {
 
   const [assignPopupOpen, setAssignPopupOpen] = useState(false)
   const [assignTarget, setAssignTarget] = useState<{
+    employeeId: number
+    employeeName: string
+  } | null>(null)
+
+  // ── Probation promotion state ─────────────────────────────────────────────
+  const [promotionPopupOpen, setPromotionPopupOpen] = useState(false)
+  const [promotionTarget, setPromotionTarget] = useState<{
     employeeId: number
     employeeName: string
   } | null>(null)
@@ -98,6 +110,17 @@ const Employees = () => {
       return desig?.designationName || '-'
     },
     [designations]
+  )
+
+  // ── Returns true when this employee's employment type is "Probation" ──────
+  const isProbation = useCallback(
+    (employmentTypeId: number): boolean => {
+      const et = employmentTypes?.data?.find(
+        (t: any) => t.employmentTypeId === employmentTypeId
+      )
+      return et?.employmentTypeName === 'Probation'
+    },
+    [employmentTypes]
   )
 
   const getEmployeeAssets = useCallback(
@@ -309,12 +332,12 @@ const Employees = () => {
                 const hasAssets = empAssets.length > 0
                 const isExpanded =
                   hasAssets && expandedEmployees.has(emp.employeeId!)
+                const showPromotionBtn = isProbation(emp.employmentTypeId)
 
                 return (
-                  <>
+                  // ── Key moved to the Fragment — fixes the console warning ──
+                  <React.Fragment key={emp.employeeId ?? index}>
                     <TableRow
-                      key={emp.employeeId || index}
-                      // Click anywhere on the row to toggle accordion (only if employee has assets)
                       onClick={() => {
                         if (hasAssets) toggleAccordion(emp.employeeId!)
                       }}
@@ -322,7 +345,7 @@ const Employees = () => {
                         hasAssets ? 'cursor-pointer hover:bg-blue-50/50' : ''
                       }
                     >
-                      {/* Accordion chevron — only shown if employee has assets */}
+                      {/* Accordion chevron */}
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {hasAssets && (
                           <button
@@ -355,12 +378,12 @@ const Employees = () => {
                         {getDesignationName(emp.designationId)}
                       </TableCell>
                       <TableCell>{emp.basicSalary}</TableCell>
-                      {/* Stop propagation on Action cell so buttons don't trigger accordion */}
                       <TableCell
                         className="text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex justify-end gap-2">
+                          {/* Assign Asset */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -376,6 +399,26 @@ const Employees = () => {
                           >
                             <Briefcase className="h-4 w-4" />
                           </Button>
+
+                          {/* Probation Confirmation — only visible for probation employees */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-amber-600 hover:text-amber-700"
+                            onClick={() => {
+                              setPromotionTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setPromotionPopupOpen(true)
+                            }}
+                            disabled={!showPromotionBtn}
+                            title="Confirm Probation Employee"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+
+                          {/* Edit */}
                           <Link
                             href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}
                           >
@@ -387,6 +430,8 @@ const Employees = () => {
                               <Edit2 className="h-4 w-4" />
                             </Button>
                           </Link>
+
+                          {/* Delete */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -402,7 +447,7 @@ const Employees = () => {
                       </TableCell>
                     </TableRow>
 
-                    {/* Accordion expanded row — table view */}
+                    {/* Accordion expanded row */}
                     {isExpanded && (
                       <TableRow key={`accordion-${emp.employeeId}`}>
                         <TableCell colSpan={10} className="p-0 bg-blue-50/40">
@@ -474,7 +519,7 @@ const Employees = () => {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 )
               })
             )}
@@ -551,6 +596,19 @@ const Employees = () => {
           employeeId={assignTarget.employeeId}
           employeeName={assignTarget.employeeName}
           assets={allAssets?.data ?? undefined}
+        />
+      )}
+
+      {/* Probation Promotion Popup */}
+      {promotionTarget && (
+        <ProbationPromotionPopup
+          isOpen={promotionPopupOpen}
+          onClose={() => {
+            setPromotionPopupOpen(false)
+            setPromotionTarget(null)
+          }}
+          employeeId={promotionTarget.employeeId}
+          employeeName={promotionTarget.employeeName}
         />
       )}
 
