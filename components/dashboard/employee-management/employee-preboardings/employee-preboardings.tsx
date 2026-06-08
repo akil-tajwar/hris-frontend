@@ -460,22 +460,31 @@ const EmployeePreboardings = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Link
-                          href={`/dashboard/employee-management/create-employee?preboardingId=${preboarding.preboardingId}`}
-                        >
+                        {preboarding.isConfirmed === true ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`${
-                              preboarding.isConfirmed === false
-                                ? 'text-green-600 hover:text-green-700'
-                                : 'text-gray-400 cursor-not-allowed'
-                            }`}
+                            className="text-green-600 hover:text-green-700"
                             title="Make Employee"
+                            disabled={preboarding.isConfirmed === true}
                           >
                             <UserCheck className="h-4 w-4" />
                           </Button>
-                        </Link>
+                        ) : (
+                          <Link
+                            href={`/dashboard/employee-management/create-employee?preboardingId=${preboarding.preboardingId}`}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600 hover:text-green-700"
+                              title="Make Employee"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        )}
+
                         <Button
                           variant="ghost"
                           size="sm"

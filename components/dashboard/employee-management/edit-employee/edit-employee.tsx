@@ -619,17 +619,6 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="doc">Date of Confirmation</Label>
-              <Input
-                id="doc"
-                name="doc"
-                type="date"
-                value={formData.doc || ''}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="departmentId">
                 Department <span className="text-red-500">*</span>
               </Label>
