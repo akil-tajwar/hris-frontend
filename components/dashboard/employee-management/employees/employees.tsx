@@ -1,10 +1,9 @@
 'use client'
 
-import type React from 'react'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import React from 'react'
+import { useCallback, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -22,25 +21,25 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { ArrowUpDown, Search, Users, Edit2, Trash2 } from 'lucide-react'
-import { Popup } from '@/utils/popup'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { AssignLeaveTypeType, GetEmployeeType } from '@/utils/type'
-import { useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom } from 'jotai'
+  ArrowUpDown,
+  Search,
+  Users,
+  Edit2,
+  Trash2,
+  Briefcase,
+  ChevronDown,
+  ChevronRight,
+  UserCheck,
+} from 'lucide-react'
+import type { GetEmployeeType, GetAssetTransactionType } from '@/utils/type'
 import {
   useGetAllEmployees,
-  useGetLeaveTypes,
-  useAssignLeaveType,
+  useGetAllAssets,
+  useGetLatestAssetTransactions,
   useGetDepartments,
   useGetDesignations,
   useDeleteEmployee,
+  useGetEmploymentTypes,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -52,16 +51,18 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import Link from 'next/link'
+import AssignAssetPopup from './assign-asset-popup'
+import ProbationPromotionPopup from './probation-promotion-popup'
 
 const Employees = () => {
   const { data: employees } = useGetAllEmployees()
-  const { data: leaveTypes } = useGetLeaveTypes()
+  console.log("🚀 ~ Employees ~ employees:", employees)
+  const { data: allAssets } = useGetAllAssets()
+  const { data: assetTransactions } = useGetLatestAssetTransactions()
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
-  console.log('🚀 ~ Employees ~ employees:', employees)
-  console.log('🚀 ~ Employees ~ leaveTypes:', leaveTypes)
+  const { data: employmentTypes } = useGetEmploymentTypes()
 
-  const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [employeesPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
@@ -69,24 +70,28 @@ const Employees = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const [isAssignPopupOpen, setIsAssignPopupOpen] = useState(false)
-  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
-  const [selectedYearPeriod, setSelectedYearPeriod] = useState<string>(
-    new Date().getFullYear().toString()
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<number>>(
+    new Set()
   )
-  const [selectedLeaveTypeIds, setSelectedLeaveTypeIds] = useState<number[]>([])
+
+  const [assignPopupOpen, setAssignPopupOpen] = useState(false)
+  const [assignTarget, setAssignTarget] = useState<{
+    employeeId: number
+    employeeName: string
+  } | null>(null)
+
+  // ── Probation promotion state ─────────────────────────────────────────────
+  const [promotionPopupOpen, setPromotionPopupOpen] = useState(false)
+  const [promotionTarget, setPromotionTarget] = useState<{
+    employeeId: number
+    employeeName: string
+  } | null>(null)
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingEmployeeId, setDeletingEmployeeId] = useState<number | null>(
     null
   )
 
-  // Generate year options (current year and next 5 years)
-  const yearOptions = useMemo(() => {
-    const currentYear = new Date().getFullYear()
-    return Array.from({ length: 6 }, (_, i) => currentYear + i)
-  }, [])
-
-  // Helper functions to get department and designation names
   const getDepartmentName = useCallback(
     (departmentId: number) => {
       const dept = departments?.data?.find(
@@ -107,45 +112,48 @@ const Employees = () => {
     [designations]
   )
 
-  const handleInputChange = (leaveTypeId: number, checked: boolean) => {
-    setSelectedLeaveTypeIds((prev) =>
-      checked ? [...prev, leaveTypeId] : prev.filter((id) => id !== leaveTypeId)
-    )
-  }
+  // ── Returns true when this employee's employment type is "Probation" ──────
+  const isProbation = useCallback(
+    (employmentTypeId: number): boolean => {
+      const et = employmentTypes?.data?.find(
+        (t: any) => t.employmentTypeId === employmentTypeId
+      )
+      return et?.employmentTypeName === 'Probation'
+    },
+    [employmentTypes]
+  )
 
-  const resetForm = useCallback(() => {
-    setSelectedEmployees([])
-    setSelectedYearPeriod(new Date().getFullYear().toString())
-    setSelectedLeaveTypeIds([])
-    setIsAssignPopupOpen(false)
-    setError(null)
+  const getEmployeeAssets = useCallback(
+    (employeeId: number): GetAssetTransactionType[] => {
+      if (!assetTransactions?.data) return []
+      return assetTransactions.data.filter(
+        (t: GetAssetTransactionType) => t.employeeId === employeeId
+      )
+    },
+    [assetTransactions]
+  )
+
+  const getAssetDetails = useCallback(
+    (assetId: number) => {
+      const asset = allAssets?.data?.find((a: any) => a.assetId === assetId)
+      return asset
+        ? {
+            code: asset.assetCode,
+            name: asset.assetName,
+            category: asset.categoryName,
+          }
+        : { code: '-', name: `Asset #${assetId}`, category: '-' }
+    },
+    [allAssets]
+  )
+
+  const toggleAccordion = useCallback((employeeId: number) => {
+    setExpandedEmployees((prev) => {
+      const next = new Set(prev)
+      next.has(employeeId) ? next.delete(employeeId) : next.add(employeeId)
+      return next
+    })
   }, [])
-
-  // Reset selected leave types when year period changes
-  useEffect(() => {
-    setSelectedLeaveTypeIds([])
-  }, [selectedYearPeriod])
-
-  const closePopup = useCallback(() => {
-    setIsAssignPopupOpen(false)
-    setError(null)
-    resetForm()
-  }, [resetForm])
-
-  const assignMutation = useAssignLeaveType({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-
-  const resetDelete = useCallback(() => {
-    setIsDeleteDialogOpen(false)
-    setDeletingEmployeeId(null)
-  }, [])
-
-  const deleteMutation = useDeleteEmployee({
-    onClose: resetDelete,
-    reset: resetDelete,
-  })
 
   const handleSort = (column: keyof GetEmployeeType) => {
     if (column === sortColumn) {
@@ -161,7 +169,6 @@ const Employees = () => {
     return employees.data.filter((emp) => {
       const departmentName = getDepartmentName(emp.departmentId)
       const designationName = getDesignationName(emp.designationId)
-
       return (
         emp.empFullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.workEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -219,102 +226,15 @@ const Employees = () => {
 
   const totalPages = Math.ceil(sortedEmployees.length / employeesPerPage)
 
-  // Handle select all checkbox
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = paginatedEmployees
-        .map((emp) => emp.employeeId)
-        .filter((id): id is number => id !== undefined)
-      setSelectedEmployees(allIds)
-    } else {
-      setSelectedEmployees([])
-    }
-  }
+  const resetDelete = useCallback(() => {
+    setIsDeleteDialogOpen(false)
+    setDeletingEmployeeId(null)
+  }, [])
 
-  // Handle individual employee checkbox
-  const handleSelectEmployee = (employeeId: number, checked: boolean) => {
-    setSelectedEmployees((prev) =>
-      checked ? [...prev, employeeId] : prev.filter((id) => id !== employeeId)
-    )
-  }
-
-  // Check if all current page employees are selected
-  const isAllSelected = useMemo(() => {
-    const currentPageIds = paginatedEmployees
-      .map((emp) => emp.employeeId)
-      .filter((id): id is number => id !== undefined)
-    return (
-      currentPageIds.length > 0 &&
-      currentPageIds.every((id) => selectedEmployees.includes(id))
-    )
-  }, [paginatedEmployees, selectedEmployees])
-
-  // Check if some (but not all) employees are selected
-  const isIndeterminate = useMemo(() => {
-    const currentPageIds = paginatedEmployees
-      .map((emp) => emp.employeeId)
-      .filter((id): id is number => id !== undefined)
-    const selectedCount = currentPageIds.filter((id) =>
-      selectedEmployees.includes(id)
-    ).length
-    return selectedCount > 0 && selectedCount < currentPageIds.length
-  }, [paginatedEmployees, selectedEmployees])
-
-  // Filter leave types by selected year period
-  const filteredLeaveTypes = useMemo(() => {
-    if (!leaveTypes?.data) return []
-    return leaveTypes.data.filter(
-      (lt: any) => lt.yearPeriod === parseInt(selectedYearPeriod)
-    )
-  }, [leaveTypes?.data, selectedYearPeriod])
-
-  // Get selected employee details
-  const selectedEmployeeDetails = useMemo(() => {
-    if (!employees?.data) return []
-    return employees.data.filter((emp) =>
-      selectedEmployees.includes(emp.employeeId!)
-    )
-  }, [employees?.data, selectedEmployees])
-
-  const handleAssignLeaveTypes = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-
-      if (selectedEmployees.length === 0) {
-        setError('Please select at least one employee')
-        return
-      }
-
-      if (selectedLeaveTypeIds.length === 0) {
-        setError('Please select at least one leave type')
-        return
-      }
-
-      setError(null)
-
-      try {
-        // Create array of employee-leaveType assignments
-        const assignData = selectedEmployees.map((employeeId) => ({
-          employeeId,
-          leaveTypeIds: selectedLeaveTypeIds,
-        }))
-
-        assignMutation.mutate({
-          data: assignData as any,
-        })
-      } catch (err) {
-        setError('Failed to assign leave types')
-        console.error(err)
-      }
-    },
-    [selectedEmployees, selectedLeaveTypeIds, assignMutation]
-  )
-
-  useEffect(() => {
-    if (assignMutation.error) {
-      setError('Error assigning leave types')
-    }
-  }, [assignMutation.error])
+  const deleteMutation = useDeleteEmployee({
+    onClose: resetDelete,
+    reset: resetDelete,
+  })
 
   return (
     <div className="p-6 space-y-6">
@@ -325,23 +245,14 @@ const Employees = () => {
           </div>
           <h2 className="text-lg font-semibold">Employees</h2>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
-          </div>
-          <Button
-            className="bg-blue-400 hover:bg-blue-500 text-black"
-            onClick={() => setIsAssignPopupOpen(true)}
-            disabled={selectedEmployees.length === 0}
-          >
-            Assign Leave Type ({selectedEmployees.length})
-          </Button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search employees..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-64"
+          />
         </div>
       </div>
 
@@ -349,16 +260,7 @@ const Employees = () => {
         <Table>
           <TableHeader className="bg-blue-100">
             <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all employees"
-                  className={
-                    isIndeterminate ? 'data-[state=checked]:bg-blue-600' : ''
-                  }
-                />
-              </TableHead>
+              <TableHead className="w-10" />
               <TableHead>Sl No.</TableHead>
               <TableHead
                 onClick={() => handleSort('empCode')}
@@ -376,7 +278,7 @@ const Employees = () => {
                 onClick={() => handleSort('workEmail')}
                 className="cursor-pointer"
               >
-                workEmail <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Work Email <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('officialPhone')}
@@ -408,75 +310,218 @@ const Employees = () => {
           <TableBody>
             {!employees || employees.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   Loading employees...
                 </TableCell>
               </TableRow>
             ) : !employees.data || employees.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No employees found
                 </TableCell>
               </TableRow>
             ) : paginatedEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No employees match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedEmployees.map((emp, index) => (
-                <TableRow key={emp.employeeId || index}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedEmployees.includes(emp.employeeId!)}
-                      onCheckedChange={(checked) =>
-                        handleSelectEmployee(
-                          emp.employeeId!,
-                          checked as boolean
-                        )
+              paginatedEmployees.map((emp, index) => {
+                const empAssets = getEmployeeAssets(emp.employeeId!)
+                const hasAssets = empAssets.length > 0
+                const isExpanded =
+                  hasAssets && expandedEmployees.has(emp.employeeId!)
+                const showPromotionBtn = isProbation(emp.employmentTypeId)
+
+                return (
+                  // ── Key moved to the Fragment — fixes the console warning ──
+                  <React.Fragment key={emp.employeeId ?? index}>
+                    <TableRow
+                      onClick={() => {
+                        if (hasAssets) toggleAccordion(emp.employeeId!)
+                      }}
+                      className={
+                        hasAssets ? 'cursor-pointer hover:bg-blue-50/50' : ''
                       }
-                      aria-label={`Select ${emp.empFullName}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {(currentPage - 1) * employeesPerPage + index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">{emp.empCode}</TableCell>
-                  <TableCell>{emp.empFullName}</TableCell>
-                  <TableCell>{emp.workEmail}</TableCell>
-                  <TableCell>{emp.officialPhone}</TableCell>
-                  <TableCell>{getDepartmentName(emp.departmentId)}</TableCell>
-                  <TableCell>{getDesignationName(emp.designationId)}</TableCell>
-                  <TableCell>{emp.basicSalary}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}
+                    >
+                      {/* Accordion chevron */}
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {hasAssets && (
+                          <button
+                            type="button"
+                            onClick={() => toggleAccordion(emp.employeeId!)}
+                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {(currentPage - 1) * employeesPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {emp.empCode}
+                      </TableCell>
+                      <TableCell>{emp.empFullName}</TableCell>
+                      <TableCell>{emp.workEmail}</TableCell>
+                      <TableCell>{emp.officialPhone}</TableCell>
+                      <TableCell>
+                        {getDepartmentName(emp.departmentId)}
+                      </TableCell>
+                      <TableCell>
+                        {getDesignationName(emp.designationId)}
+                      </TableCell>
+                      <TableCell>{emp.basicSalary}</TableCell>
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => {
-                          setDeletingEmployeeId(emp.employeeId!)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        <div className="flex justify-end gap-2">
+                          {/* Assign Asset */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => {
+                              setAssignTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setAssignPopupOpen(true)
+                            }}
+                            title="Assign Asset"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                          </Button>
+
+                          {/* Probation Confirmation — only visible for probation employees */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-amber-600 hover:text-amber-700"
+                            onClick={() => {
+                              setPromotionTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setPromotionPopupOpen(true)
+                            }}
+                            disabled={!showPromotionBtn}
+                            title="Confirm Probation Employee"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </Button>
+
+                          {/* Edit */}
+                          <Link
+                            href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          </Link>
+
+                          {/* Delete */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setDeletingEmployeeId(emp.employeeId!)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Accordion expanded row */}
+                    {isExpanded && (
+                      <TableRow key={`accordion-${emp.employeeId}`}>
+                        <TableCell colSpan={10} className="p-0 bg-blue-50/40">
+                          <div className="px-8 py-3">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                              Assigned Assets
+                            </p>
+                            <table className="w-full text-sm border rounded-md overflow-hidden">
+                              <thead>
+                                <tr className="bg-blue-100 text-left">
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Asset Code
+                                  </th>
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Asset Name
+                                  </th>
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Category
+                                  </th>
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Transaction Type
+                                  </th>
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Transaction Date
+                                  </th>
+                                  <th className="px-3 py-2 font-semibold text-gray-700">
+                                    Remarks
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {empAssets.map((t, i) => {
+                                  const asset = getAssetDetails(t.assetId)
+                                  return (
+                                    <tr
+                                      key={t.assetTransactionId ?? i}
+                                      className={
+                                        i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                                      }
+                                    >
+                                      <td className="px-3 py-2 text-gray-700">
+                                        {asset.code}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-800 font-medium">
+                                        {asset.name}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-600">
+                                        {asset.category}
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                          {t.transactionType}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-600">
+                                        {new Date(
+                                          t.transactionDate
+                                        ).toLocaleDateString()}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-500">
+                                        {t.remarks || '—'}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -496,7 +541,6 @@ const Employees = () => {
                   }
                 />
               </PaginationItem>
-
               {[...Array(totalPages)].map((_, index) => {
                 if (
                   index === 0 ||
@@ -523,10 +567,8 @@ const Employees = () => {
                     </PaginationItem>
                   )
                 }
-
                 return null
               })}
-
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
@@ -544,144 +586,31 @@ const Employees = () => {
         </div>
       )}
 
-      <Popup
-        isOpen={isAssignPopupOpen}
-        onClose={closePopup}
-        title="Assign Leave Types"
-        size="sm:max-w-2xl"
-      >
-        <form onSubmit={handleAssignLeaveTypes} className="space-y-4 py-4">
-          <div className="grid gap-4">
-            {/* Selected Employees Section */}
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">
-                Selected Employees ({selectedEmployeeDetails.length})
-              </Label>
-              <div className="border rounded-md p-3 max-h-40 overflow-y-auto bg-gray-50">
-                <div className="space-y-2">
-                  {selectedEmployeeDetails.map((emp) => (
-                    <div
-                      key={emp.employeeId}
-                      className="flex items-center justify-between text-sm p-2 bg-white rounded border"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{emp.empFullName}</p>
-                        <p className="text-gray-500 text-xs">
-                          {emp.empCode} • {emp.workEmail}
-                        </p>
-                      </div>
-                      <div className="text-right text-xs text-gray-500">
-                        <p>{getDepartmentName(emp.departmentId)}</p>
-                        <p>{getDesignationName(emp.designationId)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+      {assignTarget && (
+        <AssignAssetPopup
+          isOpen={assignPopupOpen}
+          onClose={() => {
+            setAssignPopupOpen(false)
+            setAssignTarget(null)
+          }}
+          employeeId={assignTarget.employeeId}
+          employeeName={assignTarget.employeeName}
+          assets={allAssets?.data ?? undefined}
+        />
+      )}
 
-            <div className="space-y-2">
-              <Label htmlFor="yearPeriod">
-                Year Period <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={selectedYearPeriod}
-                onValueChange={setSelectedYearPeriod}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>
-                Leave Types for {selectedYearPeriod}{' '}
-                <span className="text-red-500">*</span>
-              </Label>
-              <div className="border rounded-md p-4 space-y-3 max-h-60 overflow-y-auto">
-                {!leaveTypes || leaveTypes.data === undefined ? (
-                  <p className="text-sm text-gray-500">
-                    Loading leave types...
-                  </p>
-                ) : filteredLeaveTypes.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    No leave types available for {selectedYearPeriod}
-                  </p>
-                ) : (
-                  filteredLeaveTypes.map((leaveType: any) => (
-                    <div
-                      key={leaveType.leaveTypeId}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`leave-${leaveType.leaveTypeId}`}
-                        checked={selectedLeaveTypeIds.includes(
-                          leaveType.leaveTypeId
-                        )}
-                        onCheckedChange={(checked) =>
-                          handleInputChange(
-                            leaveType.leaveTypeId,
-                            checked as boolean
-                          )
-                        }
-                      />
-                      <label
-                        htmlFor={`leave-${leaveType.leaveTypeId}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
-                        {leaveType.leaveTypeName} ({leaveType.totalLeaves || 0}{' '}
-                        days)
-                      </label>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-              <p className="text-sm text-gray-700 font-medium">Summary</p>
-              <div className="mt-2 space-y-1">
-                <p className="text-sm text-gray-600">
-                  • Employees: {selectedEmployees.length}
-                </p>
-                <p className="text-sm text-gray-600">
-                  • Leave Types: {selectedLeaveTypeIds.length}
-                </p>
-                <p className="text-sm text-gray-600">
-                  • Year: {selectedYearPeriod}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closePopup}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={assignMutation.isPending}
-              className="bg-blue-400 hover:bg-blue-500 text-black"
-            >
-              {assignMutation.isPending ? 'Assigning...' : 'Assign'}
-            </Button>
-          </div>
-        </form>
-      </Popup>
+      {/* Probation Promotion Popup */}
+      {promotionTarget && (
+        <ProbationPromotionPopup
+          isOpen={promotionPopupOpen}
+          onClose={() => {
+            setPromotionPopupOpen(false)
+            setPromotionTarget(null)
+          }}
+          employeeId={promotionTarget.employeeId}
+          employeeName={promotionTarget.employeeName}
+        />
+      )}
 
       <AlertDialog
         open={isDeleteDialogOpen}
