@@ -73,6 +73,10 @@ import {
   GetAttendancePolicyType,
   CreateAttendancePolicyType,
   GetEmployeeActivityHistoryReport,
+  GetShiftAllocationType,
+  CreateShiftAllocationType,
+  CreateBulkShiftAllocationType,
+  UpdateRecurrenceType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1920,5 +1924,128 @@ export async function deleteAttendancePolicy(id: number, token: string) {
       Authorization: token,
       'Content-Type': 'application/json',
     },
+  })
+}
+
+// shift allocations
+export async function getAllShiftAllocations(token: string) {
+  return fetchApi<GetShiftAllocationType[]>({
+    url: 'api/shiftAllocation/getAll',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createSingleShiftAllocation(
+  data: CreateShiftAllocationType,
+  token: string
+) {
+  return fetchApi<CreateShiftAllocationType>({
+    url: 'api/shiftAllocation/create/single',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createBulkShiftAllocation(
+  data: CreateBulkShiftAllocationType,
+  token: string
+) {
+  return fetchApi<CreateBulkShiftAllocationType>({
+    url: 'api/shiftAllocation/create/bulk',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editShiftAllocation(
+  id: number,
+  data: Partial<CreateShiftAllocationType>,
+  token: string
+) {
+  return fetchApi<GetShiftAllocationType>({
+    url: `api/shiftAllocation/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteShiftAllocation(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/shiftAllocation/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getShiftAllocationsByEmployee(
+  employeeId: number,
+  token: string
+) {
+  return fetchApi<GetShiftAllocationType[]>({
+    url: `api/shiftAllocation/employee/${employeeId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+
+export async function updateShiftAllocationRecurrence(
+  id: number,
+  data: UpdateRecurrenceType,
+  token: string
+) {
+  return fetchApi<GetShiftAllocationType>({
+    url: `api/shiftAllocation/recurrence/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function copyShiftAllocationById(
+  id: number,
+  createdBy: number,
+  token: string
+) {
+  return fetchApi<{ success: boolean; insertedId: number; dateRange: any; message: string }>({
+    url: `api/shiftAllocation/copy/${id}`,
+    method: 'POST',
+    body: { createdBy },
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function copyAllActiveShiftAllocations(
+  recurrenceType: 'weekly' | 'monthly',
+  createdBy: number,
+  token: string
+) {
+  return fetchApi<{ success: boolean; totalCopied: number; dateRange: any; message: string }>({
+    url: `api/shiftAllocation/copy-all`,
+    method: 'POST',
+    body: { recurrenceType, createdBy },
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }

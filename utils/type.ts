@@ -1102,3 +1102,46 @@ export type CreateAttendancePolicyType = {
   createdBy: number
   weekDayIds?: number[]
 }
+
+
+// Shift Allocation Types
+export type GetShiftAllocationType = {
+  id: number
+  employeeId: number
+  employeeName: string | null
+  shiftId: number
+  shiftName: string | null
+  effectiveFrom: string
+  effectiveTo: string | null
+  remarks: string | null
+  approvedBy: number | null
+  createdBy: number
+  createdAt: string | null
+  recurrenceType: 'weekly' | 'monthly' | null
+  recurrenceActive: number
+}
+
+export type UpdateRecurrenceType = {
+  recurrenceType: 'weekly' | 'monthly' | null
+  recurrenceActive: boolean
+}
+
+export type CreateShiftAllocationType = {
+  employeeId: number
+  shiftId: number
+  effectiveFrom: string
+  effectiveTo?: string
+  remarks?: string
+  approvedBy?: number
+  createdBy: number
+}
+
+export type CreateBulkShiftAllocationType = {
+  employeeIds: number[]
+  shiftId: number
+  effectiveFrom: string
+  effectiveTo?: string
+  remarks?: string
+  approvedBy?: number
+  createdBy: number
+}

@@ -107,6 +107,18 @@ export function DashboardSidebar() {
       ],
     },
     {
+      title: 'Shift Management',
+      icon: LucideAirVent,
+      href: '/dashboard/shift-management',
+      subItems: [
+        {
+          title: 'Employee Shift Allocations',  
+
+          href: '/dashboard/employee-shift-allocations/employee-shift-allocations',
+        },
+      ]
+    },
+    {
       title: 'Employee Management',
       icon: UserCog,
       href: '/dashboard/employee-management',

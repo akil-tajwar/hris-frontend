@@ -140,6 +140,14 @@ import {
   editAttendancePolicy,
   deleteAttendancePolicy,
   getEmployeeActivityReport,
+  getAllShiftAllocations,
+  createSingleShiftAllocation,
+  createBulkShiftAllocation,
+  editShiftAllocation,
+  deleteShiftAllocation,
+  updateShiftAllocationRecurrence,
+  copyShiftAllocationById,
+  copyAllActiveShiftAllocations,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -190,6 +198,9 @@ import {
   GetAssetTransactionType,
   CreateAttendancePolicyType,
   GetAttendancePolicyType,
+  CreateShiftAllocationType,
+  CreateBulkShiftAllocationType,
+  UpdateRecurrenceType,
 } from '@/utils/type'
 
 //roles
@@ -5174,6 +5185,273 @@ export const useDeleteAttendancePolicy = ({
         variant: 'destructive',
         description: 'This data is needed elsewhere',
       })
+    },
+  })
+}
+
+
+// shift allocations
+export const useGetShiftAllocations = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['shiftAllocations'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllShiftAllocations(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddSingleShiftAllocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateShiftAllocationType) => {
+      const res = await createSingleShiftAllocation(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create shift allocation',
+        })
+        return
+      }
+      toast({
+        title: 'Success',
+        description: 'Shift allocation created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+}
+
+export const useAddBulkShiftAllocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateBulkShiftAllocationType) => {
+      const res = await createBulkShiftAllocation(data, token)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to bulk allocate shifts',
+        })
+        return
+      }
+      toast({
+        title: 'Success',
+        description: res?.data
+          ? `${(res.data as any).totalAllocated} employees allocated successfully!`
+          : 'Bulk shift allocation successful!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+}
+
+export const useUpdateShiftAllocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<CreateShiftAllocationType>
+    }) => {
+      return editShiftAllocation(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Shift allocation updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Failed to update shift allocation',
+      })
+    },
+  })
+}
+
+export const useDeleteShiftAllocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteShiftAllocation(id, token)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete shift allocation')
+      }
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Shift allocation deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+}
+
+
+export const useUpdateShiftAllocationRecurrence = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateRecurrenceType }) =>
+      updateShiftAllocationRecurrence(id, data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: 'Recurrence setting updated!' })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useCopyShiftAllocation = () => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, createdBy }: { id: number; createdBy: number }) =>
+      copyShiftAllocationById(id, createdBy, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: res?.data?.message || 'Copied successfully!' })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useCopyAllActiveAllocations = () => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      recurrenceType,
+      createdBy,
+    }: {
+      recurrenceType: 'weekly' | 'monthly'
+      createdBy: number
+    }) => copyAllActiveShiftAllocations(recurrenceType, createdBy, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: res?.data?.message || 'All copied successfully!' })
+      queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
     },
   })
 }
