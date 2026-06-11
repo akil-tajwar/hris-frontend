@@ -211,16 +211,8 @@ export function DashboardSidebar() {
       href: '/dashboard/report',
       subItems: [
         {
-          title: 'Salary Report',
-          href: '/dashboard/report/salary-report',
-        },
-        {
-          title: 'Attendance Report',
-          href: '/dashboard/report/attendance-report',
-        },
-        {
-          title: 'Lone Report',
-          href: '/dashboard/report/lone-report',
+          title: 'Activity Report',
+          href: '/dashboard/report/employee-activity-report',
         },
       ],
     },
