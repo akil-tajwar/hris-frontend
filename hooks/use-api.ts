@@ -139,6 +139,7 @@ import {
   createAttendancePolicy,
   editAttendancePolicy,
   deleteAttendancePolicy,
+  getEmployeeActivityReport,
   getAllShiftAllocations,
   createSingleShiftAllocation,
   createBulkShiftAllocation,
@@ -4938,6 +4939,21 @@ export const useDeleteEmployeeLeave = ({
 }
 
 //reports
+export const useGetEmployeeActivityReport = (employeeId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['activityReport', employeeId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getEmployeeActivityReport(employeeId, token)
+    },
+    enabled: !!token && !!employeeId,
+    select: (data) => data,
+  })
+}
+
 export const useGetSalaryReport = (salaryMonth: string, salaryYear: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()

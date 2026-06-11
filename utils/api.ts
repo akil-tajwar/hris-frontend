@@ -72,6 +72,7 @@ import {
   GetAssetTransactionType,
   GetAttendancePolicyType,
   CreateAttendancePolicyType,
+  GetEmployeeActivityHistoryReport,
   GetShiftAllocationType,
   CreateShiftAllocationType,
   CreateBulkShiftAllocationType,
@@ -1777,6 +1778,20 @@ export async function getAllEmployeeLeaveTypes(token: string) {
 }
 
 //reports
+export async function getEmployeeActivityReport(
+  employeeId: number,
+  token: string
+) {
+  return fetchApi<GetEmployeeActivityHistoryReport[]>({
+    url: `api/reports/activity-report?employeeId=${employeeId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getSalaryReport(
   salaryMonthy: string,
   salaryYear: number,
