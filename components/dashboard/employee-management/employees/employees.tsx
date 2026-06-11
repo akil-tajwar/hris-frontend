@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useCallback, useState, useMemo } from 'react'
+import { useCallback, useState, useMemo, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -30,16 +30,15 @@ import {
   ChevronDown,
   ChevronRight,
   UserCheck,
+  EllipsisVertical,
+  ArrowUpWideNarrow,
 } from 'lucide-react'
 import type { GetEmployeeType, GetAssetTransactionType } from '@/utils/type'
 import {
   useGetAllEmployees,
   useGetAllAssets,
   useGetLatestAssetTransactions,
-  useGetDepartments,
-  useGetDesignations,
   useDeleteEmployee,
-  useGetEmploymentTypes,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -53,15 +52,94 @@ import {
 import Link from 'next/link'
 import AssignAssetPopup from './assign-asset-popup'
 import ProbationPromotionPopup from './probation-promotion-popup'
+import PromoteEmployeePopup from './promote-employee-popup'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
+
+// ── Three-dot action menu ─────────────────────────────────────────────────────
+
+type ActionMenuProps = {
+  isProbationEmployee: boolean
+  onAssignAsset: () => void
+  onProbationConfirm: () => void
+  onPromote: () => void
+}
+
+const ActionMenu = ({
+  isProbationEmployee,
+  onAssignAsset,
+  onProbationConfirm,
+  onPromote,
+}: ActionMenuProps) => {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <EllipsisVertical className="h-4 w-4" />
+      </Button>
+
+      {open && (
+        <div className="absolute right-0 z-50 mt-1 w-48 rounded-md border bg-white shadow-lg py-1">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+            onClick={onAssignAsset}
+          >
+            <Briefcase className="h-4 w-4" />
+            Assign Asset
+          </button>
+
+          <button
+            type="button"
+            disabled={isProbationEmployee}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={onPromote}
+          >
+            <ArrowUpWideNarrow className="h-4 w-4" />
+            Promote Employee
+          </button>
+
+          <button
+            type="button"
+            disabled={!isProbationEmployee}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={onProbationConfirm}
+          >
+            <UserCheck className="h-4 w-4" />
+            Confirm Probation
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 const Employees = () => {
+  useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
+
   const { data: employees } = useGetAllEmployees()
-  console.log("🚀 ~ Employees ~ employees:", employees)
   const { data: allAssets } = useGetAllAssets()
   const { data: assetTransactions } = useGetLatestAssetTransactions()
-  const { data: departments } = useGetDepartments()
-  const { data: designations } = useGetDesignations()
-  const { data: employmentTypes } = useGetEmploymentTypes()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [employeesPerPage] = useState(10)
@@ -80,9 +158,14 @@ const Employees = () => {
     employeeName: string
   } | null>(null)
 
-  // ── Probation promotion state ─────────────────────────────────────────────
   const [promotionPopupOpen, setPromotionPopupOpen] = useState(false)
   const [promotionTarget, setPromotionTarget] = useState<{
+    employeeId: number
+    employeeName: string
+  } | null>(null)
+
+  const [promotePopupOpen, setPromotePopupOpen] = useState(false)
+  const [promoteTarget, setPromoteTarget] = useState<{
     employeeId: number
     employeeName: string
   } | null>(null)
@@ -90,37 +173,6 @@ const Employees = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingEmployeeId, setDeletingEmployeeId] = useState<number | null>(
     null
-  )
-
-  const getDepartmentName = useCallback(
-    (departmentId: number) => {
-      const dept = departments?.data?.find(
-        (d: any) => d.departmentId === departmentId
-      )
-      return dept?.departmentName || '-'
-    },
-    [departments]
-  )
-
-  const getDesignationName = useCallback(
-    (designationId: number) => {
-      const desig = designations?.data?.find(
-        (d: any) => d.designationId === designationId
-      )
-      return desig?.designationName || '-'
-    },
-    [designations]
-  )
-
-  // ── Returns true when this employee's employment type is "Probation" ──────
-  const isProbation = useCallback(
-    (employmentTypeId: number): boolean => {
-      const et = employmentTypes?.data?.find(
-        (t: any) => t.employmentTypeId === employmentTypeId
-      )
-      return et?.employmentTypeName === 'Probation'
-    },
-    [employmentTypes]
   )
 
   const getEmployeeAssets = useCallback(
@@ -166,40 +218,27 @@ const Employees = () => {
 
   const filteredEmployees = useMemo(() => {
     if (!employees?.data) return []
-    return employees.data.filter((emp) => {
-      const departmentName = getDepartmentName(emp.departmentId)
-      const designationName = getDesignationName(emp.designationId)
-      return (
+    return employees.data.filter(
+      (emp) =>
         emp.empFullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.workEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.empCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        designationName.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    })
-  }, [employees?.data, searchTerm, getDepartmentName, getDesignationName])
+        emp.departmentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.designationName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.employmentTypeName?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [employees?.data, searchTerm])
 
   const sortedEmployees = useMemo(() => {
     return [...filteredEmployees].sort((a, b) => {
-      let aValue: string | number = ''
-      let bValue: string | number = ''
-
-      if (sortColumn === 'departmentId') {
-        aValue = getDepartmentName(a.departmentId)
-        bValue = getDepartmentName(b.departmentId)
-      } else if (sortColumn === 'designationId') {
-        aValue = getDesignationName(a.designationId)
-        bValue = getDesignationName(b.designationId)
-      } else {
-        aValue =
-          typeof a[sortColumn] === 'string' || typeof a[sortColumn] === 'number'
-            ? a[sortColumn]
-            : ''
-        bValue =
-          typeof b[sortColumn] === 'string' || typeof b[sortColumn] === 'number'
-            ? b[sortColumn]
-            : ''
-      }
+      let aValue: string | number =
+        typeof a[sortColumn] === 'string' || typeof a[sortColumn] === 'number'
+          ? a[sortColumn]
+          : ''
+      let bValue: string | number =
+        typeof b[sortColumn] === 'string' || typeof b[sortColumn] === 'number'
+          ? b[sortColumn]
+          : ''
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortDirection === 'asc'
@@ -211,13 +250,7 @@ const Employees = () => {
         ? String(aValue).localeCompare(String(bValue))
         : String(bValue).localeCompare(String(aValue))
     })
-  }, [
-    filteredEmployees,
-    sortColumn,
-    sortDirection,
-    getDepartmentName,
-    getDesignationName,
-  ])
+  }, [filteredEmployees, sortColumn, sortDirection])
 
   const paginatedEmployees = useMemo(() => {
     const startIndex = (currentPage - 1) * employeesPerPage
@@ -287,16 +320,28 @@ const Employees = () => {
                 Official Phone <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('departmentId')}
+                onClick={() =>
+                  handleSort('departmentName' as keyof GetEmployeeType)
+                }
                 className="cursor-pointer"
               >
                 Department <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('designationId')}
+                onClick={() =>
+                  handleSort('designationName' as keyof GetEmployeeType)
+                }
                 className="cursor-pointer"
               >
                 Designation <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead
+                onClick={() =>
+                  handleSort('employmentTypeName' as keyof GetEmployeeType)
+                }
+                className="cursor-pointer"
+              >
+                Employment Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
                 onClick={() => handleSort('basicSalary')}
@@ -310,19 +355,19 @@ const Employees = () => {
           <TableBody>
             {!employees || employees.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   Loading employees...
                 </TableCell>
               </TableRow>
             ) : !employees.data || employees.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No employees found
                 </TableCell>
               </TableRow>
             ) : paginatedEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={11} className="text-center py-4">
                   No employees match your search
                 </TableCell>
               </TableRow>
@@ -332,10 +377,10 @@ const Employees = () => {
                 const hasAssets = empAssets.length > 0
                 const isExpanded =
                   hasAssets && expandedEmployees.has(emp.employeeId!)
-                const showPromotionBtn = isProbation(emp.employmentTypeId)
+                const isProbationEmployee =
+                  (emp as any).employmentTypeName === 'Probation'
 
                 return (
-                  // ── Key moved to the Fragment — fixes the console warning ──
                   <React.Fragment key={emp.employeeId ?? index}>
                     <TableRow
                       onClick={() => {
@@ -345,7 +390,6 @@ const Employees = () => {
                         hasAssets ? 'cursor-pointer hover:bg-blue-50/50' : ''
                       }
                     >
-                      {/* Accordion chevron */}
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         {hasAssets && (
                           <button
@@ -371,54 +415,15 @@ const Employees = () => {
                       <TableCell>{emp.empFullName}</TableCell>
                       <TableCell>{emp.workEmail}</TableCell>
                       <TableCell>{emp.officialPhone}</TableCell>
-                      <TableCell>
-                        {getDepartmentName(emp.departmentId)}
-                      </TableCell>
-                      <TableCell>
-                        {getDesignationName(emp.designationId)}
-                      </TableCell>
+                      <TableCell>{(emp as any).departmentName}</TableCell>
+                      <TableCell>{(emp as any).designationName}</TableCell>
+                      <TableCell>{(emp as any).employmentTypeName}</TableCell>
                       <TableCell>{emp.basicSalary}</TableCell>
                       <TableCell
                         className="text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="flex justify-end gap-2">
-                          {/* Assign Asset */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-green-600 hover:text-green-700"
-                            onClick={() => {
-                              setAssignTarget({
-                                employeeId: emp.employeeId!,
-                                employeeName: emp.empFullName ?? '',
-                              })
-                              setAssignPopupOpen(true)
-                            }}
-                            title="Assign Asset"
-                          >
-                            <Briefcase className="h-4 w-4" />
-                          </Button>
-
-                          {/* Probation Confirmation — only visible for probation employees */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-amber-600 hover:text-amber-700"
-                            onClick={() => {
-                              setPromotionTarget({
-                                employeeId: emp.employeeId!,
-                                employeeName: emp.empFullName ?? '',
-                              })
-                              setPromotionPopupOpen(true)
-                            }}
-                            disabled={!showPromotionBtn}
-                            title="Confirm Probation Employee"
-                          >
-                            <UserCheck className="h-4 w-4" />
-                          </Button>
-
-                          {/* Edit */}
+                        <div className="flex justify-end items-center gap-1">
                           <Link
                             href={`/dashboard/employee-management/edit-employee/${emp.employeeId}`}
                           >
@@ -431,7 +436,6 @@ const Employees = () => {
                             </Button>
                           </Link>
 
-                          {/* Delete */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -443,14 +447,38 @@ const Employees = () => {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
+
+                          <ActionMenu
+                            isProbationEmployee={isProbationEmployee}
+                            onAssignAsset={() => {
+                              setAssignTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setAssignPopupOpen(true)
+                            }}
+                            onPromote={() => {
+                              setPromoteTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setPromotePopupOpen(true)
+                            }}
+                            onProbationConfirm={() => {
+                              setPromotionTarget({
+                                employeeId: emp.employeeId!,
+                                employeeName: emp.empFullName ?? '',
+                              })
+                              setPromotionPopupOpen(true)
+                            }}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
 
-                    {/* Accordion expanded row */}
                     {isExpanded && (
                       <TableRow key={`accordion-${emp.employeeId}`}>
-                        <TableCell colSpan={10} className="p-0 bg-blue-50/40">
+                        <TableCell colSpan={11} className="p-0 bg-blue-50/40">
                           <div className="px-8 py-3">
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                               Assigned Assets
@@ -599,7 +627,6 @@ const Employees = () => {
         />
       )}
 
-      {/* Probation Promotion Popup */}
       {promotionTarget && (
         <ProbationPromotionPopup
           isOpen={promotionPopupOpen}
@@ -609,6 +636,18 @@ const Employees = () => {
           }}
           employeeId={promotionTarget.employeeId}
           employeeName={promotionTarget.employeeName}
+        />
+      )}
+
+      {promoteTarget && (
+        <PromoteEmployeePopup
+          isOpen={promotePopupOpen}
+          onClose={() => {
+            setPromotePopupOpen(false)
+            setPromoteTarget(null)
+          }}
+          employeeId={promoteTarget.employeeId}
+          employeeName={promoteTarget.employeeName}
         />
       )}
 

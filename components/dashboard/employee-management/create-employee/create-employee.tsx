@@ -22,7 +22,6 @@ import {
   useGetDepartments,
   useGetDesignations,
   useGetEmploymentTypes,
-  useGetShiftDayAndWeekDays,
   useGetCompanies,
   useGetWorkStations,
   useGetDivisions,
@@ -30,7 +29,6 @@ import {
   useGetAllEmployees,
   useGetRoles,
   useGetTenants,
-  useGetPreboardingEmployeeChecklistsById,
   useGetEmployeePreboardingById,
   useGetLeavePolicies,
   useGetSalaryStructures,
@@ -91,7 +89,6 @@ const STATIC_COLUMNS = [
     width: 24,
     required: true,
   },
-  { header: 'Shift', key: 'shiftId', width: 36, required: false },
 ]
 
 // ── Local form types ──────────────────────────────────────────────────────────
@@ -143,7 +140,7 @@ type EmployeeFormData = {
   departmentId: number
   designationId: number
   employmentTypeId: number
-  shiftId: number
+  probationMonths: number
   companyId: number
   workStationId: number
   divisionId: number
@@ -221,7 +218,7 @@ const buildEmptyForm = (userId: number): EmployeeFormData => ({
   departmentId: 0,
   designationId: 0,
   employmentTypeId: 0,
-  shiftId: 0,
+  probationMonths: 0,
   companyId: 0,
   workStationId: 0,
   divisionId: 0,
@@ -248,7 +245,6 @@ const CreateEmployee = () => {
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
-  const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
   const { data: companies } = useGetCompanies()
   const { data: workStations } = useGetWorkStations()
   const { data: divisions } = useGetDivisions()
@@ -312,6 +308,8 @@ const CreateEmployee = () => {
         preboarding.data?.reportingAuthorityId ?? prev.reportingAuthorityId,
       employmentTypeId:
         preboarding.data?.employmentTypeId ?? prev.employmentTypeId,
+      probationMonths:
+        preboarding.data?.probationMonths ?? prev.probationMonths,
       salaryStructureMasterId:
         preboarding.data?.salaryStructureMasterId ??
         prev.salaryStructureMasterId,
@@ -520,10 +518,6 @@ const CreateEmployee = () => {
     const employmentTypeLabels = (employmentTypes?.data ?? []).map(
       (t) => `${t.employmentTypeName} | ${t.employmentTypeId}`
     )
-    const shiftLabels = (shiftDayAndWeekDays?.data ?? []).map(
-      (s) =>
-        `${s.shift.shiftName} (${s.shift.startTime ?? ''}-${s.shift.endTime ?? ''})`
-    )
     const genderLabels = ['Male', 'Female']
     const bloodGroupLabels = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-']
 
@@ -670,15 +664,6 @@ const CreateEmployee = () => {
         'EmploymentTypeList'
       )
 
-    shiftLabels.forEach((label, i) => {
-      lookupSheet.getCell(`D${i + 1}`).value = label
-    })
-    if (shiftLabels.length > 0)
-      workbook.definedNames.add(
-        `Lookup!$D$1:$D$${shiftLabels.length}`,
-        'ShiftList'
-      )
-
     genderLabels.forEach((g, i) => {
       lookupSheet.getCell(`E${i + 1}`).value = g
     })
@@ -763,7 +748,6 @@ const CreateEmployee = () => {
           departmentId: parseId(get('Department')) ?? 0,
           designationId: parseId(get('Designation')) ?? 0,
           employmentTypeId: parseId(get('Employment Type')) ?? 0,
-          shiftId: parseId(get('Shift')) ?? null,
           createdBy: userData?.userId || 0,
           leavePolicyMasterId: null,
           salaryStructureMasterId: null,
@@ -1298,46 +1282,14 @@ const CreateEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="shiftId">
-                Shift <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  shiftDayAndWeekDays?.data?.map((timing) => ({
-                    id: timing.shift.shiftId?.toString() || '0',
-                    name: formatShift(
-                      timing.shift.shiftName,
-                      timing.shift.startTime,
-                      timing.shift.endTime
-                    ),
-                  })) || []
-                }
-                value={
-                  formData.shiftId
-                    ? {
-                        id: formData.shiftId.toString(),
-                        name: (() => {
-                          const t = shiftDayAndWeekDays?.data?.find(
-                            (t) => t.shift.shiftId === formData.shiftId
-                          )
-                          return t
-                            ? formatShift(
-                                t.shift.shiftName,
-                                t.shift.startTime,
-                                t.shift.endTime
-                              )
-                            : ''
-                        })(),
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    shiftId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select shift"
+              <Label htmlFor="probationMonths">Probation Months</Label>
+              <Input
+                id="probationMonths"
+                name="probationMonths"
+                type="number"
+                value={formData.probationMonths || ''}
+                onChange={handleInputChange}
+                placeholder="e.g. 3"
               />
             </div>
 
