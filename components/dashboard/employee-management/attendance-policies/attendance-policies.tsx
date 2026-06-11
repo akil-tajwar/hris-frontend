@@ -1,13 +1,3 @@
-// import React from 'react'
-
-// const AttendancePolicies = () => {
-//   return (
-//     <div>AttendancePolicies</div>
-//   )
-// }
-
-// export default AttendancePolicies
-
 'use client'
 
 import type React from 'react'
