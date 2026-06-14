@@ -97,6 +97,10 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/holidays',
         },
         {
+          title: 'Holiday Calendars',
+          href: '/dashboard/setup/holiday-calendars',
+        },
+        {
           title: 'Shift and Week Days',
           href: '/dashboard/setup/shift-and-week-days',
         },
@@ -227,8 +231,12 @@ export function DashboardSidebar() {
           href: '/dashboard/report/salary-report',
         },
         {
-          title: 'Attendance Report',
+          title: 'Daily Attendance Report',
           href: '/dashboard/report/attendance-report',
+        },
+        {
+          title: 'Attendance Report Summary',
+          href: '/dashboard/report/attendance-report-summary',
         },
         {
           title: 'Lone Report',
