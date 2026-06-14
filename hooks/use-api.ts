@@ -148,6 +148,16 @@ import {
   updateShiftAllocationRecurrence,
   copyShiftAllocationById,
   copyAllActiveShiftAllocations,
+  getAttendanceSummaryReport,
+  getDailyAttendanceReport,
+  getAllHolidayCalendars,
+  createHolidayCalendar,
+  editHolidayCalendar,
+  deleteHolidayCalendar,
+  getAllNewHolidays,
+  createNewHolidayRange,
+  editNewHoliday,
+  deleteNewHoliday,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -201,6 +211,9 @@ import {
   CreateShiftAllocationType,
   CreateBulkShiftAllocationType,
   UpdateRecurrenceType,
+  DailyAttendanceType,
+  CreateHolidayCalendarType,
+  CreateNewHolidayType,
 } from '@/utils/type'
 
 //roles
@@ -5452,6 +5465,239 @@ export const useCopyAllActiveAllocations = () => {
     },
     onError: (error: any) => {
       toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+
+// hooks/use-api.ts এ যোগ করো
+
+// hooks/use-api.ts
+export const useGetDailyAttendanceReport = (date: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+  return useQuery({
+    queryKey: ['dailyAttendanceReport', date],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getDailyAttendanceReport(date, token)
+    },
+    enabled: !!token && date.length > 0,
+    // select সরিয়ে দাও
+  })
+}
+
+export const useGetAttendanceSummaryReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+  return useQuery({
+    queryKey: ['attendanceSummaryReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAttendanceSummaryReport(fromDate, toDate, token)
+    },
+    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+  })
+}
+
+// ── Holiday Calendars ──
+export const useGetHolidayCalendars = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+  return useQuery({
+    queryKey: ['holidayCalendars'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllHolidayCalendars(token)
+    },
+    enabled: !!token,
+  })
+}
+
+export const useAddHolidayCalendar = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateHolidayCalendarType) =>
+      createHolidayCalendar(data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: 'Holiday calendar created!' })
+      queryClient.invalidateQueries({ queryKey: ['holidayCalendars'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useUpdateHolidayCalendar = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateHolidayCalendarType> }) =>
+      editHolidayCalendar(id, data, token),
+    onSuccess: () => {
+      toast({ title: 'Success!', description: 'Holiday calendar updated.' })
+      queryClient.invalidateQueries({ queryKey: ['holidayCalendars'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useDeleteHolidayCalendar = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteHolidayCalendar(id, token)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
+      if (apiError || successFlag === false) throw new Error('Failed to delete')
+      return res
+    },
+    onSuccess: () => {
+      toast({ title: 'Success!', description: 'Holiday calendar deleted.' })
+      queryClient.invalidateQueries({ queryKey: ['holidayCalendars'] })
+      reset()
+      onClose()
+    },
+    onError: () => {
+      toast({ title: 'Error', variant: 'destructive', description: 'This data is needed elsewhere' })
+    },
+  })
+}
+
+// ── New Holidays ──
+export const useGetNewHolidays = (calendarId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+  return useQuery({
+    queryKey: ['newHolidays', calendarId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllNewHolidays(calendarId, token)
+    },
+    enabled: !!token && calendarId > 0,
+  })
+}
+
+export const useAddNewHolidayRange = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateNewHolidayType) =>
+      createNewHolidayRange(data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: (res?.data as any)?.message || 'Holiday(s) created!' })
+      queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useUpdateNewHoliday = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<CreateNewHolidayType> }) =>
+      editNewHoliday(id, data, token),
+    onSuccess: () => {
+      toast({ title: 'Success!', description: 'Holiday updated.' })
+      queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useDeleteNewHoliday = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteNewHoliday(id, token)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
+      if (apiError || successFlag === false) throw new Error('Failed to delete')
+      return res
+    },
+    onSuccess: () => {
+      toast({ title: 'Success!', description: 'Holiday deleted.' })
+      queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
+      reset()
+      onClose()
+    },
+    onError: () => {
+      toast({ title: 'Error', variant: 'destructive', description: 'This data is needed elsewhere' })
     },
   })
 }

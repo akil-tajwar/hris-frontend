@@ -99,10 +99,11 @@ const DAY_ORDER: Record<string, number> = {
  * shiftEntry is one item from useGetShiftDayAndWeekDays data array.
  */
 const getWorkingDaysFromShift = (shiftEntry: any): number[] => {
-  const days: any[] = shiftEntry?.weekDays ?? shiftEntry?.days ?? []
+  // ✅ shiftDayConfigs, weekDays, বা days যেটাই হোক
+  const days: any[] = shiftEntry?.shiftDayConfigs ?? shiftEntry?.weekDays ?? shiftEntry?.days ?? []
   return days
-    .filter((d: any) => d.dayType !== 'Weekend' && (d.day ?? d.weekDay?.day))
-    .map((d: any) => DAY_ORDER[d.day ?? d.weekDay?.day] ?? -1)
+    .filter((d: any) => d.dayType !== 'Weekend' && (d.weekDay ?? d.day ?? d.weekDay?.day))
+    .map((d: any) => DAY_ORDER[d.weekDay ?? d.day ?? d.weekDay?.day] ?? -1)
     .filter((n: number) => n >= 0)
     .sort((a: number, b: number) => a - b)
 }
@@ -182,7 +183,12 @@ const ShiftAllocationPage = () => {
   const { data: shiftsData } = useGetShiftDayAndWeekDays()
 
   const employees = useMemo(() => employeesData?.data ?? [], [employeesData])
-  const shifts = useMemo(() => shiftsData?.data ?? [], [shiftsData])
+  // const shifts = useMemo(() => shiftsData?.data ?? [], [shiftsData])
+  const shifts = useMemo(() => {
+  const data = shiftsData?.data ?? []
+  console.log('shifts raw data:', JSON.stringify(data[0], null, 2))  // প্রথমটা দেখো
+  return data
+}, [shiftsData])
 
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage] = useState(10)
@@ -257,13 +263,14 @@ const ShiftAllocationPage = () => {
   const copyAllMutation = useCopyAllActiveAllocations()
 
   // ─── Helpers ──────────────────────────────────────────────────
-  const getShiftWorkingDays = useCallback(
-    (shiftId: number): number[] => {
-      const entry = shifts.find((s: any) => s.shift?.shiftId === shiftId)
-      return entry ? getWorkingDaysFromShift(entry) : []
-    },
-    [shifts]
-  )
+const getShiftWorkingDays = useCallback(
+  (shiftId: number): number[] => {
+    // ✅ s.shift?.shiftId দিয়ে match করো
+    const entry = shifts.find((s: any) => s.shift?.shiftId === shiftId)
+    return entry ? getWorkingDaysFromShift(entry) : []
+  },
+  [shifts]
+)
 
   const autoFillDates = useCallback(
     (

@@ -77,6 +77,12 @@ import {
   CreateShiftAllocationType,
   CreateBulkShiftAllocationType,
   UpdateRecurrenceType,
+  AttendanceSummaryType,
+  DailyAttendanceType,
+  GetHolidayCalendarType,
+  CreateHolidayCalendarType,
+  GetNewHolidayType,
+  CreateNewHolidayType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -2046,6 +2052,121 @@ export async function copyAllActiveShiftAllocations(
     url: `api/shiftAllocation/copy-all`,
     method: 'POST',
     body: { recurrenceType, createdBy },
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+// api/attendance.api.ts
+
+export async function getDailyAttendanceReport(date: string, token: string) {
+  return fetchApi<DailyAttendanceType[]>({
+    url: `api/reports/daily-attendance?date=${date}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function getAttendanceSummaryReport(
+  fromDate: string,
+  toDate: string,
+  token: string
+) {
+  return fetchApi<AttendanceSummaryType[]>({
+    url: `api/reports/attendance-summary?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+
+// ── Holiday Calendars ──
+export async function getAllHolidayCalendars(token: string) {
+  return fetchApi<GetHolidayCalendarType[]>({
+    url: 'api/holiday-calendars/getAll',
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function createHolidayCalendar(
+  data: CreateHolidayCalendarType,
+  token: string
+) {
+  return fetchApi<GetHolidayCalendarType>({
+    url: 'api/holiday-calendars/create',
+    method: 'POST',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function editHolidayCalendar(
+  id: number,
+  data: Partial<CreateHolidayCalendarType>,
+  token: string
+) {
+  return fetchApi<GetHolidayCalendarType>({
+    url: `api/holiday-calendars/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function deleteHolidayCalendar(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/holiday-calendars/delete/${id}`,
+    method: 'DELETE',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function getCalendarWithHolidays(id: number, token: string) {
+  return fetchApi<GetHolidayCalendarType & { holidays: GetNewHolidayType[] }>({
+    url: `api/holiday-calendars/getWithHolidays/${id}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+// ── New Holidays ──
+export async function getAllNewHolidays(calendarId: number, token: string) {
+  return fetchApi<GetNewHolidayType[]>({
+    url: `api/holidays/getAll?calendarId=${calendarId}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function createNewHolidayRange(
+  data: CreateNewHolidayType,
+  token: string
+) {
+  return fetchApi<{ message: string; holidays: GetNewHolidayType[] }>({
+    url: 'api/holidays/createRange',
+    method: 'POST',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function editNewHoliday(
+  id: number,
+  data: Partial<CreateNewHolidayType>,
+  token: string
+) {
+  return fetchApi<GetNewHolidayType>({
+    url: `api/holidays/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function deleteNewHoliday(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/holidays/delete/${id}`,
+    method: 'DELETE',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }

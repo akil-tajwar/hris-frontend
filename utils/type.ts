@@ -1148,3 +1148,74 @@ export type CreateBulkShiftAllocationType = {
   approvedBy?: number
   createdBy: number
 }
+
+
+// types/attendance.types.ts
+
+export const dailyAttendanceSchema = z.object({
+  employeeId: z.number(),
+  empCode: z.string(),
+  employeeName: z.string(),
+  departmentName: z.string(),
+  designationName: z.string(),
+  attendanceDate: z.string(),
+  firstIn: z.string().nullable(),
+  lastOut: z.string().nullable(),
+  workedMinutes: z.number(),
+  lateMinutes: z.number(),
+  earlyOutMinutes: z.number(),
+  overtimeMinutes: z.number(),
+  status: z.string(),
+})
+export type DailyAttendanceType = z.infer<typeof dailyAttendanceSchema>
+
+export const attendanceSummarySchema = z.object({
+  date: z.string(),
+  present: z.number(),
+  absent: z.number(),
+  late: z.number(),
+  halfDay: z.number(),
+  total: z.number(),
+})
+export type AttendanceSummaryType = z.infer<typeof attendanceSummarySchema>
+
+
+
+// Holiday Calendar
+export type CreateHolidayCalendarType = {
+  companyId: number
+  year: number
+  name?: string
+  isActive?: boolean
+}
+export type GetHolidayCalendarType = {
+  id: number
+  companyId: number
+  year: number
+  name?: string | null
+  isActive?: boolean | null
+  createdAt?: string | null
+}
+
+// New Holidays (new schema)
+export type CreateNewHolidayType = {
+  calendarId: number
+  title: string
+  startDate: string
+  endDate: string
+  type: string
+  isRecurring?: boolean
+  isOptional?: boolean
+  description?: string
+}
+export type GetNewHolidayType = {
+  id: number
+  calendarId: number
+  title: string
+  date?: string
+  type: string
+  isRecurring?: boolean | null
+  isOptional?: boolean | null
+  description?: string | null
+  createdAt?: string | null
+}
