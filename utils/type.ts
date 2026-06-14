@@ -433,7 +433,9 @@ export const employeeSchema = z.object({
 
   // Foreign Keys (IDs)
   departmentId: z.number().int(),
+  departmentName: z.string().optional().nullable(), //only for get
   designationId: z.number().int(),
+  designationName: z.string().optional().nullable(), //only for get
   employmentTypeId: z.number().int(),
   companyId: z.number().int(),
   workStationId: z.number().int(),
@@ -498,7 +500,9 @@ export const employeeHistorySchema = z.object({
   eventDate: z.date(),
   employeeEventType: z.string(),
   effectiveFrom: z.date(),
-  remarsk: z.string(),
+  remarks: z.string(),
+  oldValue: z.record(z.any()),
+  newValue: z.record(z.any()),
   performedBy: z.string(),
   approvedBy: z.string(),
   referenceType: z.string(),
@@ -510,7 +514,7 @@ export const employeeActivityHistoryReportSchema = z.object({
   employeeHistory: z.array(employeeHistorySchema),
 })
 export type GetEmployeeActivityHistoryReport = z.infer<
-  typeof employeeAttendanceSchema
+  typeof employeeActivityHistoryReportSchema
 >
 
 //weekDay
@@ -1102,7 +1106,6 @@ export type CreateAttendancePolicyType = {
   createdBy: number
   weekDayIds?: number[]
 }
-
 
 // Shift Allocation Types
 export type GetShiftAllocationType = {
