@@ -1782,7 +1782,7 @@ export async function getEmployeeActivityReport(
   employeeId: number,
   token: string
 ) {
-  return fetchApi<GetEmployeeActivityHistoryReport[]>({
+  return fetchApi<GetEmployeeActivityHistoryReport>({
     url: `api/reports/activity-report?employeeId=${employeeId}`,
     method: 'GET',
     headers: {
