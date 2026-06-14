@@ -271,8 +271,12 @@ export const employeePreboardingSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateEmployeePreboardingType = z.infer<typeof employeePreboardingSchema>
-export type GetEmployeePreboardingType = z.infer<typeof employeePreboardingSchema> & {
+export type CreateEmployeePreboardingType = z.infer<
+  typeof employeePreboardingSchema
+>
+export type GetEmployeePreboardingType = z.infer<
+  typeof employeePreboardingSchema
+> & {
   preboardNo: string
   companyName: string
   departmentName: string
@@ -327,8 +331,12 @@ export const EmployeePreboardingChecklistSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema>
-export type GetEmployeePreboardingChecklistType = z.infer<typeof EmployeePreboardingChecklistSchema> & {
+export type CreateEmployeePreboardingChecklistType = z.infer<
+  typeof EmployeePreboardingChecklistSchema
+>
+export type GetEmployeePreboardingChecklistType = z.infer<
+  typeof EmployeePreboardingChecklistSchema
+> & {
   responsibleEmployeeName: string
   checklistDetailsName: string
   preboardingFullName: string
@@ -425,9 +433,10 @@ export const employeeSchema = z.object({
 
   // Foreign Keys (IDs)
   departmentId: z.number().int(),
+  departmentName: z.string().optional().nullable(), //only for get
   designationId: z.number().int(),
+  designationName: z.string().optional().nullable(), //only for get
   employmentTypeId: z.number().int(),
-  shiftId: z.number().int(),
   companyId: z.number().int(),
   workStationId: z.number().int(),
   divisionId: z.number().int(),
@@ -484,10 +493,29 @@ export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   divisionName: string
   costCenterName: string
   reportingAuthorityName: string
-  shiftName: string
-  startTime: string
-  endTime: string
 }
+
+export const employeeHistorySchema = z.object({
+  employeeLifeCycleId: z.number(),
+  eventDate: z.date(),
+  employeeEventType: z.string(),
+  effectiveFrom: z.date(),
+  remarks: z.string(),
+  oldValue: z.record(z.any()),
+  newValue: z.record(z.any()),
+  performedBy: z.string(),
+  approvedBy: z.string(),
+  referenceType: z.string(),
+  referenceId: z.string(),
+  createdAt: z.string(),
+})
+export const employeeActivityHistoryReportSchema = z.object({
+  employeeDetails: employeeSchema,
+  employeeHistory: z.array(employeeHistorySchema),
+})
+export type GetEmployeeActivityHistoryReport = z.infer<
+  typeof employeeActivityHistoryReportSchema
+>
 
 //weekDay
 export const weekDaySchema = z.object({
@@ -719,12 +747,8 @@ export const salaryComponentSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
 })
-export type CreateSalaryComponentType = z.infer<
-  typeof salaryComponentSchema
->
-export type GetSalaryComponentType = z.infer<
-  typeof salaryComponentSchema
->
+export type CreateSalaryComponentType = z.infer<typeof salaryComponentSchema>
+export type GetSalaryComponentType = z.infer<typeof salaryComponentSchema>
 
 export const SalaryStructureSchema = z.object({
   salaryStructureMaster: z.object({
@@ -858,7 +882,7 @@ export const assetCategorySchema = z.object({
   createdAt: z.date(),
   updatedBy: z.number().nullable(),
   updatedAt: z.date().nullable(),
-});
+})
 export type CreateAssetCategoryType = z.infer<typeof assetCategorySchema>
 export type GetAssetCategoryType = z.infer<typeof assetCategorySchema>
 
@@ -870,12 +894,18 @@ export const assetsSchema = z.object({
   serialNumber: z.string().nullable(),
   purchaseDate: z.date().nullable(),
   purchaseValue: z.number().nullable(),
-  currentStatus: z.enum(['AVAILABLE', 'ASSIGNED', 'DAMAGE', 'LOST', 'SCRAPPED']),
+  currentStatus: z.enum([
+    'AVAILABLE',
+    'ASSIGNED',
+    'DAMAGE',
+    'LOST',
+    'SCRAPPED',
+  ]),
   createdBy: z.number(),
   createdAt: z.date(),
   updatedBy: z.number().nullable(),
   updatedAt: z.date().nullable(),
-});
+})
 export type CreateAssetType = z.infer<typeof assetsSchema>
 export type GetAssetType = z.infer<typeof assetsSchema> & {
   categoryName: string
@@ -885,7 +915,14 @@ export const assetTransactionsSchema = z.object({
   assetTransactionId: z.number().optional(),
   assetId: z.number(),
   employeeId: z.number(),
-  transactionType: z.enum(['ISSUE', 'RETURN', 'TRANSFER', 'LOST', 'DAMAGE', 'REPLACEMENT']),
+  transactionType: z.enum([
+    'ISSUE',
+    'RETURN',
+    'TRANSFER',
+    'LOST',
+    'DAMAGE',
+    'REPLACEMENT',
+  ]),
   transactionDate: z.date(),
   remarks: z.string().nullable(),
   approvedBy: z.number().nullable(),
@@ -893,27 +930,9 @@ export const assetTransactionsSchema = z.object({
   createdAt: z.date(),
   updatedBy: z.number().nullable(),
   updatedAt: z.date().nullable(),
-});
+})
 export type CreateAssetTransactionType = z.infer<typeof assetTransactionsSchema>
 export type GetAssetTransactionType = z.infer<typeof assetTransactionsSchema>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export const employeeLonesSchema = z.object({
   employeeLoneId: z.number().optional(),
@@ -1087,7 +1106,6 @@ export type CreateAttendancePolicyType = {
   createdBy: number
   weekDayIds?: number[]
 }
-
 
 // Shift Allocation Types
 export type GetShiftAllocationType = {
