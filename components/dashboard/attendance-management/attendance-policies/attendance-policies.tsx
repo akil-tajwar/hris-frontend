@@ -22,6 +22,13 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ArrowUpDown, Search, ClipboardList, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
@@ -36,6 +43,7 @@ import {
   useGetAttendancePolicies,
   useGetWeekDays,
   useUpdateAttendancePolicy,
+  useGetHolidayCalendars,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -136,6 +144,7 @@ const defaultForm = (userId: number): CreateAttendancePolicyType => ({
   maxOvertimeMinutes: 240,
   allowCompOff: false,
   isActive: true,
+  holidayCalendarId: null,
   createdBy: userId,
   weekDayIds: [],
 })
@@ -146,8 +155,8 @@ const AttendancePolicies = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: policies } = useGetAttendancePolicies()
-  // useGetWeekDays hook — replace with your actual hook if name differs
   const { data: weekDaysData } = useGetWeekDays()
+  const { data: holidayCalendarsData } = useGetHolidayCalendars()
 
   const weekDays: WeekDayItem[] = useMemo(
     () =>
@@ -156,6 +165,15 @@ const AttendancePolicies = () => {
         label: d.day,
       })) ?? [],
     [weekDaysData]
+  )
+
+  const holidayCalendars: { id: number; label: string }[] = useMemo(
+    () =>
+      holidayCalendarsData?.data?.map((c: any) => ({
+        id: c.id,
+        label: c.name ? `${c.name} (${c.year})` : `Calendar ${c.id} (${c.year})`,
+      })) ?? [],
+    [holidayCalendarsData]
   )
 
   const [error, setError] = useState<string | null>(null)
@@ -175,7 +193,6 @@ const AttendancePolicies = () => {
     defaultForm(userData?.userId || 0)
   )
 
-  // sync createdBy once user loads
   useEffect(() => {
     if (userData?.userId) {
       setFormData((prev) => ({ ...prev, createdBy: userData.userId }))
@@ -301,6 +318,7 @@ const AttendancePolicies = () => {
       maxOvertimeMinutes: policy.maxOvertimeMinutes ?? 240,
       allowCompOff: policy.allowCompOff ?? false,
       isActive: policy.isActive ?? true,
+      holidayCalendarId: policy.holidayCalendarId ?? null,
       createdBy: userData?.userId || 0,
       weekDayIds: policy.weekends?.map((w) => w.weekDayId) ?? [],
     })
@@ -352,6 +370,7 @@ const AttendancePolicies = () => {
               <TableHead>Late After (min)</TableHead>
               <TableHead>Overtime</TableHead>
               <TableHead>Weekend Days</TableHead>
+              <TableHead>Holiday Calendar</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -359,19 +378,19 @@ const AttendancePolicies = () => {
           <TableBody>
             {!policies || policies.data == null ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   Loading policies...
                 </TableCell>
               </TableRow>
             ) : policies.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No attendance policies found
                 </TableCell>
               </TableRow>
             ) : paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No policies match your search
                 </TableCell>
               </TableRow>
@@ -388,9 +407,7 @@ const AttendancePolicies = () => {
                     <TableCell>{policy.lateAfterMinutes ?? 0}</TableCell>
                     <TableCell>
                       {policy.allowOvertime ? (
-                        <span className="text-green-600 text-xs font-medium">
-                          Yes
-                        </span>
+                        <span className="text-green-600 text-xs font-medium">Yes</span>
                       ) : (
                         <span className="text-gray-400 text-xs">No</span>
                       )}
@@ -410,6 +427,16 @@ const AttendancePolicies = () => {
                           <span className="text-gray-400 text-xs">—</span>
                         )}
                       </div>
+                    </TableCell>
+                    {/* ✅ Holiday Calendar column */}
+                    <TableCell>
+                      {policy.holidayCalendarName ? (
+                        <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs">
+                          {policy.holidayCalendarName} ({policy.holidayCalendarYear})
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {policy.isActive ? (
@@ -460,12 +487,8 @@ const AttendancePolicies = () => {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  className={
-                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                 />
               </PaginationItem>
               {[...Array(totalPages)].map((_, index) => {
@@ -484,10 +507,7 @@ const AttendancePolicies = () => {
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (
-                  index === currentPage - 3 ||
-                  index === currentPage + 3
-                ) {
+                } else if (index === currentPage - 3 || index === currentPage + 3) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -498,14 +518,8 @@ const AttendancePolicies = () => {
               })}
               <PaginationItem>
                 <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  className={
-                    currentPage === totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                 />
               </PaginationItem>
             </PaginationContent>
@@ -553,9 +567,7 @@ const AttendancePolicies = () => {
 
           {/* Timing thresholds */}
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">
-              Timing Thresholds
-            </p>
+            <p className="text-sm font-medium text-gray-700 mb-2">Timing Thresholds</p>
             <div className="grid grid-cols-2 gap-3">
               <NumberField
                 label="Grace Period"
@@ -587,16 +599,11 @@ const AttendancePolicies = () => {
           {/* Overtime section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">
-                Allow Overtime
-              </Label>
+              <Label className="text-sm font-medium text-gray-700">Allow Overtime</Label>
               <Switch
                 checked={formData.allowOvertime ?? false}
                 onChange={(e) =>
-                  handleSwitchChange(
-                    'allowOvertime',
-                    (e.target as HTMLInputElement).checked
-                  )
+                  handleSwitchChange('allowOvertime', (e.target as HTMLInputElement).checked)
                 }
               />
             </div>
@@ -620,16 +627,11 @@ const AttendancePolicies = () => {
 
           {/* Comp off */}
           <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium text-gray-700">
-              Allow Comp Off
-            </Label>
+            <Label className="text-sm font-medium text-gray-700">Allow Comp Off</Label>
             <Switch
               checked={formData.allowCompOff ?? false}
               onChange={(e) =>
-                handleSwitchChange(
-                  'allowCompOff',
-                  (e.target as HTMLInputElement).checked
-                )
+                handleSwitchChange('allowCompOff', (e.target as HTMLInputElement).checked)
               }
             />
           </div>
@@ -640,19 +642,14 @@ const AttendancePolicies = () => {
             <Switch
               checked={formData.isActive ?? true}
               onChange={(e) =>
-                handleSwitchChange(
-                  'isActive',
-                  (e.target as HTMLInputElement).checked
-                )
+                handleSwitchChange('isActive', (e.target as HTMLInputElement).checked)
               }
             />
           </div>
 
           {/* Weekend days */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">
-              Weekend Days
-            </Label>
+            <Label className="text-sm font-medium text-gray-700">Weekend Days</Label>
             <WeekDayCheckboxes
               weekDays={weekDays}
               selected={formData.weekDayIds ?? []}
@@ -660,10 +657,34 @@ const AttendancePolicies = () => {
             />
           </div>
 
+          {/* ✅ Holiday Calendar */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Holiday Calendar</Label>
+            <Select
+              value={formData.holidayCalendarId?.toString() ?? 'none'}
+              onValueChange={(val) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  holidayCalendarId: val === 'none' ? null : Number(val),
+                }))
+              }
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Select holiday calendar (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— None —</SelectItem>
+                {holidayCalendars.map((c) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-              {error}
-            </div>
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</div>
           )}
 
           <div className="flex justify-end gap-2">
@@ -674,25 +695,19 @@ const AttendancePolicies = () => {
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
             >
-              {addMutation.isPending || updateMutation.isPending
-                ? 'Saving...'
-                : 'Save'}
+              {addMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
       {/* Delete dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Attendance Policy</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this attendance policy? This
-              action cannot be undone.
+              Are you sure you want to delete this attendance policy? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -718,3 +733,5 @@ const AttendancePolicies = () => {
 }
 
 export default AttendancePolicies
+
+

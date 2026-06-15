@@ -5609,9 +5609,9 @@ export const useGetNewHolidays = (calendarId: number) => {
     queryKey: ['newHolidays', calendarId],
     queryFn: () => {
       if (!token) throw new Error('Token not found')
-      return getAllNewHolidays(calendarId, token)
+      return getAllNewHolidays(token)
     },
-    enabled: !!token && calendarId > 0,
+    enabled: !!token ,
   })
 }
 

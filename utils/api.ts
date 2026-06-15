@@ -2082,7 +2082,7 @@ export async function getAttendanceSummaryReport(
 // ── Holiday Calendars ──
 export async function getAllHolidayCalendars(token: string) {
   return fetchApi<GetHolidayCalendarType[]>({
-    url: 'api/holiday-calendars/getAll',
+    url: 'api/holidayCalendar/getAll',
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
@@ -2093,7 +2093,7 @@ export async function createHolidayCalendar(
   token: string
 ) {
   return fetchApi<GetHolidayCalendarType>({
-    url: 'api/holiday-calendars/create',
+    url: 'api/holidayCalendar/create',
     method: 'POST',
     body: data,
     headers: { Authorization: token, 'Content-Type': 'application/json' },
@@ -2106,7 +2106,7 @@ export async function editHolidayCalendar(
   token: string
 ) {
   return fetchApi<GetHolidayCalendarType>({
-    url: `api/holiday-calendars/edit/${id}`,
+    url: `api/holidayCalendar/edit/${id}`,
     method: 'PATCH',
     body: data,
     headers: { Authorization: token, 'Content-Type': 'application/json' },
@@ -2115,7 +2115,7 @@ export async function editHolidayCalendar(
 
 export async function deleteHolidayCalendar(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/holiday-calendars/delete/${id}`,
+    url: `api/holidayCalendar/delete/${id}`,
     method: 'DELETE',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
@@ -2123,16 +2123,25 @@ export async function deleteHolidayCalendar(id: number, token: string) {
 
 export async function getCalendarWithHolidays(id: number, token: string) {
   return fetchApi<GetHolidayCalendarType & { holidays: GetNewHolidayType[] }>({
-    url: `api/holiday-calendars/getWithHolidays/${id}`,
+    url: `api/holidayCalendar/getWithHolidays/${id}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }
 
 // ── New Holidays ──
-export async function getAllNewHolidays(calendarId: number, token: string) {
+export async function getAllNewHolidays( token: string) {
   return fetchApi<GetNewHolidayType[]>({
-    url: `api/holidays/getAll?calendarId=${calendarId}`,
+    url: `api/holidays/getAll`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+
+export async function getNewHolidayById(id: number, token: string) {
+  return fetchApi<GetNewHolidayType>({
+    url: `api/holidays/getById/${id}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })

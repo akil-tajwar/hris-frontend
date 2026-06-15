@@ -217,7 +217,7 @@ const HolidayCalendars = () => {
                         variant="outline"
                         size="sm"
                         className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                        onClick={() => router.push(`/holidays?calendarId=${cal.id}`)}
+                        onClick={() => router.push(`/dashboard/setup/holidays?calendarId=${cal.id}`)}
                       >
                         View Holidays
                       </Button>
@@ -281,7 +281,6 @@ const HolidayCalendars = () => {
         size="sm:max-w-md"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Company */}
           <div className="space-y-2">
             <Label>Company <span className="text-red-500">*</span></Label>
             <Select
@@ -301,7 +300,6 @@ const HolidayCalendars = () => {
             </Select>
           </div>
 
-          {/* Year */}
           <div className="space-y-2">
             <Label>Year <span className="text-red-500">*</span></Label>
             <Input
@@ -314,7 +312,6 @@ const HolidayCalendars = () => {
             />
           </div>
 
-          {/* Name */}
           <div className="space-y-2">
             <Label>Calendar Name</Label>
             <Input
@@ -324,7 +321,6 @@ const HolidayCalendars = () => {
             />
           </div>
 
-          {/* Status */}
           <div className="space-y-2">
             <Label>Status</Label>
             <Select
