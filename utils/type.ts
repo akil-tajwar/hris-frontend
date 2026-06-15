@@ -1080,6 +1080,10 @@ export type GetAttendancePolicyType = {
   maxOvertimeMinutes: number | null
   allowCompOff: boolean | null
   isActive: boolean | null
+  // ✅ NEW
+  holidayCalendarId?: number | null
+  holidayCalendarName?: string | null
+  holidayCalendarYear?: number | null
   createdBy: number
   createdAt: string | null
   updatedBy: number | null
@@ -1103,9 +1107,50 @@ export type CreateAttendancePolicyType = {
   maxOvertimeMinutes?: number
   allowCompOff?: boolean
   isActive?: boolean
+  // ✅ NEW
+  holidayCalendarId?: number | null
   createdBy: number
   weekDayIds?: number[]
 }
+// export type GetAttendancePolicyType = {
+//   id: number
+//   code: string
+//   name: string
+//   graceMinutes: number | null
+//   lateAfterMinutes: number | null
+//   halfDayAfterMinutes: number | null
+//   absentAfterMinutes: number | null
+//   allowOvertime: boolean | null
+//   overtimeAfterMinutes: number | null
+//   maxOvertimeMinutes: number | null
+//   allowCompOff: boolean | null
+//   isActive: boolean | null
+//   createdBy: number
+//   createdAt: string | null
+//   updatedBy: number | null
+//   updatedAt: string | null
+//   weekends: {
+//     id: number
+//     weekDayId: number
+//     day: string | null
+//   }[]
+// }
+
+// export type CreateAttendancePolicyType = {
+//   code: string
+//   name: string
+//   graceMinutes?: number
+//   lateAfterMinutes?: number
+//   halfDayAfterMinutes?: number
+//   absentAfterMinutes?: number
+//   allowOvertime?: boolean
+//   overtimeAfterMinutes?: number
+//   maxOvertimeMinutes?: number
+//   allowCompOff?: boolean
+//   isActive?: boolean
+//   createdBy: number
+//   weekDayIds?: number[]
+// }
 
 // Shift Allocation Types
 export type GetShiftAllocationType = {
