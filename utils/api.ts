@@ -2095,6 +2095,17 @@ export async function deleteShiftAllocation(id: number, token: string) {
   })
 }
 
+export async function GetEmployeeWeekDays(userId: number, token: string) {
+  return fetchApi<{ userId: number }>({
+    url: `api/shiftAllocation/empWeekDays/${userId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getShiftAllocationsByEmployee(
   employeeId: number,
   token: string

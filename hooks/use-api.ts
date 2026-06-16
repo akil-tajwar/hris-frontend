@@ -164,6 +164,7 @@ import {
   deleteEmployeeLeaveApplication,
   approveEmployeeLeaveRepAuth,
   approveEmployeeLeaveHr,
+  GetEmployeeWeekDays,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5776,7 +5777,20 @@ export const useCopyAllActiveAllocations = () => {
 }
 
 
-// hooks/use-api.ts এ যোগ করো
+export const useGetEmployeeWeekDays = (userId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['empWeekDays', userId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return GetEmployeeWeekDays(userId, token)
+    },
+    enabled: !!token && userId > 0,
+    select: (data) => data,
+  })
+}
 
 // hooks/use-api.ts
 export const useGetDailyAttendanceReport = (date: string) => {
@@ -5789,7 +5803,6 @@ export const useGetDailyAttendanceReport = (date: string) => {
       return getDailyAttendanceReport(date, token)
     },
     enabled: !!token && date.length > 0,
-    // select সরিয়ে দাও
   })
 }
 

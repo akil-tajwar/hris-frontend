@@ -697,10 +697,11 @@ export type GetEmployeeLeaveAssignmentType = z.infer<
 export const employeeLeaveApplySchema = z.object({
   employeeLeaveApplyId: z.number(),
   employeeId: z.number(),
-  leavePolicyMasterId: z.number(),
-  leavePolicyDetailsId: z.number(),
+  leaveTypeId: z.number(),
   effectiveFrom: z.date(),
   effectiveTo: z.date().nullable(),
+  noOfDays: z.number(),
+  status: z.enum(['Pending', 'Approved', 'Rejected']),
   approvedByRepAuth: z.boolean(),
   approvedByHr: z.boolean(),
   createdBy: z.number(),
@@ -710,9 +711,7 @@ export const employeeLeaveApplySchema = z.object({
 });
 export type CreateEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema>;
 export type GetEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema> & {
-  policyName: string
-  yearlyAllocation: number
-  actualFrequency: string
+  leaveTypeName: string
   empCode: string
   empFullName: string
 }
