@@ -200,6 +200,14 @@ export function DashboardSidebar() {
           title: 'Employee Leave Assignments',
           href: '/dashboard/leave-management/employee-leave-assignments',
         },
+        {
+          title: 'Leave Apply',
+          href: '/dashboard/leave-management/leave-apply',
+        },
+        {
+          title: 'Approve Leaves',
+          href: '/dashboard/leave-management/approve-leaves',
+        },
       ],
     },
     {
