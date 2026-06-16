@@ -694,6 +694,29 @@ export type GetEmployeeLeaveAssignmentType = z.infer<
   policyName: string
 }
 
+export const employeeLeaveApplySchema = z.object({
+  employeeLeaveApplyId: z.number(),
+  employeeId: z.number(),
+  leavePolicyMasterId: z.number(),
+  leavePolicyDetailsId: z.number(),
+  effectiveFrom: z.date(),
+  effectiveTo: z.date().nullable(),
+  approvedByRepAuth: z.boolean(),
+  approvedByHr: z.boolean(),
+  createdBy: z.number(),
+  createdAt: z.date().nullable(),
+  updatedBy: z.number().nullable(),
+  updatedAt: z.date().nullable(),
+});
+export type CreateEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema>;
+export type GetEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema> & {
+  policyName: string
+  yearlyAllocation: number
+  actualFrequency: string
+  empCode: string
+  empFullName: string
+}
+
 export const employeeAttendanceSchema = z.object({
   employeeAttendanceId: z.number().optional(),
   employeeId: z.number(),

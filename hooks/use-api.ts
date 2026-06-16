@@ -158,6 +158,12 @@ import {
   createNewHolidayRange,
   editNewHoliday,
   deleteNewHoliday,
+  getAllEmployeeLeaveApplications,
+  createEmployeeLeaveApplication,
+  editEmployeeLeaveApplication,
+  deleteEmployeeLeaveApplication,
+  approveEmployeeLeaveRepAuth,
+  approveEmployeeLeaveHr,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -214,6 +220,8 @@ import {
   DailyAttendanceType,
   CreateHolidayCalendarType,
   CreateNewHolidayType,
+  CreateEmployeeLeaveApply,
+  GetEmployeeLeaveApply,
 } from '@/utils/type'
 
 //roles
@@ -3518,6 +3526,304 @@ export const useDeleteEmployeeLeaveAssignment = ({
   return mutation
 }
 
+//employee leave apply
+export const useGetEmployeeLeaveApplications = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLeaveApplications'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+
+      return getAllEmployeeLeaveApplications(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useCreateEmployeeLeaveApplication = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (
+      data: CreateEmployeeLeaveApply
+    ) => {
+      return await createEmployeeLeaveApplication(
+        data,
+        token
+      )
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message ||
+            'Failed to create leave application',
+        })
+
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description:
+          'Leave application created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+}
+
+export const useUpdateEmployeeLeaveApplication = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeeLeaveApply
+    }) => {
+      return editEmployeeLeaveApplication(
+        id,
+        data,
+        token
+      )
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message ||
+            'Failed to update leave application',
+        })
+
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description:
+          'Leave application updated successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message ||
+          'Failed to update leave application',
+      })
+    },
+  })
+}
+
+export const useDeleteEmployeeLeaveApplication = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res =
+        await deleteEmployeeLeaveApplication(
+          id,
+          token
+        )
+
+      const apiError =
+        res?.error ||
+        (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)
+        ?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error(
+          'Failed to delete leave application'
+        )
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description:
+          'Leave application deleted successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: () => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+}
+
+export const useApproveEmployeeLeaveRepAuth = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      updatedBy,
+    }: {
+      id: number
+      updatedBy: number
+    }) =>
+      approveEmployeeLeaveRepAuth(
+        id,
+        updatedBy,
+        token
+      ),
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description:
+          'Leave approved by reporting authority.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+    },
+
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Approval failed',
+      })
+    },
+  })
+}
+
+export const useApproveEmployeeLeaveHr = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      updatedBy,
+    }: {
+      id: number
+      updatedBy: number
+    }) =>
+      approveEmployeeLeaveHr(
+        id,
+        updatedBy,
+        token
+      ),
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Leave approved by HR.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+    },
+
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description:
+          error?.message || 'Approval failed',
+      })
+    },
+  })
+}
+
+//asset category
 export const useGetAllAssetCategories = () => {
   const [token] = useAtom(tokenAtom);
   useInitializeUser();
