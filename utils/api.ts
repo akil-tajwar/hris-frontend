@@ -83,6 +83,14 @@ import {
   CreateHolidayCalendarType,
   GetNewHolidayType,
   CreateNewHolidayType,
+  ProcessAttendanceDateType,
+  ProcessAttendanceResultType,
+  ProcessAttendanceRangeType,
+  ProcessAttendanceRangeResultType,
+  AttendanceAuditResponseType,
+  GetAttendanceDailyType,
+  CreateAttendanceDailyType,
+  UpdateAttendanceDailyType,
   GetEmployeeLeaveApply,
   CreateEmployeeLeaveApply,
 } from '@/utils/type'
@@ -2279,6 +2287,113 @@ export async function editNewHoliday(
 export async function deleteNewHoliday(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/holidays/delete/${id}`,
+    method: 'DELETE',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+//attendance processing
+// utils/api.ts এ যোগ করো
+
+export async function processAttendanceDate(
+  data: ProcessAttendanceDateType,
+  token: string
+) {
+  return fetchApi<ProcessAttendanceResultType>({
+    url: 'api/attendanceProcessing/process/date',
+    method: 'POST',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function processAttendanceRange(
+  data: ProcessAttendanceRangeType,
+  token: string
+) {
+  return fetchApi<ProcessAttendanceRangeResultType>({
+    url: 'api/attendanceProcessing/process/range',
+    method: 'POST',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function getAttendanceAuditLogs(
+  params: {
+    employeeId?: number
+    fromDate?: string
+    toDate?: string
+    action?: 'INSERT' | 'UPDATE'
+    page?: number
+    limit?: number
+  },
+  token: string
+) {
+  const query = new URLSearchParams()
+  if (params.employeeId) query.append('employeeId', String(params.employeeId))
+  if (params.fromDate)   query.append('fromDate', params.fromDate)
+  if (params.toDate)     query.append('toDate', params.toDate)
+  if (params.action)     query.append('action', params.action)
+  if (params.page)       query.append('page', String(params.page))
+  if (params.limit)      query.append('limit', String(params.limit))
+
+  return fetchApi<AttendanceAuditResponseType>({
+    url: `api/attendanceProcessing/audit?${query.toString()}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+
+// ── Attendance Daily (manual entry) ──
+export async function getAllAttendanceDaily(token: string) {
+  return fetchApi<GetAttendanceDailyType[]>({
+    url: 'api/attendanceDaily/getAll',
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function getAttendanceDailyByEmployee(
+  employeeId: number,
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyType[]>({
+    url: `api/attendanceDaily/getByEmployee/${employeeId}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function createAttendanceDaily(
+  data: CreateAttendanceDailyType,
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyType>({
+    url: 'api/attendanceDaily/create',
+    method: 'POST',
+    body: data,
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function editAttendanceDaily(
+  id: number,
+  data: UpdateAttendanceDailyType,
+  token: string
+) {
+  return fetchApi<{ success: boolean; data: GetAttendanceDailyType }>({
+    url: `api/attendanceDaily/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: { Authorization: `${token}`, 'Content-Type': 'application/json' },
+  })
+}
+
+export async function deleteAttendanceDaily(id: number, token: string) {
+  return fetchApi<{ message: string }>({
+    url: `api/attendanceDaily/delete/${id}`,
     method: 'DELETE',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })

@@ -166,6 +166,14 @@ export function DashboardSidebar() {
           title: 'Attendance Policies',
           href: '/dashboard/attendance-management/attendance-policies',
         },
+        {
+          title: 'Attendance Processing',
+          href: '/dashboard/attendance-management/attendance-processing',
+        },
+        {
+          title: 'Manual Attendance Entry',
+          href: '/dashboard/attendance-management/manual-attendance-entry',
+        },
       ],
     },
     {
