@@ -1264,3 +1264,116 @@ export type GetNewHolidayType = {
   description?: string | null
   createdAt?: string | null
 }
+
+//attendance processing types
+
+export type ProcessAttendanceDateType = {
+  date: string
+}
+
+export type ProcessAttendanceRangeType = {
+  fromDate: string
+  toDate: string
+}
+
+export type ProcessAttendanceSummary = {
+  holiday: number
+  weekend: number
+  present: number
+  late: number
+  halfDay: number
+  absent: number
+}
+
+export type ProcessAttendanceResultType = {
+  success: boolean
+  date: string
+  processed: number
+  summary: ProcessAttendanceSummary
+}
+
+export type ProcessAttendanceRangeResultType = {
+  success: boolean
+  results: ProcessAttendanceResultType[]
+}
+
+export type AttendanceAuditType = {
+  id: number
+  recordId: number | null
+  employeeId: number
+  attendanceDate: string
+  action: 'INSERT' | 'UPDATE'
+  changedBy: number | null
+  changedAt: string | null
+  remark: string | null
+  oldStatus: string | null
+  oldWorkedMinutes: number | null
+  oldLateMinutes: number | null
+  oldEarlyOutMinutes: number | null
+  oldOvertimeMinutes: number | null
+  oldFirstIn: string | null
+  oldLastOut: string | null
+  newStatus: string
+  newWorkedMinutes: number
+  newLateMinutes: number
+  newEarlyOutMinutes: number
+  newOvertimeMinutes: number
+  newFirstIn: string | null
+  newLastOut: string | null
+  employeeName: string | null
+  empCode: string | null
+}
+
+export type AttendanceAuditResponseType = {
+  data: AttendanceAuditType[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+// ── Attendance Daily (manual entry) ──
+export type AttendanceDailyStatus =
+  | 'PRESENT'
+  | 'ABSENT'
+  | 'LATE'
+  | 'HALF_DAY'
+  | 'HOLIDAY'
+  | 'WEEKEND'
+  | 'ON_LEAVE'
+
+export type GetAttendanceDailyType = {
+  id: number
+  employeeId: number
+  employeeName: string | null
+  empCode: string | null
+  attendanceDate: string
+  firstIn: string | null
+  lastOut: string | null
+  workedMinutes: number | null
+  lateMinutes: number | null
+  earlyOutMinutes: number | null
+  overtimeMinutes: number | null
+  status: AttendanceDailyStatus
+  createdBy: number
+  createdAt: string | null
+  updatedBy: number | null
+  updatedAt: string | null
+}
+
+export type CreateAttendanceDailyType = {
+  employeeId: number
+  attendanceDate: string
+  firstIn?: string | null
+  lastOut?: string | null
+  workedMinutes?: number | null
+  lateMinutes?: number | null
+  earlyOutMinutes?: number | null
+  overtimeMinutes?: number | null
+  status: AttendanceDailyStatus
+  createdBy: number
+}
+
+export type UpdateAttendanceDailyType = Partial<CreateAttendanceDailyType> & {
+  updatedBy?: number
+}

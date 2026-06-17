@@ -158,6 +158,13 @@ import {
   createNewHolidayRange,
   editNewHoliday,
   deleteNewHoliday,
+  getAttendanceAuditLogs,
+  processAttendanceRange,
+  processAttendanceDate,
+  getAllAttendanceDaily,
+  createAttendanceDaily,
+  editAttendanceDaily,
+  deleteAttendanceDaily,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -214,6 +221,10 @@ import {
   DailyAttendanceType,
   CreateHolidayCalendarType,
   CreateNewHolidayType,
+  ProcessAttendanceRangeType,
+  ProcessAttendanceDateType,
+  CreateAttendanceDailyType,
+  UpdateAttendanceDailyType,
 } from '@/utils/type'
 
 //roles
@@ -5698,6 +5709,214 @@ export const useDeleteNewHoliday = ({
     },
     onError: () => {
       toast({ title: 'Error', variant: 'destructive', description: 'This data is needed elsewhere' })
+    },
+  })
+}
+
+// attendance processing
+// hooks/use-api.ts এ যোগ করো
+
+export const useProcessAttendanceDate = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useMutation({
+    mutationFn: (data: ProcessAttendanceDateType) =>
+      processAttendanceDate(data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: `${res?.data?.processed} employees processed!` })
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useProcessAttendanceRange = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useMutation({
+    mutationFn: (data: ProcessAttendanceRangeType) =>
+      processAttendanceRange(data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        return
+      }
+      toast({ title: 'Success', description: `${res?.data?.results?.length} days processed!` })
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+    },
+  })
+}
+
+export const useGetAttendanceAuditLogs = (params: {
+  employeeId?: number
+  fromDate?: string
+  toDate?: string
+  action?: 'INSERT' | 'UPDATE'
+  page?: number
+  limit?: number
+}) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendanceAuditLogs', params],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAttendanceAuditLogs(params, token)
+    },
+    enabled: !!token,
+  })
+}
+
+
+// ── Attendance Daily (manual entry) ──
+export const useGetAllAttendanceDaily = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendanceDaily'],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllAttendanceDaily(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddAttendanceDaily = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateAttendanceDailyType) =>
+      createAttendanceDaily(data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create attendance record',
+        })
+        return
+      }
+      toast({
+        title: 'Success',
+        description: 'Attendance record created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendanceDaily'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+}
+
+export const useUpdateAttendanceDaily = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: UpdateAttendanceDailyType
+    }) => editAttendanceDaily(id, data, token),
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to update attendance record',
+        })
+        return
+      }
+      toast({
+        title: 'Success!',
+        description: 'Attendance record updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendanceDaily'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Failed to update attendance record',
+      })
+    },
+  })
+}
+
+export const useDeleteAttendanceDaily = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteAttendanceDaily(id, token)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete attendance record')
+      }
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Attendance record deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['attendanceDaily'] })
+      reset()
+      onClose()
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 }
