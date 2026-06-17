@@ -91,6 +91,8 @@ import {
   GetAttendanceDailyType,
   CreateAttendanceDailyType,
   UpdateAttendanceDailyType,
+  GetEmployeeLeaveApply,
+  CreateEmployeeLeaveApply,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1791,6 +1793,97 @@ export async function getAllEmployeeLeaveTypes(token: string) {
   })
 }
 
+//employee leave apply
+export async function getAllEmployeeLeaveApplications(token: string) {
+  return fetchApi<GetEmployeeLeaveApply[]>({
+    url: 'api/employeeLeaveApply/getAll',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createEmployeeLeaveApplication(
+  data: CreateEmployeeLeaveApply,
+  token: string
+) {
+  return fetchApi<CreateEmployeeLeaveApply>({
+    url: 'api/employeeLeaveApply/create',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function editEmployeeLeaveApplication(
+  id: number,
+  data: GetEmployeeLeaveApply,
+  token: string
+) {
+  return fetchApi<GetEmployeeLeaveApply>({
+    url: `api/employeeLeaveApply/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function deleteEmployeeLeaveApplication(
+  id: number,
+  token: string
+) {
+  return fetchApi<{ id: number }>({
+    url: `api/employeeLeaveApply/delete/${id}`,
+    method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// APPROVE BY REPORTING AUTHORITY
+export async function approveEmployeeLeaveRepAuth(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/employeeLeaveApply/approve-rep-auth/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// APPROVE BY HR
+export async function approveEmployeeLeaveHr(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/employeeLeaveApply/approve-hr/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //reports
 export async function getEmployeeActivityReport(
   employeeId: number,
@@ -2003,6 +2096,17 @@ export async function deleteShiftAllocation(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/shiftAllocation/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function GetEmployeeWeekDays(userId: number, token: string) {
+  return fetchApi<{ userId: number }>({
+    url: `api/shiftAllocation/empWeekDays/${userId}`,
+    method: 'GET',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
