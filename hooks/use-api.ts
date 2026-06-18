@@ -172,6 +172,7 @@ import {
   approveEmployeeLeaveRepAuth,
   approveEmployeeLeaveHr,
   GetEmployeeWeekDays,
+  getLeaveApplyNoOfDays,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -3572,13 +3573,8 @@ export const useCreateEmployeeLeaveApplication = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (
-      data: CreateEmployeeLeaveApply
-    ) => {
-      return await createEmployeeLeaveApplication(
-        data,
-        token
-      )
+    mutationFn: async (data: CreateEmployeeLeaveApply) => {
+      return await createEmployeeLeaveApplication(data, token)
     },
 
     onSuccess: (res) => {
@@ -3587,8 +3583,7 @@ export const useCreateEmployeeLeaveApplication = ({
           title: 'Error',
           variant: 'destructive',
           description:
-            res.error.message ||
-            'Failed to create leave application',
+            res.error.message || 'Failed to create leave application',
         })
 
         return
@@ -3596,8 +3591,7 @@ export const useCreateEmployeeLeaveApplication = ({
 
       toast({
         title: 'Success',
-        description:
-          'Leave application created successfully!',
+        description: 'Leave application created successfully!',
       })
 
       queryClient.invalidateQueries({
@@ -3612,8 +3606,7 @@ export const useCreateEmployeeLeaveApplication = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Unexpected error occurred',
+        description: error?.message || 'Unexpected error occurred',
       })
     },
   })
@@ -3633,18 +3626,8 @@ export const useUpdateEmployeeLeaveApplication = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number
-      data: GetEmployeeLeaveApply
-    }) => {
-      return editEmployeeLeaveApplication(
-        id,
-        data,
-        token
-      )
+    mutationFn: ({ id, data }: { id: number; data: GetEmployeeLeaveApply }) => {
+      return editEmployeeLeaveApplication(id, data, token)
     },
 
     onSuccess: (res) => {
@@ -3653,8 +3636,7 @@ export const useUpdateEmployeeLeaveApplication = ({
           title: 'Error',
           variant: 'destructive',
           description:
-            res.error.message ||
-            'Failed to update leave application',
+            res.error.message || 'Failed to update leave application',
         })
 
         return
@@ -3662,8 +3644,7 @@ export const useUpdateEmployeeLeaveApplication = ({
 
       toast({
         title: 'Success!',
-        description:
-          'Leave application updated successfully.',
+        description: 'Leave application updated successfully.',
       })
 
       queryClient.invalidateQueries({
@@ -3678,9 +3659,7 @@ export const useUpdateEmployeeLeaveApplication = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message ||
-          'Failed to update leave application',
+        description: error?.message || 'Failed to update leave application',
       })
     },
   })
@@ -3701,23 +3680,14 @@ export const useDeleteEmployeeLeaveApplication = ({
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res =
-        await deleteEmployeeLeaveApplication(
-          id,
-          token
-        )
+      const res = await deleteEmployeeLeaveApplication(id, token)
 
-      const apiError =
-        res?.error ||
-        (res?.data === null && res?.error?.message)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
 
-      const successFlag = (res?.error?.details as any)
-        ?.success
+      const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
-        throw new Error(
-          'Failed to delete leave application'
-        )
+        throw new Error('Failed to delete leave application')
       }
 
       return res
@@ -3726,8 +3696,7 @@ export const useDeleteEmployeeLeaveApplication = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description:
-          'Leave application deleted successfully.',
+        description: 'Leave application deleted successfully.',
       })
 
       queryClient.invalidateQueries({
@@ -3756,24 +3725,13 @@ export const useApproveEmployeeLeaveRepAuth = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      updatedBy,
-    }: {
-      id: number
-      updatedBy: number
-    }) =>
-      approveEmployeeLeaveRepAuth(
-        id,
-        updatedBy,
-        token
-      ),
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
+      approveEmployeeLeaveRepAuth(id, updatedBy, token),
 
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description:
-          'Leave approved by reporting authority.',
+        description: 'Leave approved by reporting authority.',
       })
 
       queryClient.invalidateQueries({
@@ -3785,8 +3743,7 @@ export const useApproveEmployeeLeaveRepAuth = () => {
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Approval failed',
+        description: error?.message || 'Approval failed',
       })
     },
   })
@@ -3800,18 +3757,8 @@ export const useApproveEmployeeLeaveHr = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      updatedBy,
-    }: {
-      id: number
-      updatedBy: number
-    }) =>
-      approveEmployeeLeaveHr(
-        id,
-        updatedBy,
-        token
-      ),
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
+      approveEmployeeLeaveHr(id, updatedBy, token),
 
     onSuccess: () => {
       toast({
@@ -3828,63 +3775,89 @@ export const useApproveEmployeeLeaveHr = () => {
       toast({
         title: 'Error',
         variant: 'destructive',
-        description:
-          error?.message || 'Approval failed',
+        description: error?.message || 'Approval failed',
       })
     },
   })
 }
 
+export const useGetLeaveApplyNoOfDays = ({
+  userId,
+  leaveTypeId,
+  fromDate,
+  toDate,
+}: {
+  userId: number
+  leaveTypeId: number
+  fromDate: string
+  toDate: string
+}) => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['leaveApplyNoOfDays', userId, leaveTypeId, fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+
+      return getLeaveApplyNoOfDays(token, userId, leaveTypeId, fromDate, toDate)
+    },
+    enabled: !!token && userId > 0 && leaveTypeId > 0 && !!fromDate && !!toDate,
+    select: (data) => data,
+  })
+}
+
 //asset category
 export const useGetAllAssetCategories = () => {
-  const [token] = useAtom(tokenAtom);
-  useInitializeUser();
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
 
   return useQuery({
     queryKey: ['assetCategories'],
     queryFn: () => {
       if (!token) {
-        throw new Error('Token not found');
+        throw new Error('Token not found')
       }
-      return getAllAssetCategories(token);
+      return getAllAssetCategories(token)
     },
     enabled: !!token,
     select: (data) => data,
-  });
-};
+  })
+}
 
 export const useGetAssetCategoryById = (id: number) => {
-  const [token] = useAtom(tokenAtom);
-  useInitializeUser();
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
 
   return useQuery({
     queryKey: ['assetCategory', id],
     queryFn: () => {
       if (!token) {
-        throw new Error('Token not found');
+        throw new Error('Token not found')
       }
-      return getAssetCategoryById(token, id);
+      return getAssetCategoryById(token, id)
     },
     enabled: !!token && !!id,
     select: (data) => data,
-  });
-};
+  })
+}
 
 export const useAddAssetCategory = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetCategoryType) => {
-      const res = await createAssetCategory(data, token);
-      return res;
+      const res = await createAssetCategory(data, token)
+      return res
     },
     onSuccess: (res) => {
       if (res?.error) {
@@ -3892,181 +3865,181 @@ export const useAddAssetCategory = ({
           title: 'Error',
           variant: 'destructive',
           description: res.error.message || 'Failed to create asset category',
-        });
-        return;
+        })
+        return
       }
 
       toast({
         title: 'Success',
         description: 'Asset category created successfully!',
-      });
+      })
 
-      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
-      reset();
-      onClose();
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] })
+      reset()
+      onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding asset category:', error);
+      console.error('Error adding asset category:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: error?.message || 'Unexpected error occurred',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 export const useUpdateAssetCategory = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetAssetCategoryType }) => {
-      return editAssetCategory(id, data, token);
+      return editAssetCategory(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Asset category edited successfully.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
-      reset();
-      onClose();
+      })
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] })
+      reset()
+      onClose()
     },
     onError: (error) => {
-      console.error('Error editing asset category:', error);
+      console.error('Error editing asset category:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: 'Failed to edit asset category',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 export const useDeleteAssetCategory = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAssetCategory(id, token);
-      console.log('DELETE RESPONSE:', res);
-      const apiError = res?.error || (res?.data === null && res?.error?.message);
-      const successFlag = (res?.error?.details as any)?.success;
+      const res = await deleteAssetCategory(id, token)
+      console.log('DELETE RESPONSE:', res)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
       if (apiError || successFlag === false) {
-        throw new Error('Failed to delete asset category');
+        throw new Error('Failed to delete asset category')
       }
-      return res;
+      return res
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Asset category deleted successfully.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['assetCategories'] });
-      reset();
-      onClose();
+      })
+      queryClient.invalidateQueries({ queryKey: ['assetCategories'] })
+      reset()
+      onClose()
     },
     onError: (error: any) => {
-      console.error('Delete error:', error);
+      console.error('Delete error:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: 'This data is needed elsewhere',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 // ==================== ASSETS ====================
 
 export const useGetAllAssets = () => {
-  const [token] = useAtom(tokenAtom);
-  useInitializeUser();
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
 
   return useQuery({
     queryKey: ['assets'],
     queryFn: () => {
       if (!token) {
-        throw new Error('Token not found');
+        throw new Error('Token not found')
       }
-      return getAllAssets(token);
+      return getAllAssets(token)
     },
     enabled: !!token,
     select: (data) => data,
-  });
-};
+  })
+}
 
 export const useGetLatestAssetTransactions = () => {
-  const [token] = useAtom(tokenAtom);
-  useInitializeUser();
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
 
   return useQuery({
     queryKey: ['assetTransactions'],
     queryFn: () => {
       if (!token) {
-        throw new Error('Token not found');
+        throw new Error('Token not found')
       }
-      return getLatestAssetTransactions(token);
+      return getLatestAssetTransactions(token)
     },
     enabled: !!token,
     select: (data) => data,
-  });
-};
+  })
+}
 
 export const useGetAssetById = (id: number) => {
-  const [token] = useAtom(tokenAtom);
-  useInitializeUser();
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
 
   return useQuery({
     queryKey: ['asset', id],
     queryFn: () => {
       if (!token) {
-        throw new Error('Token not found');
+        throw new Error('Token not found')
       }
-      return getAssetById(token, id);
+      return getAssetById(token, id)
     },
     enabled: !!token && !!id,
     select: (data) => data,
-  });
-};
+  })
+}
 
 export const useAddAsset = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetType) => {
-      const res = await createAsset(data, token);
-      return res;
+      const res = await createAsset(data, token)
+      return res
     },
     onSuccess: (res) => {
       if (res?.error) {
@@ -4074,128 +4047,128 @@ export const useAddAsset = ({
           title: 'Error',
           variant: 'destructive',
           description: res.error.message || 'Failed to create asset',
-        });
-        return;
+        })
+        return
       }
 
       toast({
         title: 'Success',
         description: 'Asset created successfully!',
-      });
+      })
 
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      reset();
-      onClose();
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+      reset()
+      onClose()
     },
     onError: (error: any) => {
-      console.error('Error adding asset:', error);
+      console.error('Error adding asset:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: error?.message || 'Unexpected error occurred',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 export const useUpdateAsset = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetAssetType }) => {
-      return editAsset(id, data, token);
+      return editAsset(id, data, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Asset edited successfully.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      reset();
-      onClose();
+      })
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+      reset()
+      onClose()
     },
     onError: (error) => {
-      console.error('Error editing asset:', error);
+      console.error('Error editing asset:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: 'Failed to edit asset',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 export const useDeleteAsset = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAsset(id, token);
-      console.log('DELETE RESPONSE:', res);
-      const apiError = res?.error || (res?.data === null && res?.error?.message);
-      const successFlag = (res?.error?.details as any)?.success;
+      const res = await deleteAsset(id, token)
+      console.log('DELETE RESPONSE:', res)
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+      const successFlag = (res?.error?.details as any)?.success
       if (apiError || successFlag === false) {
-        throw new Error('Failed to delete asset');
+        throw new Error('Failed to delete asset')
       }
-      return res;
+      return res
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Asset deleted successfully.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      reset();
-      onClose();
+      })
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+      reset()
+      onClose()
     },
     onError: (error: any) => {
-      console.error('Delete error:', error);
+      console.error('Delete error:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: 'This data is needed elsewhere',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 export const useAssignAsset = ({
   onClose,
   reset,
 }: {
-  onClose: () => void;
-  reset: () => void;
+  onClose: () => void
+  reset: () => void
 }) => {
-  useInitializeUser();
-  const [token] = useAtom(tokenAtom);
-  const queryClient = useQueryClient();
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetTransactionType) => {
-      const res = await assignAsset(data, token);
-      return res;
+      const res = await assignAsset(data, token)
+      return res
     },
     onSuccess: (res) => {
       if (res?.error) {
@@ -4203,32 +4176,32 @@ export const useAssignAsset = ({
           title: 'Error',
           variant: 'destructive',
           description: res.error.message || 'Failed to assign asset',
-        });
-        return;
+        })
+        return
       }
 
       toast({
         title: 'Success',
         description: 'Asset assigned successfully!',
-      });
+      })
 
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['assetTransactions'] });
-      reset();
-      onClose();
+      queryClient.invalidateQueries({ queryKey: ['assets'] })
+      queryClient.invalidateQueries({ queryKey: ['assetTransactions'] })
+      reset()
+      onClose()
     },
     onError: (error: any) => {
-      console.error('Error assigning asset:', error);
+      console.error('Error assigning asset:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
         description: error?.message || 'Unexpected error occurred',
-      });
+      })
     },
-  });
+  })
 
-  return mutation;
-};
+  return mutation
+}
 
 //employee attendances
 export const useGetEmployeeAttendances = () => {
@@ -5365,11 +5338,6 @@ export const useGetEmployeeAttendanceSummary = () => {
   })
 }
 
-
-
-
-
-
 // attendance policy
 export const useGetAttendancePolicies = () => {
   const [token] = useAtom(tokenAtom)
@@ -5422,7 +5390,8 @@ export const useAddAttendancePolicy = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to create attendance policy',
+          description:
+            res.error.message || 'Failed to create attendance policy',
         })
         return
       }
@@ -5456,7 +5425,13 @@ export const useUpdateAttendancePolicy = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: GetAttendancePolicyType }) => {
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetAttendancePolicyType
+    }) => {
       return editAttendancePolicy(id, data, token)
     },
     onSuccess: () => {
@@ -5519,7 +5494,6 @@ export const useDeleteAttendancePolicy = ({
     },
   })
 }
-
 
 // shift allocations
 export const useGetShiftAllocations = () => {
@@ -5707,7 +5681,6 @@ export const useDeleteShiftAllocation = ({
   })
 }
 
-
 export const useUpdateShiftAllocationRecurrence = ({
   onClose,
   reset,
@@ -5724,7 +5697,11 @@ export const useUpdateShiftAllocationRecurrence = ({
       updateShiftAllocationRecurrence(id, data, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
       toast({ title: 'Success', description: 'Recurrence setting updated!' })
@@ -5733,7 +5710,11 @@ export const useUpdateShiftAllocationRecurrence = ({
       onClose()
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -5748,14 +5729,25 @@ export const useCopyShiftAllocation = () => {
       copyShiftAllocationById(id, createdBy, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
-      toast({ title: 'Success', description: res?.data?.message || 'Copied successfully!' })
+      toast({
+        title: 'Success',
+        description: res?.data?.message || 'Copied successfully!',
+      })
       queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -5775,18 +5767,28 @@ export const useCopyAllActiveAllocations = () => {
     }) => copyAllActiveShiftAllocations(recurrenceType, createdBy, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
-      toast({ title: 'Success', description: res?.data?.message || 'All copied successfully!' })
+      toast({
+        title: 'Success',
+        description: res?.data?.message || 'All copied successfully!',
+      })
       queryClient.invalidateQueries({ queryKey: ['shiftAllocations'] })
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
-
 
 export const useGetEmployeeWeekDays = (userId: number) => {
   const [token] = useAtom(tokenAtom)
@@ -5817,7 +5819,10 @@ export const useGetDailyAttendanceReport = (date: string) => {
   })
 }
 
-export const useGetAttendanceSummaryReport = (fromDate: string, toDate: string) => {
+export const useGetAttendanceSummaryReport = (
+  fromDate: string,
+  toDate: string
+) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
   return useQuery({
@@ -5860,7 +5865,11 @@ export const useAddHolidayCalendar = ({
       createHolidayCalendar(data, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
       toast({ title: 'Success', description: 'Holiday calendar created!' })
@@ -5869,7 +5878,11 @@ export const useAddHolidayCalendar = ({
       onClose()
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -5886,8 +5899,13 @@ export const useUpdateHolidayCalendar = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateHolidayCalendarType> }) =>
-      editHolidayCalendar(id, data, token),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<CreateHolidayCalendarType>
+    }) => editHolidayCalendar(id, data, token),
     onSuccess: () => {
       toast({ title: 'Success!', description: 'Holiday calendar updated.' })
       queryClient.invalidateQueries({ queryKey: ['holidayCalendars'] })
@@ -5895,7 +5913,11 @@ export const useUpdateHolidayCalendar = ({
       onClose()
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -5926,7 +5948,11 @@ export const useDeleteHolidayCalendar = ({
       onClose()
     },
     onError: () => {
-      toast({ title: 'Error', variant: 'destructive', description: 'This data is needed elsewhere' })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 }
@@ -5941,7 +5967,7 @@ export const useGetNewHolidays = (calendarId: number) => {
       if (!token) throw new Error('Token not found')
       return getAllNewHolidays(token)
     },
-    enabled: !!token ,
+    enabled: !!token,
   })
 }
 
@@ -5961,16 +5987,27 @@ export const useAddNewHolidayRange = ({
       createNewHolidayRange(data, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
-      toast({ title: 'Success', description: (res?.data as any)?.message || 'Holiday(s) created!' })
+      toast({
+        title: 'Success',
+        description: (res?.data as any)?.message || 'Holiday(s) created!',
+      })
       queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
       reset()
       onClose()
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -5987,8 +6024,13 @@ export const useUpdateNewHoliday = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CreateNewHolidayType> }) =>
-      editNewHoliday(id, data, token),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: Partial<CreateNewHolidayType>
+    }) => editNewHoliday(id, data, token),
     onSuccess: () => {
       toast({ title: 'Success!', description: 'Holiday updated.' })
       queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
@@ -5996,7 +6038,11 @@ export const useUpdateNewHoliday = ({
       onClose()
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -6027,7 +6073,11 @@ export const useDeleteNewHoliday = ({
       onClose()
     },
     onError: () => {
-      toast({ title: 'Error', variant: 'destructive', description: 'This data is needed elsewhere' })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
     },
   })
 }
@@ -6044,13 +6094,24 @@ export const useProcessAttendanceDate = () => {
       processAttendanceDate(data, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
-      toast({ title: 'Success', description: `${res?.data?.processed} employees processed!` })
+      toast({
+        title: 'Success',
+        description: `${res?.data?.processed} employees processed!`,
+      })
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -6064,13 +6125,24 @@ export const useProcessAttendanceRange = () => {
       processAttendanceRange(data, token),
     onSuccess: (res) => {
       if (res?.error) {
-        toast({ title: 'Error', variant: 'destructive', description: res.error.message })
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message,
+        })
         return
       }
-      toast({ title: 'Success', description: `${res?.data?.results?.length} days processed!` })
+      toast({
+        title: 'Success',
+        description: `${res?.data?.results?.length} days processed!`,
+      })
     },
     onError: (error: any) => {
-      toast({ title: 'Error', variant: 'destructive', description: error?.message })
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message,
+      })
     },
   })
 }
@@ -6095,7 +6167,6 @@ export const useGetAttendanceAuditLogs = (params: {
     enabled: !!token,
   })
 }
-
 
 // ── Attendance Daily (manual entry) ──
 export const useGetAllAttendanceDaily = () => {
@@ -6132,7 +6203,8 @@ export const useAddAttendanceDaily = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to create attendance record',
+          description:
+            res.error.message || 'Failed to create attendance record',
         })
         return
       }
@@ -6178,7 +6250,8 @@ export const useUpdateAttendanceDaily = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to update attendance record',
+          description:
+            res.error.message || 'Failed to update attendance record',
         })
         return
       }
