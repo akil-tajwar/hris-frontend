@@ -113,9 +113,10 @@ const LeaveApply = () => {
     fromDate: effectiveFrom,
     toDate: effectiveTo,
   })
+  console.log("🚀 ~ LeaveApply ~ noOfDaysFromApi:", noOfDaysFromApi)
 
   // Keep formData.noOfDays in sync with the API result
-  const noOfDays = noOfDaysFromApi ?? 0
+  const noOfDays = noOfDaysFromApi?.data ?? 0
 
   const handleDateChange = (
     field: 'effectiveFrom' | 'effectiveTo',

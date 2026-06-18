@@ -173,6 +173,8 @@ import {
   approveEmployeeLeaveHr,
   GetEmployeeWeekDays,
   getLeaveApplyNoOfDays,
+  getEmpIdByUserId,
+  rejectLeave,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -2594,6 +2596,21 @@ export const useGetEmployeeById = (id: number) => {
   })
 }
 
+export const useGetEmpIdByUserId = (userId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employees', userId],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getEmpIdByUserId(token, userId)
+    },
+    enabled: !!token && userId > 0,
+    select: (data) => data,
+  })
+}
+
 export const useUpdateEmployeeWithFees = ({
   onClose,
   reset,
@@ -3764,6 +3781,38 @@ export const useApproveEmployeeLeaveHr = () => {
       toast({
         title: 'Success!',
         description: 'Leave approved by HR.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveApplications'],
+      })
+    },
+
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Approval failed',
+      })
+    },
+  })
+}
+
+export const useRejectLeave = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
+      rejectLeave(id, updatedBy, token),
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Leave is rejected successfully',
       })
 
       queryClient.invalidateQueries({

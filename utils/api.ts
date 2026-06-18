@@ -1129,6 +1129,17 @@ export async function getEmployeeById(token: string, id: number) {
   })
 }
 
+export async function getEmpIdByUserId(token: string, userId: number) {
+  return fetchApi<number>({
+    url: `api/employees/getEmpIdByUserId/${userId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function createEmployee(formData: FormData, token: string) {
   console.log('🚀 ~ createEmployee ~ formData:', formData)
   return fetchApiWithFile<CreateEmployeeType>({
@@ -1875,6 +1886,22 @@ export async function approveEmployeeLeaveHr(
 ) {
   return fetchApi({
     url: `api/employeeLeaveApply/approve-hr/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function rejectLeave(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/employeeLeaveApply/rejectLeave/${id}`,
     method: 'PATCH',
     body: { updatedBy },
     headers: {
