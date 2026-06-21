@@ -52,8 +52,14 @@ export default function Navbar() {
 
     if (msg.includes("you've been assigned a checklist")) {
       return '/dashboard/setup/pending-tasks'
-    } else if (msg.includes("an employee applied for a leave")) {
+    } else if (msg.includes('an employee applied for a leave')) {
       return '/dashboard/leave-management/approve-leaves'
+    } else if (msg.includes('a reporting authority has approved a leave')) {
+      return '/dashboard/leave-management/approve-leaves'
+    } else if (msg.includes('your applied leave have been approved')) {
+      return '/dashboard/leave-management/leave-apply'
+    } else if (msg.includes('your applied leave have been rejected')) {
+      return '/dashboard/leave-management/leave-apply'
     }
 
     return '/dashboard'
@@ -259,7 +265,6 @@ export default function Navbar() {
               >
                 <User2 className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
               </button>
-
 
               {isProfileOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md">
