@@ -52,6 +52,8 @@ export default function Navbar() {
 
     if (msg.includes("you've been assigned a checklist")) {
       return '/dashboard/setup/pending-tasks'
+    } else if (msg.includes("an employee applied for a leave")) {
+      return '/dashboard/leave-management/approve-leaves'
     }
 
     return '/dashboard'
