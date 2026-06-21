@@ -1129,6 +1129,17 @@ export async function getEmployeeById(token: string, id: number) {
   })
 }
 
+export async function getEmpIdByUserId(token: string, userId: number) {
+  return fetchApi<number>({
+    url: `api/employees/getEmpIdByUserId/${userId}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function createEmployee(formData: FormData, token: string) {
   console.log('🚀 ~ createEmployee ~ formData:', formData)
   return fetchApiWithFile<CreateEmployeeType>({
@@ -1884,6 +1895,39 @@ export async function approveEmployeeLeaveHr(
   })
 }
 
+export async function rejectLeave(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/employeeLeaveApply/rejectLeave/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getLeaveApplyNoOfDays(
+  token: string,
+  userId: number,
+  leaveTypeId: number,
+  fromDate: string,
+  toDate: string
+) {
+  return fetchApi<number>({
+    url: `api/employeeLeaveApply/calculate-noOfDays?userId=${userId}&leaveTypeId=${leaveTypeId}&fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //reports
 export async function getEmployeeActivityReport(
   employeeId: number,
@@ -1966,8 +2010,6 @@ export async function getEmployeeAttendanceSummary(token: string) {
     },
   })
 }
-
-
 
 // attendance policy
 export async function getAllAttendancePolicies(token: string) {
@@ -2128,7 +2170,6 @@ export async function getShiftAllocationsByEmployee(
   })
 }
 
-
 export async function updateShiftAllocationRecurrence(
   id: number,
   data: UpdateRecurrenceType,
@@ -2147,7 +2188,12 @@ export async function copyShiftAllocationById(
   createdBy: number,
   token: string
 ) {
-  return fetchApi<{ success: boolean; insertedId: number; dateRange: any; message: string }>({
+  return fetchApi<{
+    success: boolean
+    insertedId: number
+    dateRange: any
+    message: string
+  }>({
     url: `api/shiftAllocation/copy/${id}`,
     method: 'POST',
     body: { createdBy },
@@ -2160,7 +2206,12 @@ export async function copyAllActiveShiftAllocations(
   createdBy: number,
   token: string
 ) {
-  return fetchApi<{ success: boolean; totalCopied: number; dateRange: any; message: string }>({
+  return fetchApi<{
+    success: boolean
+    totalCopied: number
+    dateRange: any
+    message: string
+  }>({
     url: `api/shiftAllocation/copy-all`,
     method: 'POST',
     body: { recurrenceType, createdBy },
@@ -2189,7 +2240,6 @@ export async function getAttendanceSummaryReport(
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }
-
 
 // ── Holiday Calendars ──
 export async function getAllHolidayCalendars(token: string) {
@@ -2242,14 +2292,13 @@ export async function getCalendarWithHolidays(id: number, token: string) {
 }
 
 // ── New Holidays ──
-export async function getAllNewHolidays( token: string) {
+export async function getAllNewHolidays(token: string) {
   return fetchApi<GetNewHolidayType[]>({
     url: `api/holidays/getAll`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }
-
 
 export async function getNewHolidayById(id: number, token: string) {
   return fetchApi<GetNewHolidayType>({
@@ -2332,11 +2381,11 @@ export async function getAttendanceAuditLogs(
 ) {
   const query = new URLSearchParams()
   if (params.employeeId) query.append('employeeId', String(params.employeeId))
-  if (params.fromDate)   query.append('fromDate', params.fromDate)
-  if (params.toDate)     query.append('toDate', params.toDate)
-  if (params.action)     query.append('action', params.action)
-  if (params.page)       query.append('page', String(params.page))
-  if (params.limit)      query.append('limit', String(params.limit))
+  if (params.fromDate) query.append('fromDate', params.fromDate)
+  if (params.toDate) query.append('toDate', params.toDate)
+  if (params.action) query.append('action', params.action)
+  if (params.page) query.append('page', String(params.page))
+  if (params.limit) query.append('limit', String(params.limit))
 
   return fetchApi<AttendanceAuditResponseType>({
     url: `api/attendanceProcessing/audit?${query.toString()}`,
@@ -2344,7 +2393,6 @@ export async function getAttendanceAuditLogs(
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }
-
 
 // ── Attendance Daily (manual entry) ──
 export async function getAllAttendanceDaily(token: string) {

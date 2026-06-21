@@ -29,65 +29,18 @@ import {
   useCreateEmployeeLeaveApplication,
   useGetEmployeeLeaveApplications,
   useGetLeaveTypes,
-  useGetHolidayCalendars,
-  useGetNewHolidays,
-  useGetEmployeeWeekDays,
+  useGetLeaveApplyNoOfDays,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import type {
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveApply,
-  GetNewHolidayType,
 } from '@/utils/type'
 import { Badge } from '@/components/ui/badge'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const toDateOnly = (d: Date | string) => {
-  const dt = typeof d === 'string' ? new Date(d) : d
-  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
-}
-
-const countDays = (
-  from: string,
-  to: string,
-  sandwichApplicable: boolean,
-  holidayDates: Set<string>, // 'YYYY-MM-DD'
-  weekendDayNames: Set<string> // 'Monday', 'Tuesday', …
-): number => {
-  if (!from || !to) return 0
-  const start = toDateOnly(from)
-  const end = toDateOnly(to)
-  if (end < start) return 0
-
-  if (!sandwichApplicable) {
-    return Math.floor((end.getTime() - start.getTime()) / 86400000) + 1
-  }
-
-  // sandwich policy: exclude weekends and holidays
-  let count = 0
-  const cursor = new Date(start)
-  const dayNames = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ]
-  while (cursor <= end) {
-    const dayName = dayNames[cursor.getDay()]
-    const iso = cursor.toISOString().split('T')[0]
-    if (!weekendDayNames.has(dayName) && !holidayDates.has(iso)) {
-      count++
-    }
-    cursor.setDate(cursor.getDate() + 1)
-  }
-  return count
-}
 
 const statusBadge = (status: string) => {
   if (status === 'Approved')
@@ -117,11 +70,6 @@ const LeaveApply = () => {
 
   const { data: leaveApplications } = useGetEmployeeLeaveApplications()
   const { data: leaveTypes } = useGetLeaveTypes()
-  console.log("🚀 ~ LeaveApply ~ leaveTypes:", leaveTypes)
-  const { data: holidayCalendars } = useGetHolidayCalendars()
-  const { data: weekDaysData } = useGetEmployeeWeekDays(userData?.userId ?? 0)
-  console.log("🚀 ~ LeaveApply ~ weekDaysData:", weekDaysData)
-  const { data: allHolidays } = useGetNewHolidays()
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -156,56 +104,19 @@ const LeaveApply = () => {
   const [formData, setFormData] = useState(emptyForm)
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [effectiveTo, setEffectiveTo] = useState('')
+  const [leaveTypeId, setLeaveTypeId] = useState(0)
 
-  // Weekend day names set for this employee
-  const weekendDayNames = useMemo<Set<string>>(() => {
-    if (!weekDaysData?.weekDays) return new Set()
-    return new Set(
-      weekDaysData.weekDays
-        .filter((w: any) => w.dayType === 'Weekend')
-        .map((w: any) => w.day as string)
-    )
-  }, [weekDaysData])
+  // Fetch noOfDays from API whenever the required fields are filled
+  const { data: noOfDaysFromApi } = useGetLeaveApplyNoOfDays({
+    userId: userData?.userId ?? 0,
+    leaveTypeId,
+    fromDate: effectiveFrom,
+    toDate: effectiveTo,
+  })
+  console.log("🚀 ~ LeaveApply ~ noOfDaysFromApi:", noOfDaysFromApi)
 
-  // Holiday dates set (ISO strings) for the relevant year
-  const holidayDates = useMemo<Set<string>>(() => {
-    if (!holidayCalendars?.data || !allHolidays?.data || !effectiveFrom)
-      return new Set()
-    const year = new Date(effectiveFrom).getFullYear()
-    const calendar = (holidayCalendars.data as any[]).find(
-      (c) => c.year === year
-    )
-    if (!calendar) return new Set()
-    const dates = (allHolidays.data as GetNewHolidayType[])
-      .filter((h) => h.calendarId === calendar.id && h.date)
-      .map((h) => h.date as string)
-    return new Set(dates)
-  }, [holidayCalendars, allHolidays, effectiveFrom])
-
-  // Selected leave type
-  const selectedLeaveType = useMemo(() => {
-    if (!leaveTypes?.data || !formData.leaveTypeId) return null
-    return (
-      (leaveTypes.data as any[]).find(
-        (lt) => lt.leaveTypeId === formData.leaveTypeId
-      ) ?? null
-    )
-  }, [leaveTypes, formData.leaveTypeId])
-
-  // Recalculate noOfDays whenever dates or leave type changes
-  const recalcDays = useCallback(
-    (from: string, to: string, lt: any | null) => {
-      if (!from || !to || !lt) return 0
-      return countDays(
-        from,
-        to,
-        !!lt.sandwichPolicyApplicable,
-        holidayDates,
-        weekendDayNames
-      )
-    },
-    [holidayDates, weekendDayNames]
-  )
+  // Keep formData.noOfDays in sync with the API result
+  const noOfDays = noOfDaysFromApi?.data ?? 0
 
   const handleDateChange = (
     field: 'effectiveFrom' | 'effectiveTo',
@@ -213,19 +124,15 @@ const LeaveApply = () => {
   ) => {
     if (field === 'effectiveFrom') {
       setEffectiveFrom(value)
-      const days = recalcDays(value, effectiveTo, selectedLeaveType)
       setFormData((prev) => ({
         ...prev,
         effectiveFrom: new Date(value),
-        noOfDays: days,
       }))
     } else {
       setEffectiveTo(value)
-      const days = recalcDays(effectiveFrom, value, selectedLeaveType)
       setFormData((prev) => ({
         ...prev,
         effectiveTo: new Date(value),
-        noOfDays: days,
       }))
     }
   }
@@ -233,17 +140,16 @@ const LeaveApply = () => {
   const handleLeaveTypeChange = (
     value: { id: string; name: string } | null
   ) => {
-    const leaveTypeId = value ? Number(value.id) : 0
-    const lt =
-      leaveTypes?.data?.find((l: any) => l.leaveTypeId === leaveTypeId) ?? null
-    const days = recalcDays(effectiveFrom, effectiveTo, lt)
-    setFormData((prev) => ({ ...prev, leaveTypeId, noOfDays: days }))
+    const id = value ? Number(value.id) : 0
+    setLeaveTypeId(id)
+    setFormData((prev) => ({ ...prev, leaveTypeId: id }))
   }
 
   const reset = useCallback(() => {
     setFormData(emptyForm())
     setEffectiveFrom('')
     setEffectiveTo('')
+    setLeaveTypeId(0)
     setError(null)
   }, [emptyForm])
 
@@ -284,16 +190,17 @@ const LeaveApply = () => {
         createdBy: userData?.userId ?? 0,
         effectiveFrom: new Date(effectiveFrom),
         effectiveTo: new Date(effectiveTo),
+        noOfDays,
       } as CreateEmployeeLeaveApply)
     },
-    [formData, effectiveFrom, effectiveTo, createMutation, userData]
+    [formData, effectiveFrom, effectiveTo, noOfDays, createMutation, userData]
   )
 
   // Table data — only this employee's applications
   const myApplications = useMemo<GetEmployeeLeaveApply[]>(() => {
     if (!leaveApplications?.data) return []
     return leaveApplications.data.filter(
-      (a: GetEmployeeLeaveApply) => a.employeeId === userData?.userId
+      (a: GetEmployeeLeaveApply) => a.createdBy === userData?.userId
     )
   }, [leaveApplications, userData?.userId])
 
@@ -540,7 +447,7 @@ const LeaveApply = () => {
               <Label>No. of Days</Label>
               <Input
                 type="number"
-                value={formData.noOfDays}
+                value={noOfDays}
                 readOnly
                 className="bg-muted cursor-not-allowed"
               />

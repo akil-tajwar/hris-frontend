@@ -43,7 +43,9 @@ import {
   useGetAllEmployees,
   useApproveEmployeeLeaveRepAuth,
   useApproveEmployeeLeaveHr,
+  useRejectLeave,
   useUpdateEmployeeLeaveApplication,
+  useGetEmpIdByUserId,
 } from '@/hooks/use-api'
 import type { GetEmployeeLeaveApply } from '@/utils/type'
 
@@ -84,10 +86,14 @@ const statusBadge = (a: GetEmployeeLeaveApply) => {
 const ApproveLeaves = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
+  console.log("🚀 ~ ApproveLeaves ~ userData:", userData)
 
   const isHr = userData?.roleId === HR_ROLE_ID
 
   const { data: leaveApplications } = useGetEmployeeLeaveApplications()
+  const { data: empId } = useGetEmpIdByUserId(userData?.userId || 0)
+  console.log("🚀 ~ ApproveLeaves ~ empId:", empId?.data)
+  console.log("🚀 ~ ApproveLeaves ~ leaveApplications:", leaveApplications)
   const { data: employees } = useGetAllEmployees()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -107,6 +113,7 @@ const ApproveLeaves = () => {
 
   const approveMutationRepAuth = useApproveEmployeeLeaveRepAuth()
   const approveMutationHr = useApproveEmployeeLeaveHr()
+  const rejectLeaveMutation = useRejectLeave()
   const updateMutation = useUpdateEmployeeLeaveApplication({
     onClose: () => {},
     reset: () => {},
@@ -117,10 +124,10 @@ const ApproveLeaves = () => {
     if (isHr || !employees?.data || !userData?.userId) return new Set()
     return new Set(
       (employees.data as any[])
-        .filter((e) => e.reportingAuthorityId === userData.userId)
+        .filter((e) => e.reportingAuthorityId === empId?.data)
         .map((e) => e.employeeId as number)
     )
-  }, [employees, userData?.userId, isHr])
+  }, [employees, userData?.userId, isHr, empId])
 
   // Filter applications visible to this user
   const visibleApplications = useMemo<GetEmployeeLeaveApply[]>(() => {
@@ -179,6 +186,16 @@ const ApproveLeaves = () => {
     }
   }
 
+  const handleRejectLeave = () => {
+    if (!pendingRejectId || !userData?.userId) return
+    rejectLeaveMutation.mutate({
+      id: pendingRejectId,
+      updatedBy: userData.userId,
+    })
+    setRejectDialogOpen(false)
+    setPendingRejectId(null)
+  }
+
   const handleApproveConfirm = () => {
     if (!pendingApproveId || !userData?.userId) return
     if (isHr) {
@@ -194,20 +211,6 @@ const ApproveLeaves = () => {
     }
     setApproveDialogOpen(false)
     setPendingApproveId(null)
-  }
-
-  const handleRejectConfirm = () => {
-    if (!pendingRejectId) return
-    const target = leaveApplications?.data?.find(
-      (a: GetEmployeeLeaveApply) => a.employeeLeaveApplyId === pendingRejectId
-    )
-    if (!target) return
-    updateMutation.mutate({
-      id: pendingRejectId,
-      data: { ...target, status: 'Rejected', updatedBy: userData?.userId ?? 0 },
-    })
-    setRejectDialogOpen(false)
-    setPendingRejectId(null)
   }
 
   return (
@@ -425,7 +428,7 @@ const ApproveLeaves = () => {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleRejectConfirm}
+              onClick={handleRejectLeave}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Reject
