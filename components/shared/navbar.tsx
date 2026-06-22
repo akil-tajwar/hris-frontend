@@ -54,7 +54,7 @@ export default function Navbar() {
       return '/dashboard/setup/pending-tasks'
     } else if (msg.includes('an employee applied for a leave')) {
       return '/dashboard/leave-management/approve-leaves'
-    } else if (msg.includes('a reporting authority has approved a leave')) {
+    } else if (msg.includes('you have a pending leave approval')) {
       return '/dashboard/leave-management/approve-leaves'
     } else if (msg.includes('your applied leave have been approved')) {
       return '/dashboard/leave-management/leave-apply'
