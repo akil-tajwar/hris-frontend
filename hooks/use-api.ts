@@ -175,6 +175,8 @@ import {
   getLeaveApplyNoOfDays,
   getEmpIdByUserId,
   rejectLeave,
+  getLeaveBalanceSummaryReport,
+  getEmployeeLeaveLedgerReport,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5333,6 +5335,44 @@ export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
       return getAttendanceReport(fromDate, toDate, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    select: (data) => data,
+  })
+}
+
+export const useGetLeaveBalanceSummaryReport = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['leaveBalanceSummaryReport'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+
+      return getLeaveBalanceSummaryReport(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeLeaveLedgerReport = () => {
+  const [token] = useAtom(tokenAtom)
+
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLeaveLedgerReport'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+
+      return getEmployeeLeaveLedgerReport(token)
+    },
+    enabled: !!token,
     select: (data) => data,
   })
 }

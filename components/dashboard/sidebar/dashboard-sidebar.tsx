@@ -33,69 +33,43 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
 
 export function DashboardSidebar() {
+  useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
+  const [token] = useAtom(tokenAtom)
   const pathname = usePathname()
+
+  const isAdminOrHR = userData?.roleId === 1 || userData?.roleId === 2
+  const isUser = userData?.roleId === 4
 
   const navItems = [
     {
       title: 'Dashboard Overview',
       icon: Home,
       href: '/dashboard/dashboard-overview',
+      roles: [1, 2],
     },
     {
       title: 'Setup',
       icon: Settings,
       href: '/dashboard/setup',
+      roles: [1, 2],
       subItems: [
-        {
-          title: 'Tenants',
-          href: '/dashboard/setup/tenants',
-        },
-        {
-          title: 'Customers',
-          href: '/dashboard/setup/customers',
-        },
-        {
-          title: 'Register User',
-          href: '/dashboard/setup/register-user',
-        },
-        {
-          title: 'Departments',
-          href: '/dashboard/setup/departments',
-        },
-        {
-          title: 'Designations',
-          href: '/dashboard/setup/designations',
-        },
-        {
-          title: 'Companies',
-          href: '/dashboard/setup/company',
-        },
-        {
-          title: 'Business Units',
-          href: '/dashboard/setup/business-units',
-        },
-        {
-          title: 'Divisions',
-          href: '/dashboard/setup/divisions',
-        },
-        {
-          title: 'Work Stations',
-          href: '/dashboard/setup/work-stations',
-        },
-        {
-          title: 'Cost Centers',
-          href: '/dashboard/setup/cost-centers',
-        },
-        {
-          title: 'Employment Types',
-          href: '/dashboard/setup/employee-types',
-        },
-        {
-          title: 'Holidays',
-          href: '/dashboard/setup/holidays',
-        },
+        { title: 'Tenants', href: '/dashboard/setup/tenants' },
+        { title: 'Customers', href: '/dashboard/setup/customers' },
+        { title: 'Register User', href: '/dashboard/setup/register-user' },
+        { title: 'Departments', href: '/dashboard/setup/departments' },
+        { title: 'Designations', href: '/dashboard/setup/designations' },
+        { title: 'Companies', href: '/dashboard/setup/company' },
+        { title: 'Business Units', href: '/dashboard/setup/business-units' },
+        { title: 'Divisions', href: '/dashboard/setup/divisions' },
+        { title: 'Work Stations', href: '/dashboard/setup/work-stations' },
+        { title: 'Cost Centers', href: '/dashboard/setup/cost-centers' },
+        { title: 'Employment Types', href: '/dashboard/setup/employee-types' },
+        { title: 'Holidays', href: '/dashboard/setup/holidays' },
         {
           title: 'Holiday Calendars',
           href: '/dashboard/setup/holiday-calendars',
@@ -104,28 +78,26 @@ export function DashboardSidebar() {
           title: 'Shift and Week Days',
           href: '/dashboard/setup/shift-and-week-days',
         },
-        {
-          title: 'Pending Tasks',
-          href: '/dashboard/setup/pending-tasks',
-        },
+        { title: 'Pending Tasks', href: '/dashboard/setup/pending-tasks' },
       ],
     },
     {
       title: 'Shift Management',
       icon: LucideAirVent,
       href: '/dashboard/shift-management',
+      roles: [1, 2],
       subItems: [
         {
-          title: 'Employee Shift Allocations',  
-
+          title: 'Employee Shift Allocations',
           href: '/dashboard/employee-shift-allocations/employee-shift-allocations',
         },
-      ]
+      ],
     },
     {
       title: 'Employee Management',
       icon: UserCog,
       href: '/dashboard/employee-management',
+      roles: [1, 2],
       subItems: [
         {
           title: 'Checklists',
@@ -161,6 +133,7 @@ export function DashboardSidebar() {
       title: 'Attendance Management',
       icon: ListChecks,
       href: '/dashboard/attendance-management',
+      roles: [1, 2],
       subItems: [
         {
           title: 'Attendance Policies',
@@ -180,41 +153,45 @@ export function DashboardSidebar() {
       title: 'Asset Management',
       icon: Briefcase,
       href: '/dashboard/asset-management',
+      roles: [1, 2],
       subItems: [
         {
           title: 'Asset Category',
           href: '/dashboard/asset-management/asset-category',
         },
-        {
-          title: 'Assets',
-          href: '/dashboard/asset-management/assets',
-        },
+        { title: 'Assets', href: '/dashboard/asset-management/assets' },
       ],
     },
     {
       title: 'Leave Management',
       icon: LucideAirVent,
       href: '/dashboard/leave-management',
+      roles: [1, 2, 4],
       subItems: [
         {
           title: 'Leave Types',
           href: '/dashboard/leave-management/leave-types',
+          roles: [1, 2],
         },
         {
           title: 'Leave Policy',
           href: '/dashboard/leave-management/leave-policy',
+          roles: [1, 2],
         },
         {
           title: 'Employee Leave Assignments',
           href: '/dashboard/leave-management/employee-leave-assignments',
+          roles: [1, 2],
         },
         {
           title: 'Leave Apply',
           href: '/dashboard/leave-management/leave-apply',
+          roles: [1, 2, 4],
         },
         {
           title: 'Approve Leaves',
           href: '/dashboard/leave-management/approve-leaves',
+          roles: [1, 2],
         },
       ],
     },
@@ -222,6 +199,7 @@ export function DashboardSidebar() {
       title: 'Salary Management',
       icon: DollarSign,
       href: '/dashboard/salary-management',
+      roles: [1, 2],
       subItems: [
         {
           title: 'Salary Components',
@@ -231,16 +209,14 @@ export function DashboardSidebar() {
           title: 'Salary Structures',
           href: '/dashboard/salary-management/salary-structures',
         },
-        {
-          title: 'Salary',
-          href: '/dashboard/salary-management/salareis',
-        },
+        { title: 'Salary', href: '/dashboard/salary-management/salareis' },
       ],
     },
     {
       title: 'Reports',
       icon: FileChartColumn,
       href: '/dashboard/report',
+      roles: [1, 2],
       subItems: [
         {
           title: 'Activity Report',
@@ -254,17 +230,34 @@ export function DashboardSidebar() {
           title: 'Attendance Report Summary',
           href: '/dashboard/report/attendance-report-summary',
         },
+        {
+          title: 'Leave Balance Summary Report',
+          href: '/dashboard/report/leave-balance-summary-report',
+        },
+        {
+          title: 'Leave Ledger Report',
+          href: '/dashboard/report/leave-ledger-report',
+        },
       ],
     },
   ]
 
-  // Check if the current path is in the submenu items
+  const roleId = userData?.roleId
+
+  const filteredNavItems = navItems
+    .filter((item) => item.roles.includes(roleId!))
+    .map((item) => ({
+      ...item,
+      subItems: item.subItems?.filter(
+        (sub) => !('roles' in sub) || (sub as any).roles.includes(roleId!)
+      ),
+    }))
+
   const isSubItemActive = (item: any) => {
     if (!item.subItems) return false
     return item.subItems.some((subItem: any) => pathname === subItem.href)
   }
 
-  // Check if the current path matches the main item or its sub-items
   const isItemActive = (item: any) => {
     return pathname.startsWith(item.href) || isSubItemActive(item)
   }
@@ -280,13 +273,12 @@ export function DashboardSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {filteredNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  {!item.subItems ? (
-                    // Regular menu item without submenu
+                  {!item.subItems || item.subItems.length === 0 ? (
                     <SidebarMenuButton
                       asChild
-                      className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white !hover:bg-blue-500' : ''} `}
+                      className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white !hover:bg-blue-500' : ''}`}
                     >
                       <Link href={item.href}>
                         <item.icon className="mr-2 w-4" />
@@ -294,14 +286,13 @@ export function DashboardSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   ) : (
-                    // Menu item with submenu as accordion
                     <Collapsible
                       defaultOpen={isItemActive(item)}
                       className="w-full"
                     >
                       <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton
-                          className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white hover:bg-blue-500' : ''} `}
+                          className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white hover:bg-blue-500' : ''}`}
                         >
                           <item.icon className="mr-2 w-4" />
                           <span>{item.title}</span>
@@ -314,7 +305,7 @@ export function DashboardSidebar() {
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton
                                 asChild
-                                className={`text-white hover:bg-slate-700 hover:text-white ${pathname === subItem.href ? 'text-blue-300 hover:text-blue-300' : ''} `}
+                                className={`text-white hover:bg-slate-700 hover:text-white ${pathname === subItem.href ? 'text-blue-300 hover:text-blue-300' : ''}`}
                               >
                                 <Link
                                   className="h-auto mt-2"

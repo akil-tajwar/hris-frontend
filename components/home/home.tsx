@@ -76,7 +76,11 @@ export default function Home() {
         console.log('Current user info stored:', userInfo)
 
         // Redirect to dashboard
-        router.push('/dashboard/dashboard-overview')
+        if (roleId == 1 || roleId == 2) {
+          router.push('/dashboard/dashboard-overview')
+        } else if (roleId == 4) {
+          router.push('/dashboard/leave-management/leave-apply')
+        }
         toast({
           title: 'Success',
           description: 'you are signined in',

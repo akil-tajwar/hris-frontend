@@ -517,6 +517,70 @@ export type GetEmployeeActivityHistoryReport = z.infer<
   typeof employeeActivityHistoryReportSchema
 >
 
+export const employeeLeaveBalanceSummarySchema = z.array(
+  z.object({
+    employeeId: z.number(),
+    empCode: z.string(),
+    empFullName: z.string(),
+    empDesignation: z.string(),
+    empDepartment: z.string(),
+
+    leaves: z.array(
+      z.object({
+        leaveTypeName: z.string(),
+        usedDays: z.number(),
+        remainingDays: z.number(),
+      })
+    ),
+  })
+)
+
+export type GetEmployeeLeaveBalanceSummaryReport = z.infer<
+  typeof employeeLeaveSummarySchema
+>
+
+export const employeeLeaveLedgerSchema = z.array(
+  z.object({
+    employeeDetails: z.object({
+      employeeId: z.number(),
+      empCode: z.string(),
+      empFullName: z.string(),
+    }),
+
+    leaveDetails: z.array(
+      z.object({
+        leaveTypeId: z.number(),
+        leaveTypeName: z.string(),
+
+        allocatedDays: z.number(),
+        usedDays: z.number(),
+        availableDays: z.number(),
+        currentBalance: z.number(),
+
+        history: z.array(
+          z.object({
+            leaveApplyId: z.number().optional(),
+            date: z.string().optional(),
+
+            event: z.string().optional(),
+            status: z.string().optional(),
+
+            fromDate: z.string().optional(),
+            toDate: z.string().optional(),
+
+            days: z.number().optional(),
+            balanceAfter: z.number().optional(),
+          })
+        ),
+      })
+    ),
+  })
+)
+
+export type GetEmployeeLeaveLedgerReport = z.infer<
+  typeof employeeLeaveLedgerSchema
+>
+
 //weekDay
 export const weekDaySchema = z.object({
   weekDayId: z.number().optional(),
@@ -708,8 +772,8 @@ export const employeeLeaveApplySchema = z.object({
   createdAt: z.date().nullable(),
   updatedBy: z.number().nullable(),
   updatedAt: z.date().nullable(),
-});
-export type CreateEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema>;
+})
+export type CreateEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema>
 export type GetEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema> & {
   leaveTypeName: string
   empCode: string
@@ -1216,7 +1280,6 @@ export type CreateBulkShiftAllocationType = {
   createdBy: number
 }
 
-
 // types/attendance.types.ts
 
 export const dailyAttendanceSchema = z.object({
@@ -1245,8 +1308,6 @@ export const attendanceSummarySchema = z.object({
   total: z.number(),
 })
 export type AttendanceSummaryType = z.infer<typeof attendanceSummarySchema>
-
-
 
 // Holiday Calendar
 export type CreateHolidayCalendarType = {
