@@ -254,6 +254,14 @@ export function DashboardSidebar() {
           title: 'Attendance Report Summary',
           href: '/dashboard/report/attendance-report-summary',
         },
+        {
+          title: 'Leave Balance Summary Report',
+          href: '/dashboard/report/leave-balance-summary-report',
+        },
+        {
+          title: 'Leave Ledger Report',
+          href: '/dashboard/report/leave-ledger-report',
+        },
       ],
     },
   ]

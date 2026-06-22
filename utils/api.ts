@@ -93,6 +93,8 @@ import {
   UpdateAttendanceDailyType,
   GetEmployeeLeaveApply,
   CreateEmployeeLeaveApply,
+  GetEmployeeLeaveBalanceSummaryReport,
+  GetEmployeeLeaveLedgerReport,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1965,6 +1967,28 @@ export async function getAttendanceReport(
 ) {
   return fetchApi<GetEmployeeAttendanceType[]>({
     url: `api/reports/attendance-report?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getLeaveBalanceSummaryReport(token: string) {
+  return fetchApi<GetEmployeeLeaveBalanceSummaryReport[]>({
+    url: 'api/reports/leave-balance-summary-report',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getEmployeeLeaveLedgerReport(token: string) {
+  return fetchApi<GetEmployeeLeaveLedgerReport[]>({
+    url: 'api/reports/leave-ledger-report',
     method: 'GET',
     headers: {
       Authorization: token,
