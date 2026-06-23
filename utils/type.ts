@@ -166,6 +166,7 @@ export type GetDesignationType = z.infer<typeof designationSchema>
 //company type
 export const companySchema = z.object({
   companyId: z.number().optional(),
+  tenantId: z.number(),
   code: z.string().max(50).nullable().optional(),
   companyName: z.string().max(100),
   shortName: z.string().max(50).nullable().optional(),

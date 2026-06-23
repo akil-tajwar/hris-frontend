@@ -30,6 +30,7 @@ import {
   useAddCompany,
   useDeleteCompany,
   useGetCompanies,
+  useGetTenants,
   useUpdateCompany,
 } from '@/hooks/use-api'
 import {
@@ -74,6 +75,7 @@ const CURRENCY_OPTIONS = [
 ]
 
 const DEFAULT_FORM: CreateCompanyType = {
+  tenantId: 0,
   companyName: '',
   code: '',
   shortName: '',
@@ -95,6 +97,8 @@ const Companies = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: companies } = useGetCompanies()
+  const { data: tenants } = useGetTenants()
+  console.log("🚀 ~ Companies ~ tenants:", tenants)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -223,6 +227,7 @@ const Companies = () => {
       setError(null)
       try {
         const submitData = new FormData()
+        submitData.append('tenantId', String(formData.tenantId))
         submitData.append('companyName', formData.companyName)
         submitData.append('code', formData.code || '')
         submitData.append('shortName', formData.shortName || '')
@@ -273,6 +278,7 @@ const Companies = () => {
 
   const handleEditClick = (company: any) => {
     setFormData({
+      tenantId: company.tenantId,
       companyName: company.companyName,
       code: company.code || '',
       shortName: company.shortName || '',
@@ -531,6 +537,38 @@ const Companies = () => {
                 value={formData.code ?? ''}
                 onChange={handleInputChange}
                 maxLength={50}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tenantId">
+                Tenant <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  tenants?.data?.map((tenant) => ({
+                    id: tenant?.tenantId?.toString() || '0',
+                    name: tenant.tenantName || 'Unnamed tenant',
+                  })) || []
+                }
+                value={
+                  formData.tenantId
+                    ? {
+                        id: formData.tenantId.toString(),
+                        name:
+                          tenants?.data?.find(
+                            (t) => t.tenantId === formData.tenantId
+                          )?.tenantName || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    tenantId: value ? Number(value.id) : 0,
+                  }))
+                }
+                placeholder="Select tenant"
               />
             </div>
 
