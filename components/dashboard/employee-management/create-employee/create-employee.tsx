@@ -32,6 +32,7 @@ import {
   useGetEmployeePreboardingById,
   useGetLeavePolicies,
   useGetSalaryStructures,
+  useGetAttendancePolicies,
 } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
@@ -149,6 +150,7 @@ type EmployeeFormData = {
   reportingAuthorityId: number | null
   leavePolicyMasterId: number | null
   salaryStructureMasterId: number | null
+  attendancePolicyId: number | null
   createdBy: number
 }
 
@@ -228,6 +230,7 @@ const buildEmptyForm = (userId: number): EmployeeFormData => ({
   reportingAuthorityId: null,
   leavePolicyMasterId: null,
   salaryStructureMasterId: null,
+  attendancePolicyId: null,
   createdBy: userId,
 })
 
@@ -253,7 +256,7 @@ const CreateEmployee = () => {
   const { data: costCenters } = useGetCostCenters()
   const { data: employees } = useGetAllEmployees()
   const { data: roles } = useGetRoles()
-  const { data: tenants } = useGetTenants()
+  const { data: attendancePolicies } = useGetAttendancePolicies()
   const { data: leavePoliciesResponse } = useGetLeavePolicies()
   const { data: salaryStructuresResponse } = useGetSalaryStructures()
 
@@ -502,6 +505,7 @@ const CreateEmployee = () => {
         roleId: userFormData.roleId,
         tenantId: userFormData.tenantId,
         email: userFormData.email,
+        userCompanies: userFormData.userCompanies
       })
     )
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
@@ -1650,7 +1654,7 @@ const CreateEmployee = () => {
         {/* ── 7. Leave Policies & Salary Structures ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-1">
-            Leave Policies &amp; Salary Structures
+            Leave Policy, Salary Structure &amp; Attendance Policy
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             Assign leave policies and salary structures that will apply to this
@@ -1713,6 +1717,35 @@ const CreateEmployee = () => {
                   )
                 }
                 placeholder="Select salary structure"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attendancePolicyId">
+                Attendance Policy <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={(attendancePolicies?.data ?? []).map((p) => ({
+                  id: p.id.toString(),
+                  name: p.name || 'Unnamed policy',
+                }))}
+                value={
+                  formData.attendancePolicyId
+                    ? {
+                        id: formData.attendancePolicyId.toString(),
+                        name:
+                          (attendancePolicies?.data ?? []).find(
+                            (p) => p.id === formData.attendancePolicyId
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'attendancePolicyId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select attendance policy"
               />
             </div>
           </div>
