@@ -24,6 +24,7 @@ export const useInitializeUser = () => {
       setToken(`Bearer ${mainToken}`)
 
       const userStr = localStorage.getItem('currentUser')
+      console.log("🚀 ~ loadUser ~ userStr:", userStr)
       if (userStr) {
         const parsedUser = JSON.parse(userStr)
 
