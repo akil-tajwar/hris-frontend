@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,6 +38,7 @@ import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
 import { saveAs } from 'file-saver'
 import { GetLeavePolicyType, GetSalaryStructureType } from '@/utils/type'
+import { MultiSelect } from '@/components/ui/multi-select'
 
 // ── Static column definitions ─────────────────────────────────────────────────
 const STATIC_COLUMNS = [
@@ -158,6 +159,7 @@ type UserFormData = {
   email: string
   roleId: number
   tenantId: number
+  userCompanies: number[]
   active: boolean
 }
 
@@ -273,6 +275,7 @@ const CreateEmployee = () => {
     email: '',
     roleId: 0,
     tenantId: 0,
+    userCompanies: [],
     active: true,
   })
 
@@ -280,8 +283,9 @@ const CreateEmployee = () => {
   useEffect(() => {
     if (userData?.userId) {
       setFormData((prev) => ({ ...prev, createdBy: userData.userId }))
+      setUserFormData((prev) => ({ ...prev, tenantId: userData.tenantId ?? 0 }))
     }
-  }, [userData?.userId])
+  }, [userData?.userId, userData?.tenantId])
 
   // ── Pre-fill from preboarding ─────────────────────────────────────────────
   useEffect(() => {
@@ -405,6 +409,7 @@ const CreateEmployee = () => {
       email: '',
       roleId: 0,
       tenantId: 0,
+      userCompanies: [],
       active: true,
     })
     setEmployeePhotoFile(null)
@@ -421,6 +426,17 @@ const CreateEmployee = () => {
 
   const addMutation = useAddEmployee({ onClose: closePopup, reset: resetForm })
   console.log('🚀 ~ CreateEmployee ~ addMutation:', addMutation)
+
+  const userCompanyOptions = useMemo(
+    () =>
+      (companies?.data ?? [])
+        .filter((c) => (c as any).tenantId === userData?.tenantId)
+        .map((c) => ({
+          value: String((c as any).companyId),
+          label: (c as any).companyName || 'Unnamed company',
+        })),
+    [companies, userData?.tenantId]
+  )
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -460,8 +476,8 @@ const CreateEmployee = () => {
       return setError('Passwords do not match')
     if (!userFormData.roleId || userFormData.roleId <= 0)
       return setError('Please select a role')
-    if (!userFormData.tenantId || userFormData.tenantId <= 0)
-      return setError('Please select a tenant')
+    if (!userFormData.userCompanies.length)
+      return setError('Please select at least one company')
 
     const form = new FormData()
     form.append(
@@ -1127,12 +1143,12 @@ const CreateEmployee = () => {
                 Company <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
-                items={
-                  companies?.data?.map((c) => ({
+                items={(companies?.data ?? [])
+                  .filter((c) => c.tenantId === userData?.tenantId)
+                  .map((c) => ({
                     id: c?.companyId?.toString() || '0',
                     name: c.companyName || 'Unnamed company',
-                  })) || []
-                }
+                  }))}
                 value={
                   formData.companyId
                     ? {
@@ -1795,34 +1811,20 @@ const CreateEmployee = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenantId">
-                Tenant <span className="text-red-500">*</span>
+              <Label>
+                Companies <span className="text-red-500">*</span>
               </Label>
-              <CustomCombobox
-                items={
-                  tenants?.data?.map((tenant) => ({
-                    id: tenant?.tenantId?.toString() || '0',
-                    name: tenant.tenantName || 'Unnamed tenant',
-                  })) || []
-                }
-                value={
-                  userFormData.tenantId
-                    ? {
-                        id: userFormData.tenantId.toString(),
-                        name:
-                          tenants?.data?.find(
-                            (t) => t.tenantId === userFormData.tenantId
-                          )?.tenantName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
+              <MultiSelect
+                options={userCompanyOptions}
+                selected={userFormData.userCompanies.map(String)}
+                onChange={(values) =>
                   setUserFormData((prev) => ({
                     ...prev,
-                    tenantId: value ? Number(value.id) : 0,
+                    userCompanies: values.map(Number),
                   }))
                 }
-                placeholder="Select tenant"
+                placeholder="Select companies"
+                className="w-full"
               />
             </div>
             <div className="space-y-2">
