@@ -127,9 +127,9 @@ export async function registerUser(credentials: SignInRequest) {
 }
 
 //customers
-export async function getAllCustomers(token: string) {
+export async function getAllCustomers(tenantId: number, token: string) {
   return fetchApi<GetCustomerType[]>({
-    url: 'api/customers/getall',
+    url: `api/customers/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -178,9 +178,9 @@ export async function deleteCustomer(id: number, token: string) {
 }
 
 //business units
-export async function getAllBusinessUnits(token: string) {
+export async function getAllBusinessUnits(tenantId: number, token: string) {
   return fetchApi<GetBusinessUnitType[]>({
-    url: 'api/business-units/getall',
+    url: `api/business-units/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -231,10 +231,10 @@ export async function deleteBusinessUnit(id: number, token: string) {
   })
 }
 
-//departments
-export async function getAllTenants(token: string) {
+//tenants
+export async function getAllTenants(tenantId: number, token: string) {
   return fetchApi<GetTenantType[]>({
-    url: 'api/tenants/getall',
+    url: `api/tenants/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -283,9 +283,9 @@ export async function deleteTenant(id: number, token: string) {
 }
 
 //department
-export async function getAllDepartments(token: string) {
+export async function getAllDepartments(tenantId: number, token: string) {
   return fetchApi<GetDepartmentType[]>({
-    url: 'api/departments/getall',
+    url: `api/departments/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -337,9 +337,9 @@ export async function deleteDepartment(id: number, token: string) {
 }
 
 //designation
-export async function getAllDesignations(token: string) {
+export async function getAllDesignations(tenantId: number, token: string) {
   return fetchApi<GetDesignationType[]>({
-    url: 'api/designations/getall',
+    url: `api/designations/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -391,9 +391,9 @@ export async function deleteDesignation(id: number, token: string) {
 }
 
 // Company API Functions
-export async function getAllCompanies(token: string) {
+export async function getAllCompanies(tenantId: number, token: string) {
   return fetchApi<GetCompanyType[]>({
-    url: 'api/company/getall',
+    url: `api/company/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -440,9 +440,9 @@ export async function deleteCompany(id: number, token: string) {
 }
 
 // Work Station API Functions
-export async function getAllWorkStations(token: string) {
+export async function getAllWorkStations(tenantId: number, token: string) {
   return fetchApi<GetWorkStationType[]>({
-    url: 'api/workstations/getall',
+    url: `api/workstations/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -494,9 +494,9 @@ export async function deleteWorkStation(id: number, token: string) {
 }
 
 // Division API Functions
-export async function getAllDivisions(token: string) {
+export async function getAllDivisions(tenantId: number, token: string) {
   return fetchApi<GetDivisionType[]>({
-    url: 'api/divisions/getall',
+    url: `api/divisions/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -546,9 +546,9 @@ export async function deleteDivision(id: number, token: string) {
 }
 
 // Cost Center API Functions
-export async function getAllCostCenters(token: string) {
+export async function getAllCostCenters(tenantId: number, token: string) {
   return fetchApi<GetCostCenterType[]>({
-    url: 'api/costcenters/getall',
+    url: `api/costcenters/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -600,9 +600,9 @@ export async function deleteCostCenter(id: number, token: string) {
 }
 
 //employee type
-export async function getAllEmploymentTypes(token: string) {
+export async function getAllEmploymentTypes(tenantId: number, token: string) {
   return fetchApi<GetEmploymentTypeType[]>({
-    url: 'api/employmentTypes/getall',
+    url: `api/employmentTypes/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -666,9 +666,9 @@ export async function getAllWeekDays(token: string) {
 }
 
 //shift weekDays
-export async function getAllShiftDayAndWeekDays(token: string) {
+export async function getAllShiftDayAndWeekDays(tenantId: number, token: string) {
   return fetchApi<GetShiftsType[]>({
-    url: 'api/shift/getall',
+    url: `api/shift/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -720,9 +720,9 @@ export async function deleteShiftDayAndWeekDays(id: number, token: string) {
 }
 
 //employee preboarding
-export async function getAllEmployeePreboardings(token: string) {
+export async function getAllEmployeePreboardings(tenantId: number, token: string) {
   return fetchApi<GetEmployeePreboardingType[]>({
-    url: 'api/employeePreboarding/getall',
+    url: `api/employeePreboarding/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -865,9 +865,9 @@ export async function completeEmployeePreboardingChecklist(
   })
 }
 
-export async function getAllAssetCategories(token: string) {
+export async function getAllAssetCategories(tenantId: number, token: string) {
   return fetchApi<GetAssetCategoryType[]>({
-    url: 'api/assetCategory/getall',
+    url: `api/assetCategory/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -930,9 +930,9 @@ export async function deleteAssetCategory(id: number, token: string) {
 }
 
 //assets
-export async function getAllAssets(token: string) {
+export async function getAllAssets(tenantId: number, token: string) {
   return fetchApi<GetAssetType[]>({
-    url: 'api/assets/getall',
+    url: `api/assets/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1055,9 +1055,9 @@ export async function markAsRead(data: number[], token: string) {
 }
 
 //checklist
-export async function getAllChecklists(token: string) {
+export async function getAllChecklists(tenantId: number, token: string) {
   return fetchApi<GetChecklistType[]>({
-    url: 'api/checklists/getall',
+    url: `api/checklists/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1109,9 +1109,9 @@ export async function deleteChecklist(id: number, token: string) {
 }
 
 //employee
-export async function getAllEmployees(token: string) {
+export async function getAllEmployees(tenantId: number, token: string) {
   return fetchApi<GetEmployeeType[]>({
-    url: 'api/employees/getall',
+    url: `api/employees/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1196,9 +1196,9 @@ export async function assignLeaveType(
 }
 
 //holidays
-export async function getAllHolidays(token: string) {
+export async function getAllHolidays(tenantId: number, token: string) {
   return fetchApi<GetHolidayType[]>({
-    url: 'api/holidays/getall',
+    url: `api/holidays/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1247,9 +1247,9 @@ export async function deleteHoliday(id: number, token: string) {
 }
 
 //leave type
-export async function getAllLeaveTypes(token: string) {
+export async function getAllLeaveTypes(tenantId: number, token: string) {
   return fetchApi<GetLeaveTypeType[]>({
-    url: 'api/leaveTypes/getall',
+    url: `api/leaveTypes/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1301,9 +1301,9 @@ export async function deleteLeaveType(id: number, token: string) {
 }
 
 //leave policy
-export async function getAllLeavePolicies(token: string) {
+export async function getAllLeavePolicies(tenantId: number, token: string) {
   return fetchApi<GetLeavePolicyType[]>({
-    url: 'api/leavePolicy/getall',
+    url: `api/leavePolicy/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1355,9 +1355,9 @@ export async function deleteLeavePolicy(id: number, token: string) {
 }
 
 //employee leave assignment
-export async function getAllEmployeeLeaveAssignments(token: string) {
+export async function getAllEmployeeLeaveAssignments(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveAssignmentType[]>({
-    url: 'api/employeeLeaveAssignments/getall',
+    url: `api/employeeLeaveAssignments/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1409,9 +1409,9 @@ export async function deleteEmployeeLeaveAssignment(id: number, token: string) {
 }
 
 //employee attendance
-export async function getAllEmployeeAttendances(token: string) {
+export async function getAllEmployeeAttendances(tenantId: number, token: string) {
   return fetchApi<GetEmployeeAttendanceType[]>({
-    url: 'api/employeeAttendances/getall',
+    url: `api/employeeAttendances/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1463,9 +1463,9 @@ export async function deleteEmployeeAttendance(id: number, token: string) {
 }
 
 //salary components
-export async function getAllSalaryComponents(token: string) {
+export async function getAllSalaryComponents(tenantId: number, token: string) {
   return fetchApi<GetSalaryComponentType[]>({
-    url: 'api/salaryComponents/getall',
+    url: `api/salaryComponents/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1517,9 +1517,9 @@ export async function deleteSalaryComponent(id: number, token: string) {
 }
 
 //salary structure
-export async function getAllSalaryStructures(token: string) {
+export async function getAllSalaryStructures(tenantId: number, token: string) {
   return fetchApi<GetSalaryStructureType[]>({
-    url: 'api/salaryStructures/getall',
+    url: `api/salaryStructures/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1571,9 +1571,9 @@ export async function deleteSalaryStructure(id: number, token: string) {
 }
 
 //employee other salary components
-export async function getAllEmployeeSalaryComponents(token: string) {
+export async function getAllEmployeeSalaryComponents(tenantId: number, token: string) {
   return fetchApi<GetEmployeeSalaryComponentType[]>({
-    url: 'api/employeeSalaryComponents/getall',
+    url: `api/employeeSalaryComponents/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1625,9 +1625,9 @@ export async function deleteEmployeeSalaryComponent(id: number, token: string) {
 }
 
 //salary
-export async function getAllSalaries(token: string) {
+export async function getAllSalaries(tenantId: number, token: string) {
   return fetchApi<GetSalaryType[]>({
-    url: 'api/salary/getall',
+    url: `api/salary/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1676,9 +1676,9 @@ export async function deleteSalary(id: number, token: string) {
 }
 
 //lones
-export async function getAllLones(token: string) {
+export async function getAllLones(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLoneType[]>({
-    url: 'api/employeeLones/getall',
+    url: `api/employeeLones/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1742,9 +1742,9 @@ export async function skipLone(
 }
 
 //employee leaves
-export async function getAllEmployeeLeaves(token: string) {
+export async function getAllEmployeeLeaves(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveType[]>({
-    url: 'api/employeeLeaves/getall',
+    url: `api/employeeLeaves/getall/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1795,9 +1795,9 @@ export async function deleteEmployeeLeave(id: number, token: string) {
   })
 }
 
-export async function getAllEmployeeLeaveTypes(token: string) {
+export async function getAllEmployeeLeaveTypes(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveTypeType[]>({
-    url: 'api/employeeLeaves/getallEmployeeLeaveTypes',
+    url: `api/employeeLeaves/getallEmployeeLeaveTypes/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1807,9 +1807,9 @@ export async function getAllEmployeeLeaveTypes(token: string) {
 }
 
 //employee leave apply
-export async function getAllEmployeeLeaveApplications(token: string) {
+export async function getAllEmployeeLeaveApplications(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveApply[]>({
-    url: 'api/employeeLeaveApply/getAll',
+    url: `api/employeeLeaveApply/getAll/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1933,10 +1933,11 @@ export async function getLeaveApplyNoOfDays(
 //reports
 export async function getEmployeeActivityReport(
   employeeId: number,
+  tenantId: number,
   token: string
 ) {
   return fetchApi<GetEmployeeActivityHistoryReport>({
-    url: `api/reports/activity-report?employeeId=${employeeId}`,
+    url: `api/reports/activity-report?employeeId=${employeeId}&tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1948,10 +1949,11 @@ export async function getEmployeeActivityReport(
 export async function getSalaryReport(
   salaryMonthy: string,
   salaryYear: number,
+  tenantId: number,
   token: string
 ) {
   return fetchApi<GetSalaryType[]>({
-    url: `api/reports/salary-report?salaryMonth=${salaryMonthy}&salaryYear=${salaryYear}`,
+    url: `api/reports/salary-report?salaryMonth=${salaryMonthy}&salaryYear=${salaryYear}&tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1963,10 +1965,11 @@ export async function getSalaryReport(
 export async function getAttendanceReport(
   fromDate: string,
   toDate: string,
+  tenantId: number,
   token: string
 ) {
   return fetchApi<GetEmployeeAttendanceType[]>({
-    url: `api/reports/attendance-report?fromDate=${fromDate}&toDate=${toDate}`,
+    url: `api/reports/attendance-report?fromDate=${fromDate}&toDate=${toDate}&tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1975,9 +1978,9 @@ export async function getAttendanceReport(
   })
 }
 
-export async function getLeaveBalanceSummaryReport(token: string) {
+export async function getLeaveBalanceSummaryReport(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveBalanceSummaryReport[]>({
-    url: 'api/reports/leave-balance-summary-report',
+    url: `api/reports/leave-balance-summary-report?tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -1986,9 +1989,9 @@ export async function getLeaveBalanceSummaryReport(token: string) {
   })
 }
 
-export async function getEmployeeLeaveLedgerReport(token: string) {
+export async function getEmployeeLeaveLedgerReport(tenantId: number, token: string) {
   return fetchApi<GetEmployeeLeaveLedgerReport[]>({
-    url: 'api/reports/leave-ledger-report',
+    url: `api/reports/leave-ledger-report?tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -2000,10 +2003,11 @@ export async function getEmployeeLeaveLedgerReport(token: string) {
 export async function getLoneReport(
   fromDate: string,
   toDate: string,
+  tenantId: number,
   token: string
 ) {
   return fetchApi<GetLoneReportType[]>({
-    url: `api/reports/lone-report?fromDate=${fromDate}&toDate=${toDate}`,
+    url: `api/reports/lone-report?fromDate=${fromDate}&toDate=${toDate}&tenantId=${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -2036,9 +2040,9 @@ export async function getEmployeeAttendanceSummary(token: string) {
 }
 
 // attendance policy
-export async function getAllAttendancePolicies(token: string) {
+export async function getAllAttendancePolicies(tenantId: number, token: string) {
   return fetchApi<GetAttendancePolicyType[]>({
-    url: 'api/attendancePolicies/getAll',
+    url: `api/attendancePolicies/getAll/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -2101,9 +2105,9 @@ export async function deleteAttendancePolicy(id: number, token: string) {
 }
 
 // shift allocations
-export async function getAllShiftAllocations(token: string) {
+export async function getAllShiftAllocations(tenantId: number, token: string) {
   return fetchApi<GetShiftAllocationType[]>({
-    url: 'api/shiftAllocation/getAll',
+    url: `api/shiftAllocation/getAll/${tenantId}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -2245,9 +2249,9 @@ export async function copyAllActiveShiftAllocations(
 
 // api/attendance.api.ts
 
-export async function getDailyAttendanceReport(date: string, token: string) {
+export async function getDailyAttendanceReport(date: string, tenantId: number, token: string) {
   return fetchApi<DailyAttendanceType[]>({
-    url: `api/reports/daily-attendance?date=${date}`,
+    url: `api/reports/daily-attendance?date=${date}&tenantId=${tenantId}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
@@ -2256,19 +2260,20 @@ export async function getDailyAttendanceReport(date: string, token: string) {
 export async function getAttendanceSummaryReport(
   fromDate: string,
   toDate: string,
+  tenantId: number,
   token: string
 ) {
   return fetchApi<AttendanceSummaryType[]>({
-    url: `api/reports/attendance-summary?fromDate=${fromDate}&toDate=${toDate}`,
+    url: `api/reports/attendance-summary?fromDate=${fromDate}&toDate=${toDate}&tenantId=${tenantId}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
 }
 
 // ── Holiday Calendars ──
-export async function getAllHolidayCalendars(token: string) {
+export async function getAllHolidayCalendars(tenantId: number, token: string) {
   return fetchApi<GetHolidayCalendarType[]>({
-    url: 'api/holidayCalendar/getAll',
+    url: `api/holidayCalendar/getAll/${tenantId}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
@@ -2316,9 +2321,9 @@ export async function getCalendarWithHolidays(id: number, token: string) {
 }
 
 // ── New Holidays ──
-export async function getAllNewHolidays(token: string) {
+export async function getAllNewHolidays(tenantId: number, token: string) {
   return fetchApi<GetNewHolidayType[]>({
-    url: `api/holidays/getAll`,
+    url: `api/holidays/getAll/${tenantId}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })
@@ -2419,9 +2424,9 @@ export async function getAttendanceAuditLogs(
 }
 
 // ── Attendance Daily (manual entry) ──
-export async function getAllAttendanceDaily(token: string) {
+export async function getAllAttendanceDaily(tenantId: number, token: string) {
   return fetchApi<GetAttendanceDailyType[]>({
-    url: 'api/attendanceDaily/getAll',
+    url: `api/attendanceDaily/getAll/${tenantId}`,
     method: 'GET',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
   })

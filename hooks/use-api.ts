@@ -1,4 +1,4 @@
-import { tokenAtom, useInitializeUser } from '@/utils/user'
+import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
@@ -263,15 +263,16 @@ export const useGetRoles = () => {
 //customers
 export const useGetCustomers = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['customers'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllCustomers(token)
+      return getAllCustomers(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -417,15 +418,16 @@ export const useDeleteCustomer = ({
 //business units
 export const useGetBusinessUnits = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['business-units'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllBusinessUnits(token)
+      return getAllBusinessUnits(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -571,15 +573,16 @@ export const useDeleteBusinessUnit = ({
 //tenants
 export const useGetTenants = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['tenants'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllTenants(token)
+      return getAllTenants(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -725,15 +728,16 @@ export const useDeleteTenant = ({
 //departments
 export const useGetDepartments = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['departments'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllDepartments(token)
+      return getAllDepartments(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -879,15 +883,17 @@ export const useDeleteDepartment = ({
 // Companies Hooks
 export const useGetCompanies = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
+
   useInitializeUser()
 
   return useQuery({
     queryKey: ['companies'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllCompanies(token)
+      return getAllCompanies(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1027,15 +1033,16 @@ export const useDeleteCompany = ({
 // Work Stations Hooks
 export const useGetWorkStations = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['workstations'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllWorkStations(token)
+      return getAllWorkStations(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1181,15 +1188,16 @@ export const useDeleteWorkStation = ({
 // Divisions Hooks
 export const useGetDivisions = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['divisions'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllDivisions(token)
+      return getAllDivisions(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1335,15 +1343,16 @@ export const useDeleteDivision = ({
 // Cost Centers Hooks
 export const useGetCostCenters = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['costcenters'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllCostCenters(token)
+      return getAllCostCenters(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1489,15 +1498,16 @@ export const useDeleteCostCenter = ({
 //designation
 export const useGetDesignations = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['designations'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllDesignations(token)
+      return getAllDesignations(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1643,15 +1653,16 @@ export const useDeleteDesignation = ({
 //employee type
 export const useGetEmploymentTypes = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employmentTypes'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmploymentTypes(token)
+      return getAllEmploymentTypes(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1821,15 +1832,16 @@ export const useGetWeekDays = () => {
 //shift weekDays
 export const useGetShiftDayAndWeekDays = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['shift'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllShiftDayAndWeekDays(token)
+      return getAllShiftDayAndWeekDays(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -1975,13 +1987,16 @@ export const useDeleteShiftDayAndWeekDays = ({
 // employee-preboarding
 export const useGetAllEmployeePreboardings = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeePreboardings'],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllEmployeePreboardings(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllEmployeePreboardings(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -2181,15 +2196,16 @@ export const useCompleteEmployeePreboardingChecklist = ({
 //checklists
 export const useGetChecklists = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['checklists'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllChecklists(token)
+      return getAllChecklists(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -2569,15 +2585,16 @@ export const useAddEmployee = ({
 
 export const useGetAllEmployees = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employees'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployees(token)
+      return getAllEmployees(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -2753,15 +2770,16 @@ export const useAssignLeaveType = ({
 //holidays
 export const useGetHolidays = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['holidays'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllHolidays(token)
+      return getAllHolidays(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -2907,15 +2925,16 @@ export const useDeleteHoliday = ({
 //leave type
 export const useGetLeaveTypes = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['leaveTypes'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllLeaveTypes(token)
+      return getAllLeaveTypes(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -3061,15 +3080,16 @@ export const useDeleteLeaveType = ({
 //leave policy
 export const useGetLeavePolicies = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['leavePolicy'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllLeavePolicies(token)
+      return getAllLeavePolicies(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -3214,15 +3234,16 @@ export const useDeleteLeavePolicys = ({
 
 export const useGetSalaryStructures = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['salaryStructure'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllSalaryStructures(token)
+      return getAllSalaryStructures(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -3384,15 +3405,16 @@ export const useDeleteSalaryStructures = ({
 //employee leave assignment
 export const useGetEmployeeLeaveAssignments = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeLeaveAssignments'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployeeLeaveAssignments(token)
+      return getAllEmployeeLeaveAssignments(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -3562,17 +3584,17 @@ export const useDeleteEmployeeLeaveAssignment = ({
 //employee leave apply
 export const useGetEmployeeLeaveApplications = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
 
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeLeaveApplications'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-
-      return getAllEmployeeLeaveApplications(token)
+      return getAllEmployeeLeaveApplications(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -3863,15 +3885,16 @@ export const useGetLeaveApplyNoOfDays = ({
 //asset category
 export const useGetAllAssetCategories = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['assetCategories'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllAssetCategories(token)
+      return getAllAssetCategories(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4028,15 +4051,16 @@ export const useDeleteAssetCategory = ({
 
 export const useGetAllAssets = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['assets'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllAssets(token)
+      return getAllAssets(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4258,15 +4282,16 @@ export const useAssignAsset = ({
 //employee attendances
 export const useGetEmployeeAttendances = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeAttendances'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployeeAttendances(token)
+      return getAllEmployeeAttendances(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4422,15 +4447,16 @@ export const useDeleteEmployeeAttendance = ({
 //salary components
 export const useGetSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['salaryComponents'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllSalaryComponents(token)
+      return getAllSalaryComponents(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4582,15 +4608,16 @@ export const useDeleteSalaryComponent = ({
 //employee other salary components
 export const useGetEmployeeSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeSalaryComponents'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+     if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployeeSalaryComponents(token)
+      return getAllEmployeeSalaryComponents(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4748,15 +4775,16 @@ export const useDeleteEmployeeSalaryComponent = ({
 //salary
 export const useGetSalaries = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['salaries'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllSalaries(token)
+      return getAllSalaries(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -4902,15 +4930,16 @@ export const useDeleteSalary = ({
 //lones
 export const useGetLones = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['lones'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllLones(token)
+      return getAllLones(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5127,15 +5156,16 @@ export const useDeleteLone = ({
 //employee leaves
 export const useGetEmployeeLeaves = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeLeaves'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployeeLeaves(token)
+      return getAllEmployeeLeaves(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5144,15 +5174,16 @@ export const useGetEmployeeLeaves = () => {
 
 export const useGetEmployeeLeaveTypes = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeLeaveTypes'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
-      return getAllEmployeeLeaveTypes(token)
+      return getAllEmployeeLeaveTypes(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5297,13 +5328,16 @@ export const useDeleteEmployeeLeave = ({
 //reports
 export const useGetEmployeeActivityReport = (employeeId: number) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['activityReport', employeeId],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getEmployeeActivityReport(employeeId, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getEmployeeActivityReport(employeeId, userData?.tenantId, token)
     },
     enabled: !!token && !!employeeId,
     select: (data) => data,
@@ -5312,13 +5346,16 @@ export const useGetEmployeeActivityReport = (employeeId: number) => {
 
 export const useGetSalaryReport = (salaryMonth: string, salaryYear: number) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['salaryReport', salaryMonth, salaryYear],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getSalaryReport(salaryMonth, salaryYear, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getSalaryReport(salaryMonth, salaryYear, userData?.tenantId, token)
     },
     enabled: !!token && salaryMonth.length > 0 && salaryYear > 0,
     select: (data) => data,
@@ -5327,13 +5364,16 @@ export const useGetSalaryReport = (salaryMonth: string, salaryYear: number) => {
 
 export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['attendanceReport', fromDate, toDate],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceReport(fromDate, toDate, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAttendanceReport(fromDate, toDate, userData?.tenantId, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
@@ -5342,17 +5382,17 @@ export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
 
 export const useGetLeaveBalanceSummaryReport = () => {
   const [token] = useAtom(tokenAtom)
-
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['leaveBalanceSummaryReport'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
 
-      return getLeaveBalanceSummaryReport(token)
+      return getLeaveBalanceSummaryReport(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5361,17 +5401,17 @@ export const useGetLeaveBalanceSummaryReport = () => {
 
 export const useGetEmployeeLeaveLedgerReport = () => {
   const [token] = useAtom(tokenAtom)
-
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['employeeLeaveLedgerReport'],
     queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
       }
 
-      return getEmployeeLeaveLedgerReport(token)
+      return getEmployeeLeaveLedgerReport(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5380,13 +5420,16 @@ export const useGetEmployeeLeaveLedgerReport = () => {
 
 export const useGetLoneReport = (fromDate: string, toDate: string) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['loneReport', fromDate, toDate],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getLoneReport(fromDate, toDate, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getLoneReport(fromDate, toDate, userData?.tenantId, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
@@ -5431,13 +5474,16 @@ export const useGetEmployeeAttendanceSummary = () => {
 // attendance policy
 export const useGetAttendancePolicies = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['attendancePolicies'],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendancePolicies(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllAttendancePolicies(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5588,13 +5634,16 @@ export const useDeleteAttendancePolicy = ({
 // shift allocations
 export const useGetShiftAllocations = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['shiftAllocations'],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllShiftAllocations(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllShiftAllocations(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
@@ -5898,12 +5947,15 @@ export const useGetEmployeeWeekDays = (userId: number) => {
 // hooks/use-api.ts
 export const useGetDailyAttendanceReport = (date: string) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
   return useQuery({
     queryKey: ['dailyAttendanceReport', date],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getDailyAttendanceReport(date, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getDailyAttendanceReport(date, userData?.tenantId, token)
     },
     enabled: !!token && date.length > 0,
   })
@@ -5914,12 +5966,15 @@ export const useGetAttendanceSummaryReport = (
   toDate: string
 ) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
   return useQuery({
     queryKey: ['attendanceSummaryReport', fromDate, toDate],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceSummaryReport(fromDate, toDate, token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAttendanceSummaryReport(fromDate, toDate, userData?.tenantId, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
   })
@@ -5928,12 +5983,15 @@ export const useGetAttendanceSummaryReport = (
 // ── Holiday Calendars ──
 export const useGetHolidayCalendars = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
   return useQuery({
     queryKey: ['holidayCalendars'],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllHolidayCalendars(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllHolidayCalendars(userData?.tenantId, token)
     },
     enabled: !!token,
   })
@@ -6050,12 +6108,15 @@ export const useDeleteHolidayCalendar = ({
 // ── New Holidays ──
 export const useGetNewHolidays = (calendarId: number) => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
   return useQuery({
     queryKey: ['newHolidays', calendarId],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllNewHolidays(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllNewHolidays(userData?.tenantId, token)
     },
     enabled: !!token,
   })
@@ -6261,13 +6322,16 @@ export const useGetAttendanceAuditLogs = (params: {
 // ── Attendance Daily (manual entry) ──
 export const useGetAllAttendanceDaily = () => {
   const [token] = useAtom(tokenAtom)
+  const [userData] = useAtom(userDataAtom)
   useInitializeUser()
 
   return useQuery({
     queryKey: ['attendanceDaily'],
     queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendanceDaily(token)
+      if (!token || !userData?.tenantId) {
+        throw new Error('Token or tenantId not found')
+      }
+      return getAllAttendanceDaily(userData?.tenantId, token)
     },
     enabled: !!token,
     select: (data) => data,
