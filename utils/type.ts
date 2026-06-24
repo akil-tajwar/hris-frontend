@@ -41,7 +41,6 @@ export type User = z.infer<typeof UserSchema>
 export const SignInResponseSchema = z.object({
   token: z.string(),
   user: UserSchema,
-  userCompanies: z.array(z.number()),
 })
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>

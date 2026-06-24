@@ -58,12 +58,11 @@ export function DashboardSidebar() {
       href: '/dashboard/setup',
       roles: [1, 2],
       subItems: [
-        { title: 'Tenants', href: '/dashboard/setup/tenants' },
+        { title: 'Companies', href: '/dashboard/setup/company' },
         { title: 'Customers', href: '/dashboard/setup/customers' },
         { title: 'Register User', href: '/dashboard/setup/register-user' },
         { title: 'Departments', href: '/dashboard/setup/departments' },
         { title: 'Designations', href: '/dashboard/setup/designations' },
-        { title: 'Companies', href: '/dashboard/setup/company' },
         { title: 'Business Units', href: '/dashboard/setup/business-units' },
         { title: 'Divisions', href: '/dashboard/setup/divisions' },
         { title: 'Work Stations', href: '/dashboard/setup/work-stations' },

@@ -28,7 +28,6 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
   useGetRoles,
-  useGetTenants,
   useGetEmployeePreboardingById,
   useGetLeavePolicies,
   useGetSalaryStructures,
@@ -39,7 +38,6 @@ import ExcelFileInput from '@/utils/excel-file-input'
 import { Popup } from '@/utils/popup'
 import { saveAs } from 'file-saver'
 import { GetLeavePolicyType, GetSalaryStructureType } from '@/utils/type'
-import { MultiSelect } from '@/components/ui/multi-select'
 
 // ── Static column definitions ─────────────────────────────────────────────────
 const STATIC_COLUMNS = [
@@ -161,7 +159,6 @@ type UserFormData = {
   email: string
   roleId: number
   tenantId: number
-  userCompanies: number[]
   active: boolean
 }
 
@@ -278,7 +275,6 @@ const CreateEmployee = () => {
     email: '',
     roleId: 0,
     tenantId: 0,
-    userCompanies: [],
     active: true,
   })
 
@@ -412,7 +408,6 @@ const CreateEmployee = () => {
       email: '',
       roleId: 0,
       tenantId: 0,
-      userCompanies: [],
       active: true,
     })
     setEmployeePhotoFile(null)
@@ -479,8 +474,6 @@ const CreateEmployee = () => {
       return setError('Passwords do not match')
     if (!userFormData.roleId || userFormData.roleId <= 0)
       return setError('Please select a role')
-    if (!userFormData.userCompanies.length)
-      return setError('Please select at least one company')
 
     const form = new FormData()
     form.append(
@@ -505,7 +498,6 @@ const CreateEmployee = () => {
         roleId: userFormData.roleId,
         tenantId: userFormData.tenantId,
         email: userFormData.email,
-        userCompanies: userFormData.userCompanies
       })
     )
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
@@ -1841,23 +1833,6 @@ const CreateEmployee = () => {
                   }))
                 }
                 placeholder="Select role"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>
-                Companies <span className="text-red-500">*</span>
-              </Label>
-              <MultiSelect
-                options={userCompanyOptions}
-                selected={userFormData.userCompanies.map(String)}
-                onChange={(values) =>
-                  setUserFormData((prev) => ({
-                    ...prev,
-                    userCompanies: values.map(Number),
-                  }))
-                }
-                placeholder="Select companies"
-                className="w-full"
               />
             </div>
             <div className="space-y-2">

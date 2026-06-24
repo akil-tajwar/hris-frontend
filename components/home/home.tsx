@@ -7,14 +7,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { EyeIcon, EyeOffIcon, Lock, LockIcon, Mail, MailIcon } from 'lucide-react'
+import {
+  EyeIcon,
+  EyeOffIcon,
+  Lock,
+  LockIcon,
+  Mail,
+  MailIcon,
+} from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { signIn } from '@/utils/api'
-import { useAddTenant } from '@/hooks/use-api'
+import { useAddTenant, useGetCompanies } from '@/hooks/use-api'
+import { Popup } from '@/utils/popup'
 
 type Tab = 'signin' | 'register'
 
 export default function Home() {
+  const { data: companies } = useGetCompanies()
   const [activeTab, setActiveTab] = useState<Tab>('signin')
   const router = useRouter()
 
@@ -34,6 +43,7 @@ export default function Home() {
   const [showRegPassword, setShowRegPassword] = useState(false)
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false)
   const [registerError, setRegisterError] = useState('')
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false)
 
   const reset = useCallback(() => {
     setRegUsername('')
@@ -72,18 +82,24 @@ export default function Home() {
         localStorage.setItem('authToken', response.data.token)
 
         const { userId, roleId, tenantId } = response.data.user
-        const userCompanies = response.data.userCompanies
 
         localStorage.setItem(
           'currentUser',
           JSON.stringify({ userId, roleId, tenantId })
         )
-        localStorage.setItem('userCompanies', JSON.stringify(userCompanies))
 
-        if (roleId == 1 || roleId == 2) {
-          router.push('/dashboard/dashboard-overview')
-        } else if (roleId == 4) {
+        const hasCompany = companies?.data?.some(
+          (c: any) => c.tenantId === tenantId
+        )
+
+        if (roleId == 4) {
           router.push('/dashboard/leave-management/leave-apply')
+        } else if (roleId == 1 || roleId == 2) {
+          if (!hasCompany) {
+            setShowWelcomePopup(true)
+          } else {
+            router.push('/dashboard/dashboard-overview')
+          }
         }
 
         toast({ title: 'Success', description: 'You are signed in' })
@@ -406,6 +422,44 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <Popup
+        isOpen={showWelcomePopup}
+        onClose={() => {
+          setShowWelcomePopup(false)
+          router.push('/dashboard/dashboard-overview')
+        }}
+        title="Welcome to HRIS Software 👋"
+        size={'w-3xl'}
+      >
+        <div className="py-4 space-y-4">
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Your account is all set up! To get started, please create at least
+            one company for your organization. Everything in the system —
+            employees, payroll, leaves — is tied to a company.
+          </p>
+          <div className="flex gap-3 justify-end pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowWelcomePopup(false)
+                router.push('/dashboard/dashboard-overview')
+              }}
+            >
+              Skip for now
+            </Button>
+            <Button
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+              onClick={() => {
+                setShowWelcomePopup(false)
+                router.push('/dashboard/setup/company')
+              }}
+            >
+              Create Company
+            </Button>
+          </div>
+        </div>
+      </Popup>
     </div>
   )
 }
