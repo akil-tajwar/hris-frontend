@@ -239,6 +239,7 @@ import {
   UpdateAttendanceDailyType,
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveApply,
+  GetTenantType,
 } from '@/utils/type'
 
 //roles
@@ -646,7 +647,7 @@ export const useUpdateTenant = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateTenantType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetTenantType }) => {
       return editTenant(id, data, token)
     },
     onSuccess: () => {

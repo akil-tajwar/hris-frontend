@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 //auth + authorization + user management
 export const SignInRequestSchema = z.object({
-  username: z.string().min(1),
+  email: z.string().min(1),
   password: z.string().min(1),
 })
 
@@ -57,7 +57,6 @@ export const RegisterUserResponseSchema = z.object({
     }),
   }),
 })
-
 export type RegisterUserResponse = z.infer<typeof RegisterUserResponseSchema>
 
 export const RegisterUserSchema = z.object({
@@ -69,7 +68,6 @@ export const RegisterUserSchema = z.object({
   tenantId: z.number(),
   isPasswordResetRequired: z.boolean().default(false),
 })
-
 export type RegisterUserRequest = z.infer<typeof RegisterUserSchema>
 
 //customer
@@ -98,7 +96,11 @@ export const tenantSchema = z.object({
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().nullable().optional(),
 })
-export type CreateTenantType = z.infer<typeof tenantSchema>
+export const createTenantSchema = z.object({
+  tenantData: tenantSchema,
+  userData: RegisterUserSchema
+})
+export type CreateTenantType = z.infer<typeof createTenantSchema>
 export type GetTenantType = z.infer<typeof tenantSchema>
 
 export const businessUnitSchema = z.object({
