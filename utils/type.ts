@@ -77,6 +77,7 @@ export const CustomerSchema = z.object({
   phone: z.string().max(50).optional().nullable(),
   address: z.string().optional().nullable(),
   companyId: z.number().int(),
+  tenantId: z.number(),
   createdBy: z.number().int(),
   createdAt: z.date().optional(),
   updatedBy: z.number().int().optional().nullable(),
@@ -109,6 +110,7 @@ export const businessUnitSchema = z.object({
   unitCode: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   headEmployeeId: z.number().nullable().optional(),
+  tenantId: z.number(),
   status: z.boolean().default(true),
   createdBy: z.number(),
   createdAt: z.date().nullable().optional(),
@@ -133,6 +135,7 @@ export const departmentSchema = z.object({
   parentDepartmentId: z.number().nullable().optional(),
   costCenterId: z.number().nullable().optional(),
   headEmployeeId: z.number().nullable().optional(),
+  tenantId: z.number(),
   status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -156,6 +159,7 @@ export const designationSchema = z.object({
   jobLevel: z.number().nullable().optional(),
   description: z.string().nullable().optional(),
   status: z.boolean().default(true).optional(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -194,6 +198,7 @@ export const workStationSchema = z.object({
   workStationId: z.number().optional(),
   workStationName: z.string(),
   workStationNumber: z.number(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -210,6 +215,7 @@ export const divisionSchema = z.object({
   description: z.string().nullable().optional(),
   businessUnitId: z.number().nullable().optional(),
   headEmployeeId: z.number().nullable().optional(),
+  tenantId: z.number(),
   status: z.boolean().default(true).optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -229,6 +235,7 @@ export type GetDivisionType = z.infer<typeof divisionSchema> & {
 export const employmentTypeSchema = z.object({
   employmentTypeId: z.number().optional(),
   employmentTypeName: z.string(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -241,6 +248,7 @@ export type GetEmploymentTypeType = z.infer<typeof employmentTypeSchema>
 export const costCenterSchema = z.object({
   costCenterId: z.number().optional(),
   costCenterName: z.string(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -264,6 +272,7 @@ export const employeePreboardingSchema = z.object({
   reportingAuthorityId: z.number(),
   employmentTypeId: z.number(),
   salaryStructureMasterId: z.number(),
+  tenantId: z.number(),
   offeredSalary: z.number(),
   probationMonths: z.number(),
   isConfirmed: z.boolean().default(false),
@@ -296,6 +305,7 @@ export const ChecklistSchema = z.object({
     heading: z.string().optional(),
     responsibleEmployeeId: z.number().optional(),
     responsibleEmployeeName: z.string().optional().nullable(), // only for get
+    tenantId: z.number(),
     userId: z.number().optional(), // only for get
     createdBy: z.number(),
     createdAt: z.coerce.date(),
@@ -309,6 +319,7 @@ export const ChecklistSchema = z.object({
       checklistMasterId: z.number().nullable(),
       responsibleEmployeeId: z.number(),
       responsibleEmployeeName: z.string().optional().nullable(), // only for get
+      tenantId: z.number(),
       createdBy: z.number(),
       createdAt: z.coerce.date(),
       updatedBy: z.number().optional().nullable(),
@@ -325,6 +336,7 @@ export const EmployeePreboardingChecklistSchema = z.object({
   preboardingId: z.number(),
   checklistDetailsId: z.number(),
   responsibleEmployeeId: z.number(),
+  tenantId: z.number(),
   completionDate: z.coerce.date().nullable().optional(),
   isComplete: z.boolean().default(false),
   status: z.boolean(),
@@ -347,6 +359,7 @@ export type GetEmployeePreboardingChecklistType = z.infer<
 export const notificationSchema = z.object({
   notificationId: z.number().optional(),
   employeeId: z.number(),
+  tenantId: z.number(),
   notification: z.string().max(255),
   isRead: z.boolean().default(false),
   createdAt: z.date().optional(),
@@ -451,6 +464,7 @@ export const employeeSchema = z.object({
   // For creating employee with leave types
   leavePolicyMasterId: z.number().int(),
   salaryStructureMasterId: z.number().int(),
+  tenantId: z.number(),
   preboardingId: z.number().optional(), //for just updating preboarding data
 
   // Audit Fields
@@ -596,6 +610,7 @@ export const ShiftsSchema = z.object({
     shiftId: z.number().optional(),
     companyId: z.number(),
     companyName: z.string().optional(), // only for get
+    tenantId: z.number(),
     shiftName: z.string(),
     shiftCode: z.string(),
     shiftType: z.enum(['Fixed', 'Flexible', 'Rotational']),
@@ -623,6 +638,7 @@ export const ShiftsSchema = z.object({
       breakMinutes: z.number().optional(),
       expectedWorkHours: z.number().optional(),
       minimumHoursForPresent: z.number().optional(),
+      tenantId: z.number(),
     })
   ),
 })
@@ -638,6 +654,7 @@ export const holidaySchema = z.object({
   endDate: z.string(),
   noOfDays: z.number(),
   description: z.string().optional().nullable(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -650,6 +667,7 @@ export type GetHolidayType = z.infer<typeof holidaySchema>
 export const leaveTypeSchema = z.object({
   leaveTypeId: z.number().optional(),
   companyId: z.number(),
+  tenantId: z.number(),
   code: z.string().min(1).max(20),
   name: z.string().min(1).max(100),
   category: z.enum(['Paid', 'Unpaid', 'Special']),
@@ -686,6 +704,7 @@ export const employeeLeaveTypeSchema = z.object({
   employeeLeaveTypeId: z.number().optional(),
   employeeId: z.number(),
   leaveTypeId: z.number(),
+  tenantId: z.number(),
 })
 export type GetEmployeeLeaveTypeType = z.infer<
   typeof employeeLeaveTypeSchema
@@ -703,6 +722,7 @@ export const LeavePolicySchema = z.object({
     leavePolicyMasterId: z.number().optional().nullable(),
     companyId: z.number(),
     companyName: z.string().optional(), // only for get
+    tenantId: z.number(),
     policyName: z.string(),
     effectiveFrom: z.coerce.date(),
     effectiveTo: z.coerce.date().optional().nullable(),
@@ -718,6 +738,7 @@ export const LeavePolicySchema = z.object({
       leavePolicyDetailsId: z.number().optional(),
       leavePolicyMasterId: z.number().nullable().optional(),
       leaveTypeId: z.number(),
+      tenantId: z.number(),
       leaveTypeName: z.string().optional(), // only for get
       yearlyAllocation: z.number(),
       accrualFrequency: z.enum(['Monthly', 'Quarterly', 'Yearly']),
@@ -738,6 +759,7 @@ export type CreateLeavePolicyType = z.infer<typeof LeavePolicySchema>
 export const EmployeeLeaveAssignmentSchema = z.object({
   employeeLeaveAssignmentId: z.number().optional(),
   employeeId: z.number(),
+  tenantId: z.number(),
   leavePolicyMasterId: z.number(),
   effectiveFrom: z.coerce.date(),
   effectiveTo: z.coerce.date().optional().nullable(),
@@ -763,6 +785,7 @@ export type GetEmployeeLeaveAssignmentType = z.infer<
 export const employeeLeaveApplySchema = z.object({
   employeeLeaveApplyId: z.number(),
   employeeId: z.number(),
+  tenantId: z.number(),
   leaveTypeId: z.number(),
   effectiveFrom: z.date(),
   effectiveTo: z.date().nullable(),
@@ -785,6 +808,7 @@ export type GetEmployeeLeaveApply = z.infer<typeof employeeLeaveApplySchema> & {
 export const employeeAttendanceSchema = z.object({
   employeeAttendanceId: z.number().optional(),
   employeeId: z.number(),
+  tenantId: z.number(),
   attendanceDate: z.string(),
   inTime: z.string().optional(),
   outTime: z.string().optional(),
@@ -814,6 +838,7 @@ export const assignLeaveTypeSchema = z.object({
   employeeLeaveTypeId: z.number().optional(),
   employeeId: z.number(),
   leaveTypeIds: z.array(z.number()).min(1),
+  tenantId: z.number(),
 })
 export type AssignLeaveTypeType = z.infer<typeof assignLeaveTypeSchema>
 
@@ -830,6 +855,7 @@ export const salaryComponentSchema = z.object({
   affectGross: z.boolean().default(false),
   affectNet: z.boolean().default(false),
   sequenceNo: z.number(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
@@ -845,6 +871,7 @@ export const SalaryStructureSchema = z.object({
     structureCode: z.string().optional().nullable(),
     companyId: z.number(),
     companyName: z.string().optional(), // only for get
+    tenantId: z.number(),
     structureType: z.enum(['Earning', 'Deduction']),
     effectiveFrom: z.coerce.date(),
     effectiveTo: z.coerce.date().optional().nullable(),
@@ -860,6 +887,7 @@ export const SalaryStructureSchema = z.object({
       salaryStructureMasterId: z.number().optional().nullable(),
       salaryComponentId: z.number(),
       salaryComponentName: z.string().optional(), // only for get
+      tenantId: z.number(),
       amount: z.number(),
       percentage: z.number().optional().nullable(),
       formulaExpression: z.string().optional().nullable(),
@@ -885,6 +913,7 @@ export const salarySchema = z.object({
     departmentName: z.string().optional(), //only for get
     designationId: z.number(),
     designationName: z.string().optional(), //only for get
+    tenantId: z.number(),
     basicSalary: z.number(),
     grossSalary: z.number(),
     netSalary: z.number(),
@@ -902,6 +931,7 @@ export const salarySchema = z.object({
       salaryComponentId: z.number(),
       componentName: z.string().optional(), //only for get
       componentType: z.enum(['Allowance', 'Deduction']).optional(), //only for get
+      tenantId: z.number(),
       salaryMonth: z.string(),
       salaryYear: z.number(),
       amount: z.number(),
@@ -918,6 +948,7 @@ export const createSalarySchema = z.object({
   salaryMonth: z.string(),
   salaryYear: z.number(),
   employeeId: z.number(),
+  tenantId: z.number(),
   departmentId: z.number(),
   designationId: z.number(),
   basicSalary: z.number(),
@@ -936,6 +967,7 @@ export const employeeSalaryComponentSchema = z.object({
   employeeId: z.number(),
   salaryComponentId: z.number(),
   employeeLoneId: z.number().optional().nullable(),
+  tenantId: z.number(),
   salaryMonth: z.string(),
   salaryYear: z.number(),
   amount: z.number(),
@@ -966,6 +998,7 @@ export type GetEmployeeSalaryComponentType = z.infer<
 export const assetCategorySchema = z.object({
   assetCategoryId: z.number().optional(),
   categoryName: z.string(),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date(),
   updatedBy: z.number().nullable(),
@@ -989,6 +1022,7 @@ export const assetsSchema = z.object({
     'LOST',
     'SCRAPPED',
   ]),
+  tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date(),
   updatedBy: z.number().nullable(),
@@ -1003,6 +1037,7 @@ export const assetTransactionsSchema = z.object({
   assetTransactionId: z.number().optional(),
   assetId: z.number(),
   employeeId: z.number(),
+  tenantId: z.number(),
   transactionType: z.enum([
     'ISSUE',
     'RETURN',
@@ -1027,6 +1062,7 @@ export const employeeLonesSchema = z.object({
   employeeLoneName: z.string().min(1),
   loneDate: z.string().min(1),
   employeeId: z.number(),
+  tenantId: z.number(),
   amount: z.number(),
   perMonth: z.number(),
   description: z.string().optional(),
@@ -1050,6 +1086,7 @@ export const employeeLeaveSchema = z.object({
   endDate: z.string().min(1),
   noOfDays: z.number().int().positive(),
   leaveTypeId: z.number(),
+  tenantId: z.number(),
   description: z.string().optional(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -1172,6 +1209,7 @@ export type GetAttendancePolicyType = {
   holidayCalendarId?: number | null
   holidayCalendarName?: string | null
   holidayCalendarYear?: number | null
+  tenantId: number
   createdBy: number
   createdAt: string | null
   updatedBy: number | null
@@ -1197,48 +1235,10 @@ export type CreateAttendancePolicyType = {
   isActive?: boolean
   // ✅ NEW
   holidayCalendarId?: number | null
+  tenantId: number
   createdBy: number
   weekDayIds?: number[]
 }
-// export type GetAttendancePolicyType = {
-//   id: number
-//   code: string
-//   name: string
-//   graceMinutes: number | null
-//   lateAfterMinutes: number | null
-//   halfDayAfterMinutes: number | null
-//   absentAfterMinutes: number | null
-//   allowOvertime: boolean | null
-//   overtimeAfterMinutes: number | null
-//   maxOvertimeMinutes: number | null
-//   allowCompOff: boolean | null
-//   isActive: boolean | null
-//   createdBy: number
-//   createdAt: string | null
-//   updatedBy: number | null
-//   updatedAt: string | null
-//   weekends: {
-//     id: number
-//     weekDayId: number
-//     day: string | null
-//   }[]
-// }
-
-// export type CreateAttendancePolicyType = {
-//   code: string
-//   name: string
-//   graceMinutes?: number
-//   lateAfterMinutes?: number
-//   halfDayAfterMinutes?: number
-//   absentAfterMinutes?: number
-//   allowOvertime?: boolean
-//   overtimeAfterMinutes?: number
-//   maxOvertimeMinutes?: number
-//   allowCompOff?: boolean
-//   isActive?: boolean
-//   createdBy: number
-//   weekDayIds?: number[]
-// }
 
 // Shift Allocation Types
 export type GetShiftAllocationType = {
@@ -1251,6 +1251,7 @@ export type GetShiftAllocationType = {
   effectiveTo: string | null
   remarks: string | null
   approvedBy: number | null
+  tenantId: number
   createdBy: number
   createdAt: string | null
   recurrenceType: 'weekly' | 'monthly' | null
@@ -1269,6 +1270,7 @@ export type CreateShiftAllocationType = {
   effectiveTo?: string
   remarks?: string
   approvedBy?: number
+  tenantId: number
   createdBy: number
 }
 
@@ -1279,6 +1281,7 @@ export type CreateBulkShiftAllocationType = {
   effectiveTo?: string
   remarks?: string
   approvedBy?: number
+  tenatnId: number
   createdBy: number
 }
 
@@ -1317,6 +1320,7 @@ export type CreateHolidayCalendarType = {
   year: number
   name?: string
   isActive?: boolean
+  tenantId: number
 }
 export type GetHolidayCalendarType = {
   id: number
@@ -1324,6 +1328,7 @@ export type GetHolidayCalendarType = {
   year: number
   name?: string | null
   isActive?: boolean | null
+  tenantId: number
   createdAt?: string | null
 }
 
@@ -1337,6 +1342,7 @@ export type CreateNewHolidayType = {
   isRecurring?: boolean
   isOptional?: boolean
   description?: string
+  tenantId: number
 }
 export type GetNewHolidayType = {
   id: number
@@ -1347,6 +1353,7 @@ export type GetNewHolidayType = {
   isRecurring?: boolean | null
   isOptional?: boolean | null
   description?: string | null
+  tenantId: number
   createdAt?: string | null
 }
 

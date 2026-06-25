@@ -73,6 +73,7 @@ const AssetCategories = () => {
       categoryName: '',
       createdBy: userData?.userId || 0,
       createdAt: new Date(),
+      tenantId: userData?.tenantId || 0,
       updatedBy: null,
       updatedAt: null,
     }),
@@ -180,6 +181,7 @@ const AssetCategories = () => {
   const handleEditClick = (cat: GetAssetCategoryType) => {
     setFormData({
       categoryName: cat.categoryName,
+      tenantId: cat.tenantId,
       createdBy: cat.createdBy,
       createdAt: cat.createdAt,
       updatedBy: cat.updatedBy,
