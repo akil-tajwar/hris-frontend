@@ -16,14 +16,15 @@ import {
   MailIcon,
 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { signIn } from '@/utils/api'
+import { getAllCompanies, signIn } from '@/utils/api'
 import { useAddTenant, useGetCompanies } from '@/hooks/use-api'
 import { Popup } from '@/utils/popup'
 
 type Tab = 'signin' | 'register'
 
 export default function Home() {
-  const { data: companies } = useGetCompanies()
+  const { data: companies, refetch: refetchCompanies } = useGetCompanies()
+  console.log('🚀 ~ Home ~ companies:', companies)
   const [activeTab, setActiveTab] = useState<Tab>('signin')
   const router = useRouter()
 
@@ -79,10 +80,10 @@ export default function Home() {
           description: response.error?.message || 'Failed to sign in',
         })
       } else {
-        localStorage.setItem('authToken', response.data.token)
-
         const { userId, roleId, tenantId } = response.data.user
+        const token = response.data.token
 
+        localStorage.setItem('authToken', token)
         localStorage.setItem(
           'currentUser',
           JSON.stringify({ userId, roleId, tenantId })
@@ -101,6 +102,18 @@ export default function Home() {
             router.push('/dashboard/dashboard-overview')
           }
         }
+
+        // if (response.data.token) {
+        //   if (hasCompany) {
+        //     if (roleId == 4) {
+        //       router.push('/dashboard/leave-management/leave-apply')
+        //     } else if (roleId == 1 || roleId == 2) {
+        //       // router.push('/dashboard/dashboard-overview')
+        //     }
+        //   } else {
+        //     setShowWelcomePopup(true)
+        //   }
+        // }
 
         toast({ title: 'Success', description: 'You are signed in' })
       }
