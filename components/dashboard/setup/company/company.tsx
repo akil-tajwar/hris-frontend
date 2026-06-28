@@ -277,6 +277,12 @@ const Companies = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
+  useEffect(() => {
+    if (companies?.data && companies.data.length === 0) {
+      setIsPopupOpen(true)
+    }
+  }, [companies?.data])
+
   const handleEditClick = (company: any) => {
     setFormData({
       tenantId: company.tenantId,

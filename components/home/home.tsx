@@ -89,9 +89,13 @@ export default function Home() {
           JSON.stringify({ userId, roleId, tenantId })
         )
 
-        const hasCompany = companies?.data?.some(
-          (c: any) => c.tenantId === tenantId
-        )
+        const companyResponse = await getAllCompanies(`Bearer ${token}`)
+
+        console.log(companyResponse)
+
+        const hasCompany =
+          Array.isArray(companyResponse.data) &&
+          companyResponse.data.some((c: any) => c.tenantId === tenantId)
 
         if (roleId == 4) {
           router.push('/dashboard/leave-management/leave-apply')
@@ -102,18 +106,6 @@ export default function Home() {
             router.push('/dashboard/dashboard-overview')
           }
         }
-
-        // if (response.data.token) {
-        //   if (hasCompany) {
-        //     if (roleId == 4) {
-        //       router.push('/dashboard/leave-management/leave-apply')
-        //     } else if (roleId == 1 || roleId == 2) {
-        //       // router.push('/dashboard/dashboard-overview')
-        //     }
-        //   } else {
-        //     setShowWelcomePopup(true)
-        //   }
-        // }
 
         toast({ title: 'Success', description: 'You are signed in' })
       }
