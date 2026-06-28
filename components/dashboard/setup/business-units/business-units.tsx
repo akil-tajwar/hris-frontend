@@ -55,6 +55,7 @@ const BusinessUnits = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: businessUnits } = useGetBusinessUnits()
+  console.log("🚀 ~ BusinessUnits ~ businessUnits:", businessUnits)
   const { data: employees } = useGetAllEmployees()
   const { data: companies } = useGetCompanies()
 

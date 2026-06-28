@@ -27,6 +27,7 @@ const LeaveBalanceSummaryReport = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
 
   const { data: reportData } = useGetLeaveBalanceSummaryReport()
+  console.log("🚀 ~ LeaveBalanceSummaryReport ~ useGetLeaveBalanceSummaryReport:", useGetLeaveBalanceSummaryReport)
   const { data: employeesData } = useGetAllEmployees()
 
   const employees = useMemo(() => employeesData?.data || [], [employeesData])

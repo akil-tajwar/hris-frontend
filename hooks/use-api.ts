@@ -239,6 +239,7 @@ import {
   UpdateAttendanceDailyType,
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveApply,
+  GetTenantType,
 } from '@/utils/type'
 
 //roles
@@ -391,9 +392,9 @@ export const useDeleteCustomer = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'BusinessUnit is deleted successfully.',
+        description: 'Customer is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['business-units'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
 
       reset()
       onClose()
@@ -646,7 +647,7 @@ export const useUpdateTenant = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateTenantType }) => {
+    mutationFn: ({ id, data }: { id: number; data: GetTenantType }) => {
       return editTenant(id, data, token)
     },
     onSuccess: () => {
@@ -1003,7 +1004,7 @@ export const useDeleteCompany = ({
         title: 'Success!',
         description: 'Company is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
 
       reset()
       onClose()
@@ -3360,7 +3361,7 @@ export const useDeleteSalaryStructures = ({
         title: 'Success!',
         description: 'Salary structure deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryStructure'] })
 
       reset()
       onClose()

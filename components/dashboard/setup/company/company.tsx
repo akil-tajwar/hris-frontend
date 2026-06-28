@@ -30,6 +30,7 @@ import {
   useAddCompany,
   useDeleteCompany,
   useGetCompanies,
+  useGetTenants,
   useUpdateCompany,
 } from '@/hooks/use-api'
 import {
@@ -74,6 +75,7 @@ const CURRENCY_OPTIONS = [
 ]
 
 const DEFAULT_FORM: CreateCompanyType = {
+  tenantId: 0,
   companyName: '',
   code: '',
   shortName: '',
@@ -95,6 +97,9 @@ const Companies = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: companies } = useGetCompanies()
+  console.log("🚀 ~ Companies ~ companies:", companies)
+  const { data: tenants } = useGetTenants()
+  console.log("🚀 ~ Companies ~ tenants:", tenants)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -223,6 +228,7 @@ const Companies = () => {
       setError(null)
       try {
         const submitData = new FormData()
+        submitData.append('tenantId', String(userData?.tenantId))
         submitData.append('companyName', formData.companyName)
         submitData.append('code', formData.code || '')
         submitData.append('shortName', formData.shortName || '')
@@ -273,6 +279,7 @@ const Companies = () => {
 
   const handleEditClick = (company: any) => {
     setFormData({
+      tenantId: company.tenantId,
       companyName: company.companyName,
       code: company.code || '',
       shortName: company.shortName || '',
@@ -552,6 +559,7 @@ const Companies = () => {
                     className="h-16 w-16 rounded-md object-contain border border-gray-200 bg-gray-50 p-1"
                     width={64}
                     height={64}
+                    unoptimized
                   />
                 </div>
               )}

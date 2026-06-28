@@ -109,12 +109,13 @@ const Assets = () => {
       purchaseDate: null,
       purchaseValue: null,
       currentStatus: 'AVAILABLE',
+      tenantId: userData?.tenantId || 0,
       createdBy: userData?.userId || 0,
       createdAt: new Date(),
       updatedBy: null,
       updatedAt: null,
     }),
-    [userData?.userId]
+    [userData?.userId, userData?.tenantId]
   )
 
   const [formData, setFormData] = useState<CreateAssetType>(defaultForm)
@@ -239,6 +240,7 @@ const Assets = () => {
       purchaseDate: asset.purchaseDate ?? null,
       purchaseValue: asset.purchaseValue ?? null,
       currentStatus: asset.currentStatus,
+      tenantId: asset.tenantId,
       createdBy: asset.createdBy,
       createdAt: asset.createdAt,
       updatedBy: asset.updatedBy,

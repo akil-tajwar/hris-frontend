@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,10 +28,10 @@ import {
   useGetCostCenters,
   useGetAllEmployees,
   useGetRoles,
-  useGetTenants,
   useGetEmployeePreboardingById,
   useGetLeavePolicies,
   useGetSalaryStructures,
+  useGetAttendancePolicies,
 } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
 import ExcelFileInput from '@/utils/excel-file-input'
@@ -148,6 +148,7 @@ type EmployeeFormData = {
   reportingAuthorityId: number | null
   leavePolicyMasterId: number | null
   salaryStructureMasterId: number | null
+  attendancePolicyId: number | null
   createdBy: number
 }
 
@@ -226,6 +227,7 @@ const buildEmptyForm = (userId: number): EmployeeFormData => ({
   reportingAuthorityId: null,
   leavePolicyMasterId: null,
   salaryStructureMasterId: null,
+  attendancePolicyId: null,
   createdBy: userId,
 })
 
@@ -251,7 +253,7 @@ const CreateEmployee = () => {
   const { data: costCenters } = useGetCostCenters()
   const { data: employees } = useGetAllEmployees()
   const { data: roles } = useGetRoles()
-  const { data: tenants } = useGetTenants()
+  const { data: attendancePolicies } = useGetAttendancePolicies()
   const { data: leavePoliciesResponse } = useGetLeavePolicies()
   const { data: salaryStructuresResponse } = useGetSalaryStructures()
 
@@ -280,8 +282,9 @@ const CreateEmployee = () => {
   useEffect(() => {
     if (userData?.userId) {
       setFormData((prev) => ({ ...prev, createdBy: userData.userId }))
+      setUserFormData((prev) => ({ ...prev, tenantId: userData.tenantId ?? 0 }))
     }
-  }, [userData?.userId])
+  }, [userData?.userId, userData?.tenantId])
 
   // ── Pre-fill from preboarding ─────────────────────────────────────────────
   useEffect(() => {
@@ -422,6 +425,17 @@ const CreateEmployee = () => {
   const addMutation = useAddEmployee({ onClose: closePopup, reset: resetForm })
   console.log('🚀 ~ CreateEmployee ~ addMutation:', addMutation)
 
+  const userCompanyOptions = useMemo(
+    () =>
+      (companies?.data ?? [])
+        .filter((c) => (c as any).tenantId === userData?.tenantId)
+        .map((c) => ({
+          value: String((c as any).companyId),
+          label: (c as any).companyName || 'Unnamed company',
+        })),
+    [companies, userData?.tenantId]
+  )
+
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -460,8 +474,6 @@ const CreateEmployee = () => {
       return setError('Passwords do not match')
     if (!userFormData.roleId || userFormData.roleId <= 0)
       return setError('Please select a role')
-    if (!userFormData.tenantId || userFormData.tenantId <= 0)
-      return setError('Please select a tenant')
 
     const form = new FormData()
     form.append(
@@ -1127,12 +1139,12 @@ const CreateEmployee = () => {
                 Company <span className="text-red-500">*</span>
               </Label>
               <CustomCombobox
-                items={
-                  companies?.data?.map((c) => ({
+                items={(companies?.data ?? [])
+                  .filter((c) => c.tenantId === userData?.tenantId)
+                  .map((c) => ({
                     id: c?.companyId?.toString() || '0',
                     name: c.companyName || 'Unnamed company',
-                  })) || []
-                }
+                  }))}
                 value={
                   formData.companyId
                     ? {
@@ -1634,7 +1646,7 @@ const CreateEmployee = () => {
         {/* ── 7. Leave Policies & Salary Structures ── */}
         <div className="border p-8 rounded-lg bg-slate-100">
           <h3 className="text-md font-semibold mb-1">
-            Leave Policies &amp; Salary Structures
+            Leave Policy, Salary Structure &amp; Attendance Policy
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             Assign leave policies and salary structures that will apply to this
@@ -1697,6 +1709,35 @@ const CreateEmployee = () => {
                   )
                 }
                 placeholder="Select salary structure"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attendancePolicyId">
+                Attendance Policy <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={(attendancePolicies?.data ?? []).map((p) => ({
+                  id: p.id.toString(),
+                  name: p.name || 'Unnamed policy',
+                }))}
+                value={
+                  formData.attendancePolicyId
+                    ? {
+                        id: formData.attendancePolicyId.toString(),
+                        name:
+                          (attendancePolicies?.data ?? []).find(
+                            (p) => p.id === formData.attendancePolicyId
+                          )?.name || '',
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  handleSelectChange(
+                    'attendancePolicyId',
+                    value ? String(value.id) : '0'
+                  )
+                }
+                placeholder="Select attendance policy"
               />
             </div>
           </div>
@@ -1792,37 +1833,6 @@ const CreateEmployee = () => {
                   }))
                 }
                 placeholder="Select role"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tenantId">
-                Tenant <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  tenants?.data?.map((tenant) => ({
-                    id: tenant?.tenantId?.toString() || '0',
-                    name: tenant.tenantName || 'Unnamed tenant',
-                  })) || []
-                }
-                value={
-                  userFormData.tenantId
-                    ? {
-                        id: userFormData.tenantId.toString(),
-                        name:
-                          tenants?.data?.find(
-                            (t) => t.tenantId === userFormData.tenantId
-                          )?.tenantName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setUserFormData((prev) => ({
-                    ...prev,
-                    tenantId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select tenant"
               />
             </div>
             <div className="space-y-2">

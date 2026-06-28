@@ -106,7 +106,7 @@ const EmployeeLeaves = () => {
 
   // Leave type combobox items — filtered by selected employee
   const leaveTypeItems = useMemo(() => {
-    if (!employeeLeaveTypes?.data || !formData.employeeId) return []
+    if (!employeeLeaveTypes?.data) return []
     return (employeeLeaveTypes.data as GetEmployeeLeaveTypeType[])
       .filter((lt) => lt.employeeId === formData.employeeId)
       .map((lt) => ({
@@ -514,10 +514,10 @@ const EmployeeLeaves = () => {
                 value={
                   formData.leaveTypeId
                     ? {
-                        id: formData.leaveTypeId.toString(),
+                        id: String(formData.leaveTypeId),
                         name:
                           leaveTypeItems.find(
-                            (lt) => lt.id === formData.leaveTypeId.toString()
+                            (lt) => String(lt.id) === String(formData.leaveTypeId)
                           )?.name || '',
                       }
                     : null
