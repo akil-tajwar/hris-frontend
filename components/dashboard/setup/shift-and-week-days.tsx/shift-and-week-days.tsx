@@ -1028,7 +1028,7 @@ const ShiftAndWeekDays = () => {
               Weekday Configuration <span className="text-red-500">*</span>
             </h3>
             <div className="space-y-2">
-              {formData.shiftDayAndWeekDays.map((config) => {
+              {formData.shiftDayAndWeekDays.map((config, index) => {
                 const dayTypeBadge =
                   config.dayType === 'Weekend'
                     ? 'bg-red-100 text-red-600'
@@ -1037,7 +1037,7 @@ const ShiftAndWeekDays = () => {
                       : 'bg-green-100 text-green-700'
 
                 return (
-                  <div key={config.weekDayId} className="border rounded-md p-3">
+                  <div key={index} className="border rounded-md p-3">
                     {/* Single row: day name | dayType | all fields */}
                     <div className="flex items-center gap-3 flex-wrap">
                       {/* Day name */}

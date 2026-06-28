@@ -18,8 +18,12 @@ import { toast } from '@/hooks/use-toast'
 import { registerUser } from '@/utils/api'
 import { useGetRoles, useGetTenants } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
 
 export default function RegisterUser() {
+  useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -129,7 +133,7 @@ export default function RegisterUser() {
         password,
         confirmPassword,
         roleId,
-        tenantId,
+        tenantId: userData?.tenantId,
         isPasswordResetRequired,
         active,
       }
@@ -311,39 +315,6 @@ export default function RegisterUser() {
                 }
                 placeholder={rolesLoading ? 'Loading roles...' : 'Select role'}
                 disabled={rolesLoading}
-              />
-            </div>
-
-            {/* Tenant Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="tenantId">
-                Tenant <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  tenantsData?.data?.map((tenant) => ({
-                    id: tenant?.tenantId?.toString() || '0',
-                    name: tenant?.tenantName || 'Unnamed tenant',
-                  })) || []
-                }
-                value={
-                  tenantId && tenantId !== 0
-                    ? {
-                        id: tenantId.toString(),
-                        name:
-                          tenantsData?.data?.find(
-                            (t) => t.tenantId === tenantId
-                          )?.tenantName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange('tenantId', value ? String(value.id) : '0')
-                }
-                placeholder={
-                  tenantsLoading ? 'Loading tenants...' : 'Select tenant'
-                }
-                disabled={tenantsLoading}
               />
             </div>
 

@@ -97,6 +97,7 @@ const Companies = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: companies } = useGetCompanies()
+  console.log("🚀 ~ Companies ~ companies:", companies)
   const { data: tenants } = useGetTenants()
   console.log("🚀 ~ Companies ~ tenants:", tenants)
 
@@ -227,7 +228,7 @@ const Companies = () => {
       setError(null)
       try {
         const submitData = new FormData()
-        submitData.append('tenantId', String(formData.tenantId))
+        submitData.append('tenantId', String(userData?.tenantId))
         submitData.append('companyName', formData.companyName)
         submitData.append('code', formData.code || '')
         submitData.append('shortName', formData.shortName || '')
@@ -541,38 +542,6 @@ const Companies = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tenantId">
-                Tenant <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  tenants?.data?.map((tenant) => ({
-                    id: tenant?.tenantId?.toString() || '0',
-                    name: tenant.tenantName || 'Unnamed tenant',
-                  })) || []
-                }
-                value={
-                  formData.tenantId
-                    ? {
-                        id: formData.tenantId.toString(),
-                        name:
-                          tenants?.data?.find(
-                            (t) => t.tenantId === formData.tenantId
-                          )?.tenantName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    tenantId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select tenant"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="logoUrl">Logo</Label>
               <Input
                 id="logoUrl"
@@ -590,6 +559,7 @@ const Companies = () => {
                     className="h-16 w-16 rounded-md object-contain border border-gray-200 bg-gray-50 p-1"
                     width={64}
                     height={64}
+                    unoptimized
                   />
                 </div>
               )}

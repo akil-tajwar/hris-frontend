@@ -392,9 +392,9 @@ export const useDeleteCustomer = ({
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'BusinessUnit is deleted successfully.',
+        description: 'Customer is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['business-units'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
 
       reset()
       onClose()
@@ -1004,7 +1004,7 @@ export const useDeleteCompany = ({
         title: 'Success!',
         description: 'Company is deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
 
       reset()
       onClose()
@@ -3361,7 +3361,7 @@ export const useDeleteSalaryStructures = ({
         title: 'Success!',
         description: 'Salary structure deleted successfully.',
       })
-      queryClient.invalidateQueries({ queryKey: ['salaryComponents'] })
+      queryClient.invalidateQueries({ queryKey: ['salaryStructure'] })
 
       reset()
       onClose()

@@ -60,7 +60,7 @@ export function DashboardSidebar() {
       subItems: [
         { title: 'Companies', href: '/dashboard/setup/company' },
         { title: 'Customers', href: '/dashboard/setup/customers' },
-        { title: 'Register User', href: '/dashboard/setup/register-user' },
+        // { title: 'Register User', href: '/dashboard/setup/register-user' },
         { title: 'Departments', href: '/dashboard/setup/departments' },
         { title: 'Designations', href: '/dashboard/setup/designations' },
         { title: 'Business Units', href: '/dashboard/setup/business-units' },
@@ -68,11 +68,11 @@ export function DashboardSidebar() {
         { title: 'Work Stations', href: '/dashboard/setup/work-stations' },
         { title: 'Cost Centers', href: '/dashboard/setup/cost-centers' },
         { title: 'Employment Types', href: '/dashboard/setup/employee-types' },
-        { title: 'Holidays', href: '/dashboard/setup/holidays' },
         {
           title: 'Holiday Calendars',
           href: '/dashboard/setup/holiday-calendars',
         },
+        { title: 'Holidays', href: '/dashboard/setup/holidays' },
         {
           title: 'Shift and Week Days',
           href: '/dashboard/setup/shift-and-week-days',
@@ -114,18 +114,18 @@ export function DashboardSidebar() {
           title: 'Employees',
           href: '/dashboard/employee-management/employees',
         },
-        {
-          title: 'Employee Leaves',
-          href: '/dashboard/employee-management/employee-leaves',
-        },
-        {
-          title: 'Employee Attendance',
-          href: '/dashboard/employee-management/employee-attendances',
-        },
-        {
-          title: 'Employee Lones',
-          href: '/dashboard/employee-management/employee-lones',
-        },
+        // {
+        //   title: 'Employee Leaves',
+        //   href: '/dashboard/employee-management/employee-leaves',
+        // },
+        // {
+        //   title: 'Employee Attendance',
+        //   href: '/dashboard/employee-management/employee-attendances',
+        // },
+        // {
+        //   title: 'Employee Lones',
+        //   href: '/dashboard/employee-management/employee-lones',
+        // },
       ],
     },
     {

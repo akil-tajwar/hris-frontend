@@ -6,6 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,16 +28,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, BookOpen, Edit2, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Search, Network, Edit2, Trash2 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateDesignationType, GetDesignationType } from '@/utils/type'
+import type {
+  CreateDivisionType,
+  GetBusinessUnitType,
+  GetDivisionType,
+  GetEmployeeType,
+} from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useAddDesignation,
-  useDeleteDesignation,
-  useGetDesignations,
-  useUpdateDesignation,
+  useAddDivision,
+  useDeleteDivision,
+  useGetBusinessUnits,
+  useGetDivisions,
+  useGetAllEmployees,
+  useUpdateDivision,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -41,69 +55,71 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import CustomSwitch from '@/utils/custom-switch'
+import { CustomCombobox } from '@/utils/custom-combobox'
 
-const Designations = () => {
+const emptyForm = (userId: number): CreateDivisionType => ({
+  divisionName: '',
+  divisionCode: null,
+  description: null,
+  businessUnitId: null,
+  headEmployeeId: null,
+  createdBy: userId,
+})
+
+const Divisions = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
-  const { data: designations } = useGetDesignations()
+  const { data: divisions } = useGetDivisions()
+  console.log("🚀 ~ Divisions ~ divisions:", divisions)
+  const { data: businessUnits } = useGetBusinessUnits()
+  const { data: employees } = useGetAllEmployees()
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [designationsPerPage] = useState(10)
+  const [divisionsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetDesignationType>('designationName')
+    useState<keyof GetDivisionType>('divisionName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingDesignationId, setEditingDesignationId] = useState<
-    number | null
-  >(null)
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingDesignationId, setDeletingDesignationId] = useState<
-    number | null
-  >(null)
-
-  const defaultForm = useCallback<any>(
-    () => ({
-      designationName: '',
-      designationCode: null,
-      jobLevel: null,
-      description: null,
-      status: true,
-      createdBy: userData?.userId || 0,
-    }),
-    [userData?.userId]
+  const [editingDivisionId, setEditingDivisionId] = useState<number | null>(
+    null
   )
 
-  const [formData, setFormData] = useState<CreateDesignationType>(defaultForm)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingDivisionId, setDeletingDivisionId] = useState<number | null>(
+    null
+  )
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const [formData, setFormData] = useState<CreateDivisionType>(
+    emptyForm(userData?.userId || 0)
+  )
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value || null }))
   }
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
+  const handleSelectChange = (
+    name: keyof CreateDivisionType,
+    value: string
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value === '' ? null : Number(value),
+      [name]: value === 'none' ? null : Number(value),
     }))
   }
 
   const resetForm = useCallback(() => {
-    setFormData({ ...defaultForm, createdBy: userData?.userId || 0 })
-    setEditingDesignationId(null)
+    setFormData(emptyForm(userData?.userId || 0))
+    setEditingDivisionId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
     setError(null)
-  }, [userData?.userId, defaultForm])
+  }, [userData?.userId])
 
   const closePopup = useCallback(() => {
     setIsPopupOpen(false)
@@ -111,20 +127,17 @@ const Designations = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddDesignation({
+  const addMutation = useAddDivision({ onClose: closePopup, reset: resetForm })
+  const updateMutation = useUpdateDivision({
     onClose: closePopup,
     reset: resetForm,
   })
-  const updateMutation = useUpdateDesignation({
-    onClose: closePopup,
-    reset: resetForm,
-  })
-  const deleteMutation = useDeleteDesignation({
+  const deleteMutation = useDeleteDivision({
     onClose: closePopup,
     reset: resetForm,
   })
 
-  const handleSort = (column: keyof GetDesignationType) => {
+  const handleSort = (column: keyof GetDivisionType) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -133,59 +146,75 @@ const Designations = () => {
     }
   }
 
-  const filteredDesignations = useMemo(() => {
-    if (!designations?.data) return []
-    return designations.data.filter((d) =>
-      d.designationName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDivisions = useMemo(() => {
+    if (!divisions?.data || !Array.isArray(divisions.data)) return []
+    return divisions.data.filter((division) =>
+      division.divisionName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-  }, [designations?.data, searchTerm])
+  }, [divisions?.data, searchTerm])
 
-  const sortedDesignations = useMemo(() => {
-    return [...filteredDesignations].sort((a, b) => {
-      const aValue = a.designationName ?? ''
-      const bValue = b.designationName ?? ''
+  const sortedDivisions = useMemo(() => {
+    if (!Array.isArray(filteredDivisions)) return []
+    return [...filteredDivisions].sort((a, b) => {
+      const aValue = a[sortColumn] ?? ''
+      const bValue = b[sortColumn] ?? ''
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue)
+      }
       return sortDirection === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue)
+        ? aValue > bValue
+          ? 1
+          : -1
+        : bValue > aValue
+          ? 1
+          : -1
     })
-  }, [filteredDesignations, sortDirection])
+  }, [filteredDivisions, sortColumn, sortDirection])
 
-  const paginatedDesignations = useMemo(() => {
-    const startIndex = (currentPage - 1) * designationsPerPage
-    return sortedDesignations.slice(
-      startIndex,
-      startIndex + designationsPerPage
-    )
-  }, [sortedDesignations, currentPage, designationsPerPage])
+  const paginatedDivisions = useMemo(() => {
+    const startIndex = (currentPage - 1) * divisionsPerPage
+    return sortedDivisions.slice(startIndex, startIndex + divisionsPerPage)
+  }, [sortedDivisions, currentPage, divisionsPerPage])
 
-  const totalPages = Math.ceil(sortedDesignations.length / designationsPerPage)
+  const totalPages = Math.ceil(sortedDivisions.length / divisionsPerPage)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
       setError(null)
       try {
-        const submitData: CreateDesignationType = { ...formData }
-        if (isEditMode) {
-          submitData.updatedBy = userData?.userId || 0
-        } else {
-          submitData.createdBy = userData?.userId || 0
+        const submitData: CreateDivisionType = {
+          ...formData,
+          ...(isEditMode
+            ? { updatedBy: userData?.userId || 0 }
+            : { createdBy: userData?.userId || 0 }),
         }
-
-        if (isEditMode && editingDesignationId) {
-          updateMutation.mutate({ id: editingDesignationId, data: submitData })
+        if (isEditMode && editingDivisionId) {
+          updateMutation.mutate({
+            id: editingDivisionId,
+            data: {
+              ...submitData,
+              businessUnitName: '',
+              empCode: '',
+              empFullName: '',
+              departmentName: '',
+              designationName: '',
+            },
+          })
         } else {
           addMutation.mutate(submitData)
         }
       } catch (err) {
-        setError('Failed to save designation')
+        setError('Failed to save division')
         console.error(err)
       }
     },
     [
       formData,
       isEditMode,
-      editingDesignationId,
+      editingDivisionId,
       addMutation,
       updateMutation,
       userData,
@@ -194,20 +223,20 @@ const Designations = () => {
 
   useEffect(() => {
     if (addMutation.error || updateMutation.error) {
-      setError('Error saving designation')
+      setError('Error saving division')
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (desig: any) => {
+  const handleEditClick = (division: any) => {
     setFormData({
-      designationName: desig.designationName,
-      designationCode: desig.designationCode ?? null,
-      jobLevel: desig.jobLevel ?? null,
-      description: desig.description ?? null,
-      status: desig.status ?? true,
+      divisionName: division.divisionName,
+      divisionCode: division.divisionCode ?? null,
+      description: division.description ?? null,
+      businessUnitId: division.businessUnitId ?? null,
+      headEmployeeId: division.headEmployeeId ?? null,
       createdBy: userData?.userId || 0,
     })
-    setEditingDesignationId(desig.designationId)
+    setEditingDivisionId(division.divisionId)
     setIsEditMode(true)
     setIsPopupOpen(true)
   }
@@ -217,15 +246,15 @@ const Designations = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-blue-100 p-2 rounded-md">
-            <BookOpen className="text-blue-600" />
+            <Network className="text-blue-600" />
           </div>
-          <h2 className="text-lg font-semibold">Designations</h2>
+          <h2 className="text-lg font-semibold">Divisions</h2>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Search designations..."
+              placeholder="Search divisions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-64"
@@ -246,69 +275,55 @@ const Designations = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <TableHead
-                onClick={() => handleSort('designationName')}
+                onClick={() => handleSort('divisionName')}
                 className="cursor-pointer"
               >
-                Designation Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                Division Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Job Level</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Division Code</TableHead>
+              <TableHead>Business Unit</TableHead>
+              <TableHead>Head Employee</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!designations || designations.data === undefined ? (
+            {!divisions || divisions.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading designations...
+                <TableCell colSpan={6} className="text-center py-4">
+                  Loading divisions...
                 </TableCell>
               </TableRow>
-            ) : !designations.data || designations.data.length === 0 ? (
+            ) : !divisions.data || divisions.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No designations found
+                <TableCell colSpan={6} className="text-center py-4">
+                  No divisions found
                 </TableCell>
               </TableRow>
-            ) : paginatedDesignations.length === 0 ? (
+            ) : paginatedDivisions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No designations match your search
+                <TableCell colSpan={6} className="text-center py-4">
+                  No divisions match your search
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedDesignations.map((desig: any, index) => (
-                <TableRow key={desig.designationId ?? index}>
+              paginatedDivisions.map((division, index) => (
+                <TableRow key={index}>
                   <TableCell>
-                    {(currentPage - 1) * designationsPerPage + index + 1}
+                    {(currentPage - 1) * divisionsPerPage + index + 1}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {desig.designationName}
+                    {division.divisionName}
                   </TableCell>
-                  <TableCell>{desig.designationCode ?? '—'}</TableCell>
-                  <TableCell>{desig.jobLevel ?? '—'}</TableCell>
-                  <TableCell className="max-w-[160px] truncate">
-                    {desig.description ?? '—'}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        desig.status
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {desig.status ? 'Active' : 'Inactive'}
-                    </span>
-                  </TableCell>
+                  <TableCell>{division.divisionCode ?? '—'}</TableCell>
+                  <TableCell>{division.businessUnitName ?? '—'}</TableCell>
+                  <TableCell>{division.empFullName ?? '—'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-blue-600 hover:text-blue-700"
-                        onClick={() => handleEditClick(desig)}
+                        onClick={() => handleEditClick(division)}
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -317,7 +332,7 @@ const Designations = () => {
                         size="sm"
                         className="text-red-600 hover:text-red-700"
                         onClick={() => {
-                          setDeletingDesignationId(desig.designationId)
+                          setDeletingDivisionId(division.divisionId ?? null)
                           setIsDeleteDialogOpen(true)
                         }}
                       >
@@ -332,7 +347,7 @@ const Designations = () => {
         </Table>
       </div>
 
-      {sortedDesignations.length > 0 && (
+      {sortedDivisions.length > 0 && (
         <div className="mt-4">
           <Pagination>
             <PaginationContent>
@@ -394,52 +409,35 @@ const Designations = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title={isEditMode ? 'Edit Designation' : 'Add Designation'}
+        title={isEditMode ? 'Edit Division' : 'Add Division'}
         size="sm:max-w-lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Designation Name */}
+          <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="designationName">
-                Designation Name <span className="text-red-500">*</span>
+              <Label htmlFor="divisionName">
+                Division Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="designationName"
-                name="designationName"
-                value={formData.designationName}
+                id="divisionName"
+                name="divisionName"
+                value={formData.divisionName}
                 onChange={handleInputChange}
                 required
               />
             </div>
 
-            {/* Designation Code */}
             <div className="space-y-2">
-              <Label htmlFor="designationCode">Designation Code</Label>
+              <Label htmlFor="divisionCode">Division Code</Label>
               <Input
-                id="designationCode"
-                name="designationCode"
-                value={formData.designationCode ?? ''}
+                id="divisionCode"
+                name="divisionCode"
+                value={formData.divisionCode ?? ''}
                 onChange={handleInputChange}
               />
             </div>
 
-            {/* Job Level */}
             <div className="space-y-2">
-              <Label htmlFor="jobLevel">Job Level</Label>
-              <Input
-                id="jobLevel"
-                name="jobLevel"
-                type="number"
-                min={0}
-                value={formData.jobLevel ?? ''}
-                onChange={handleNumberChange}
-                placeholder="e.g. 1"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2 col-span-2">
               <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
@@ -449,14 +447,68 @@ const Designations = () => {
               />
             </div>
 
-            {/* Status */}
-            <div className="space-y-2 col-span-2">
-              <CustomSwitch
-                label="Status"
-                checked={formData.status ?? true}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: value }))
+            <div className="space-y-2">
+              <Label>Business Unit</Label>
+              <CustomCombobox
+                items={
+                  businessUnits?.data?.map((bu: GetBusinessUnitType) => ({
+                    id: bu.businessUnitId?.toString() ?? '',
+                    name: bu.unitName,
+                  })) || []
                 }
+                value={
+                  formData.businessUnitId
+                    ? {
+                        id: formData.businessUnitId.toString(),
+                        name:
+                          businessUnits?.data?.find(
+                            (bu: GetBusinessUnitType) =>
+                              bu.businessUnitId === formData.businessUnitId
+                          )?.unitName ||
+                          formData.businessUnitId.toString(),
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    businessUnitId: value ? Number(value.id) : null,
+                  }))
+                }
+                placeholder="Select business unit"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="responsibleEmployeeId">
+                Responsible Employee <span className="text-red-500">*</span>
+              </Label>
+              <CustomCombobox
+                items={
+                  employees?.data?.map((emp: GetEmployeeType) => ({
+                    id: emp.employeeId?.toString() ?? '',
+                    name: emp.empFullName,
+                  })) || []
+                }
+                value={
+                  formData.headEmployeeId
+                    ? {
+                        id: formData.headEmployeeId.toString(),
+                        name:
+                          employees?.data?.find(
+                            (emp: GetEmployeeType) =>
+                              emp.employeeId === formData.headEmployeeId
+                          )?.empFullName || formData.headEmployeeId.toString(),
+                      }
+                    : null
+                }
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    headEmployeeId: value ? Number(value.id) : 0,
+                  }))
+                }
+                placeholder="Select responsible employee"
               />
             </div>
           </div>
@@ -489,10 +541,10 @@ const Designations = () => {
       >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Designation</AlertDialogTitle>
+            <AlertDialogTitle>Delete Division</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this designation? This action
-              cannot be undone.
+              Are you sure you want to delete this division? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -501,8 +553,8 @@ const Designations = () => {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (deletingDesignationId) {
-                  deleteMutation.mutate({ id: deletingDesignationId })
+                if (deletingDivisionId) {
+                  deleteMutation.mutate({ id: deletingDivisionId })
                 }
                 setIsDeleteDialogOpen(false)
               }}
@@ -517,4 +569,4 @@ const Designations = () => {
   )
 }
 
-export default Designations
+export default Divisions
