@@ -86,8 +86,8 @@ const DEFAULT_FORM: CreateCompanyType = {
   phone: '',
   address: '',
   logoUrl: '',
-  timezone: 'UTC',
-  currency: 'USD',
+  timezone: 'Asia/Dhaka',
+  currency: 'BDT – Bangladeshi Taka',
   status: true,
   createdBy: 0,
 }
