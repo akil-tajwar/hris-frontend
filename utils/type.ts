@@ -133,7 +133,6 @@ export const departmentSchema = z.object({
   departmentCode: z.string().nullable().optional(),
   divisionId: z.number().nullable().optional(),
   parentDepartmentId: z.number().nullable().optional(),
-  costCenterId: z.number().nullable().optional(),
   headEmployeeId: z.number().nullable().optional(),
   tenantId: z.number().optional(),
   status: z.boolean().default(true).optional(),
@@ -146,7 +145,6 @@ export type CreateDepartmentType = z.infer<typeof departmentSchema>
 export type GetDepartmentType = z.infer<typeof departmentSchema> & {
   divisionName: string
   parentDepartmentName: string
-  costCenterName: string
   headEmployeeName: string
   headEmployeeCode: string
 }
@@ -454,9 +452,7 @@ export const employeeSchema = z.object({
   designationName: z.string().optional().nullable(), //only for get
   employmentTypeId: z.number().int(),
   companyId: z.number().int(),
-  workStationId: z.number().int(),
   divisionId: z.number().int(),
-  costCenterId: z.number().int(),
   reportingAuthorityId: z.number().int().nullable(),
 
   // Additional fields from your service (not in original schema)

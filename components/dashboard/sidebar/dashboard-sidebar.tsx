@@ -59,24 +59,17 @@ export function DashboardSidebar() {
       roles: [1, 2],
       subItems: [
         { title: 'Companies', href: '/dashboard/setup/company' },
-        { title: 'Customers', href: '/dashboard/setup/customers' },
         // { title: 'Register User', href: '/dashboard/setup/register-user' },
         { title: 'Departments', href: '/dashboard/setup/departments' },
         { title: 'Designations', href: '/dashboard/setup/designations' },
         { title: 'Business Units', href: '/dashboard/setup/business-units' },
         { title: 'Divisions', href: '/dashboard/setup/divisions' },
-        { title: 'Work Stations', href: '/dashboard/setup/work-stations' },
-        { title: 'Cost Centers', href: '/dashboard/setup/cost-centers' },
         { title: 'Employment Types', href: '/dashboard/setup/employee-types' },
         {
           title: 'Holiday Calendars',
           href: '/dashboard/setup/holiday-calendars',
         },
         { title: 'Holidays', href: '/dashboard/setup/holidays' },
-        {
-          title: 'Shift and Week Days',
-          href: '/dashboard/setup/shift-and-week-days',
-        },
         { title: 'Pending Tasks', href: '/dashboard/setup/pending-tasks' },
       ],
     },
@@ -87,8 +80,12 @@ export function DashboardSidebar() {
       roles: [1, 2],
       subItems: [
         {
+          title: 'Shift and Week Days',
+          href: '/dashboard/shift-management/shift-and-week-days',
+        },
+        {
           title: 'Employee Shift Allocations',
-          href: '/dashboard/employee-shift-allocations/employee-shift-allocations',
+          href: '/dashboard/shift-management/employee-shift-allocations',
         },
       ],
     },

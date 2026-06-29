@@ -1,6 +1,6 @@
 'use client'
 
-import type React from 'react'
+import React from 'react'
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -645,60 +645,68 @@ const ShiftAndWeekDays = () => {
                           <div className="text-xs font-semibold text-gray-500 mb-2">
                             Weekday Configuration
                           </div>
+
                           <div className="space-y-1">
                             {dayConfigs.length === 0 ? (
                               <p className="text-xs text-gray-400">
                                 No weekday configs found.
                               </p>
                             ) : (
-                              dayConfigs.map((c: any) => (
-                                <div
-                                  key={c.weekDayId}
-                                  className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white"
-                                >
-                                  <span className="font-medium w-20">
-                                    {c.weekDay}
-                                  </span>
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full font-medium ${dayTypeBadgeClass(c.dayType)}`}
-                                  >
-                                    {c.dayType}
-                                  </span>
-                                  {c.dayType !== 'Weekend' && (
-                                    <>
-                                      <span className="text-gray-500">
-                                        Start:{' '}
-                                        <span className="text-gray-800">
-                                          {formatTime(c.startTime)}
+                              dayConfigs.map((c: any, idx: number) => (
+                                <React.Fragment key={idx}>
+                                  <div className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white">
+                                    <span className="font-medium w-20">
+                                      {c.weekDay}
+                                    </span>
+
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full font-medium ${dayTypeBadgeClass(
+                                        c.dayType
+                                      )}`}
+                                    >
+                                      {c.dayType}
+                                    </span>
+
+                                    {c.dayType !== 'Weekend' && (
+                                      <>
+                                        <span className="text-gray-500">
+                                          Start:{' '}
+                                          <span className="text-gray-800">
+                                            {formatTime(c.startTime)}
+                                          </span>
                                         </span>
-                                      </span>
-                                      <span className="text-gray-500">
-                                        End:{' '}
-                                        <span className="text-gray-800">
-                                          {formatTime(c.endTime)}
+
+                                        <span className="text-gray-500">
+                                          End:{' '}
+                                          <span className="text-gray-800">
+                                            {formatTime(c.endTime)}
+                                          </span>
                                         </span>
-                                      </span>
-                                      <span className="text-gray-500">
-                                        Break:{' '}
-                                        <span className="text-gray-800">
-                                          {c.breakMinutes} min
+
+                                        <span className="text-gray-500">
+                                          Break:{' '}
+                                          <span className="text-gray-800">
+                                            {c.breakMinutes} min
+                                          </span>
                                         </span>
-                                      </span>
-                                      <span className="text-gray-500">
-                                        Exp Hrs:{' '}
-                                        <span className="text-gray-800">
-                                          {c.expectedWorkHours}
+
+                                        <span className="text-gray-500">
+                                          Exp Hrs:{' '}
+                                          <span className="text-gray-800">
+                                            {c.expectedWorkHours}
+                                          </span>
                                         </span>
-                                      </span>
-                                      <span className="text-gray-500">
-                                        Min Hrs:{' '}
-                                        <span className="text-gray-800">
-                                          {c.minimumHoursForPresent}
+
+                                        <span className="text-gray-500">
+                                          Min Hrs:{' '}
+                                          <span className="text-gray-800">
+                                            {c.minimumHoursForPresent}
+                                          </span>
                                         </span>
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
+                                      </>
+                                    )}
+                                  </div>
+                                </React.Fragment>
                               ))
                             )}
                           </div>

@@ -142,9 +142,7 @@ type EmployeeFormData = {
   employmentTypeId: number
   probationMonths: number
   companyId: number
-  workStationId: number
   divisionId: number
-  costCenterId: number
   reportingAuthorityId: number | null
   leavePolicyMasterId: number | null
   salaryStructureMasterId: number | null
@@ -160,17 +158,6 @@ type UserFormData = {
   roleId: number
   tenantId: number
   active: boolean
-}
-
-// ── Safe shift label helper ───────────────────────────────────────────────────
-const formatShift = (
-  shiftName?: string,
-  startTime?: string,
-  endTime?: string
-) => {
-  if (!shiftName) return 'Unknown shift'
-  if (!startTime || !endTime) return shiftName
-  return `${shiftName} (${startTime}-${endTime})`
 }
 
 // ── Multi-select checklist ────────────────────────────────────────────────────
@@ -221,9 +208,7 @@ const buildEmptyForm = (userId: number): EmployeeFormData => ({
   employmentTypeId: 0,
   probationMonths: 0,
   companyId: 0,
-  workStationId: 0,
   divisionId: 0,
-  costCenterId: 0,
   reportingAuthorityId: null,
   leavePolicyMasterId: null,
   salaryStructureMasterId: null,
@@ -459,12 +444,8 @@ const CreateEmployee = () => {
       return setError('Please select employee type')
     if (!formData.companyId || formData.companyId <= 0)
       return setError('Please select company')
-    if (!formData.workStationId || formData.workStationId <= 0)
-      return setError('Please select work station')
     if (!formData.divisionId || formData.divisionId <= 0)
       return setError('Please select division')
-    if (!formData.costCenterId || formData.costCenterId <= 0)
-      return setError('Please select cost center')
     if (!userFormData.username.trim()) return setError('Please enter username')
     if (!userFormData.email.trim()) return setError('Please enter user email')
     if (!userFormData.password.trim()) return setError('Please enter password')
@@ -1167,38 +1148,6 @@ const CreateEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workStationId">
-                Work Station <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  workStations?.data?.map((ws) => ({
-                    id: ws?.workStationId?.toString() || '0',
-                    name: ws.workStationName || 'Unnamed work station',
-                  })) || []
-                }
-                value={
-                  formData.workStationId
-                    ? {
-                        id: formData.workStationId.toString(),
-                        name:
-                          workStations?.data?.find(
-                            (ws) => ws.workStationId === formData.workStationId
-                          )?.workStationName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange(
-                    'workStationId',
-                    value ? String(value.id) : '0'
-                  )
-                }
-                placeholder="Select work station"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="divisionId">
                 Division <span className="text-red-500">*</span>
               </Label>
@@ -1227,38 +1176,6 @@ const CreateEmployee = () => {
                   )
                 }
                 placeholder="Select division"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="costCenterId">
-                Cost Center <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  costCenters?.data?.map((cc) => ({
-                    id: cc?.costCenterId?.toString() || '0',
-                    name: cc.costCenterName || 'Unnamed cost center',
-                  })) || []
-                }
-                value={
-                  formData.costCenterId
-                    ? {
-                        id: formData.costCenterId.toString(),
-                        name:
-                          costCenters?.data?.find(
-                            (cc) => cc.costCenterId === formData.costCenterId
-                          )?.costCenterName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange(
-                    'costCenterId',
-                    value ? String(value.id) : '0'
-                  )
-                }
-                placeholder="Select cost center"
               />
             </div>
 
