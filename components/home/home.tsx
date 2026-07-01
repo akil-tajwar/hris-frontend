@@ -23,7 +23,7 @@ import { Popup } from '@/utils/popup'
 type Tab = 'signin' | 'register'
 
 export default function Home() {
-  const { data: companies, refetch: refetchCompanies } = useGetCompanies()
+  const { data: companies } = useGetCompanies()
   console.log('🚀 ~ Home ~ companies:', companies)
   const [activeTab, setActiveTab] = useState<Tab>('signin')
   const router = useRouter()
