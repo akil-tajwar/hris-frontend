@@ -1,4 +1,4 @@
-import ShiftAllocation from '@/components/dashboard/employee-shift-allocations/employee-shift-allocations/employee-shift-allocations'
+import ShiftAllocation from '@/components/dashboard/shift-management/employee-shift-allocations/employee-shift-allocations'
 import React from 'react'
 
 const EmployeeShiftAllocationPage = () => {

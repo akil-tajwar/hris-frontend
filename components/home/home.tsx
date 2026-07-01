@@ -16,7 +16,7 @@ import {
   MailIcon,
 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { signIn } from '@/utils/api'
+import { getAllCompanies, signIn } from '@/utils/api'
 import { useAddTenant, useGetCompanies } from '@/hooks/use-api'
 import { Popup } from '@/utils/popup'
 
@@ -24,6 +24,7 @@ type Tab = 'signin' | 'register'
 
 export default function Home() {
   const { data: companies } = useGetCompanies()
+  console.log('🚀 ~ Home ~ companies:', companies)
   const [activeTab, setActiveTab] = useState<Tab>('signin')
   const router = useRouter()
 
@@ -79,18 +80,22 @@ export default function Home() {
           description: response.error?.message || 'Failed to sign in',
         })
       } else {
-        localStorage.setItem('authToken', response.data.token)
-
         const { userId, roleId, tenantId } = response.data.user
+        const token = response.data.token
 
+        localStorage.setItem('authToken', token)
         localStorage.setItem(
           'currentUser',
           JSON.stringify({ userId, roleId, tenantId })
         )
 
-        const hasCompany = companies?.data?.some(
-          (c: any) => c.tenantId === tenantId
-        )
+        const companyResponse = await getAllCompanies(`Bearer ${token}`)
+
+        console.log(companyResponse)
+
+        const hasCompany =
+          Array.isArray(companyResponse.data) &&
+          companyResponse.data.some((c: any) => c.tenantId === tenantId)
 
         if (roleId == 4) {
           router.push('/dashboard/leave-management/leave-apply')

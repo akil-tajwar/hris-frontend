@@ -86,8 +86,8 @@ const DEFAULT_FORM: CreateCompanyType = {
   phone: '',
   address: '',
   logoUrl: '',
-  timezone: 'UTC',
-  currency: 'USD',
+  timezone: 'Asia/Dhaka',
+  currency: 'BDT – Bangladeshi Taka',
   status: true,
   createdBy: 0,
 }
@@ -276,6 +276,12 @@ const Companies = () => {
       setError('Error saving company')
     }
   }, [addMutation.error, updateMutation.error])
+
+  useEffect(() => {
+    if (companies?.data && companies.data.length === 0) {
+      setIsPopupOpen(true)
+    }
+  }, [companies?.data])
 
   const handleEditClick = (company: any) => {
     setFormData({

@@ -231,7 +231,7 @@ export async function deleteBusinessUnit(id: number, token: string) {
   })
 }
 
-//departments
+//tenants
 export async function getAllTenants(token: string) {
   return fetchApi<GetTenantType[]>({
     url: 'api/tenants/getall',
