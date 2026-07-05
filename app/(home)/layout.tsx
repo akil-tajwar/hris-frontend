@@ -18,14 +18,10 @@ export default function HomeLayout({
   const isHomePage = pathname === '/'
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ReactQueryProvider>
-          {!isHomePage && <HomeNavbar />}
-          <main className={!isHomePage ? "p-6 pt-20" : ""}>{children}</main>
-          <Toaster />
-        </ReactQueryProvider>
-      </body>
-    </html>
+    <>
+      {!isHomePage && <HomeNavbar />}
+      <main className={!isHomePage ? 'p-6 pt-20' : ''}>{children}</main>
+      <Toaster />
+    </>
   )
 }
