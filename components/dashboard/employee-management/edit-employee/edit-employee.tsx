@@ -92,11 +92,8 @@ type EmployeeEditFormData = {
   departmentId: number
   designationId: number
   employmentTypeId: number
-  shiftId: number
   companyId: number
-  workStationId: number
   divisionId: number
-  costCenterId: number
   reportingAuthorityId: number | null
   updatedBy: number
 }
@@ -175,11 +172,8 @@ const EditEmployee = () => {
     departmentId: 0,
     designationId: 0,
     employmentTypeId: 0,
-    shiftId: 0,
     companyId: 0,
-    workStationId: 0,
     divisionId: 0,
-    costCenterId: 0,
     reportingAuthorityId: null,
     updatedBy: userData?.userId || 0,
   })
@@ -232,11 +226,8 @@ const EditEmployee = () => {
         departmentId: emp.departmentId || 0,
         designationId: emp.designationId || 0,
         employmentTypeId: emp.employmentTypeId || 0,
-        shiftId: emp.shiftId || 0,
         companyId: emp.companyId || 0,
-        workStationId: emp.workStationId || 0,
         divisionId: emp.divisionId || 0,
-        costCenterId: emp.costCenterId || 0,
         reportingAuthorityId: emp.reportingAuthorityId || null,
         updatedBy: userData?.userId || 0,
       })
@@ -340,12 +331,8 @@ const EditEmployee = () => {
       return setError('Please select employee type')
     if (!formData.companyId || formData.companyId <= 0)
       return setError('Please select company')
-    if (!formData.workStationId || formData.workStationId <= 0)
-      return setError('Please select work station')
     if (!formData.divisionId || formData.divisionId <= 0)
       return setError('Please select division')
-    if (!formData.costCenterId || formData.costCenterId <= 0)
-      return setError('Please select cost center')
 
     const form = new FormData()
     form.append(
@@ -748,38 +735,6 @@ const EditEmployee = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workStationId">
-                Work Station <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  workStations?.data?.map((ws) => ({
-                    id: ws?.workStationId?.toString() || '0',
-                    name: ws.workStationName || 'Unnamed work station',
-                  })) || []
-                }
-                value={
-                  formData.workStationId
-                    ? {
-                        id: formData.workStationId.toString(),
-                        name:
-                          workStations?.data?.find(
-                            (ws) => ws.workStationId === formData.workStationId
-                          )?.workStationName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange(
-                    'workStationId',
-                    value ? String(value.id) : '0'
-                  )
-                }
-                placeholder="Select work station"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="divisionId">
                 Division <span className="text-red-500">*</span>
               </Label>
@@ -808,38 +763,6 @@ const EditEmployee = () => {
                   )
                 }
                 placeholder="Select division"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="costCenterId">
-                Cost Center <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  costCenters?.data?.map((cc) => ({
-                    id: cc?.costCenterId?.toString() || '0',
-                    name: cc.costCenterName || 'Unnamed cost center',
-                  })) || []
-                }
-                value={
-                  formData.costCenterId
-                    ? {
-                        id: formData.costCenterId.toString(),
-                        name:
-                          costCenters?.data?.find(
-                            (cc) => cc.costCenterId === formData.costCenterId
-                          )?.costCenterName || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  handleSelectChange(
-                    'costCenterId',
-                    value ? String(value.id) : '0'
-                  )
-                }
-                placeholder="Select cost center"
               />
             </div>
 
@@ -873,51 +796,6 @@ const EditEmployee = () => {
                   )
                 }
                 placeholder="Select reporting authority"
-              />
-            </div>
-
-            {/* ── Shift — uses same nested .shift.* shape as CreateEmployee ── */}
-            <div className="space-y-2">
-              <Label htmlFor="shiftId">
-                Shift <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={
-                  shiftDayAndWeekDays?.data?.map((timing) => ({
-                    id: timing.shift.shiftId?.toString() || '0',
-                    name: formatShift(
-                      timing.shift.shiftName,
-                      timing.shift.startTime,
-                      timing.shift.endTime
-                    ),
-                  })) || []
-                }
-                value={
-                  formData.shiftId
-                    ? {
-                        id: formData.shiftId.toString(),
-                        name: (() => {
-                          const t = shiftDayAndWeekDays?.data?.find(
-                            (t) => t.shift.shiftId === formData.shiftId
-                          )
-                          return t
-                            ? formatShift(
-                                t.shift.shiftName,
-                                t.shift.startTime,
-                                t.shift.endTime
-                              )
-                            : ''
-                        })(),
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    shiftId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select shift"
               />
             </div>
 

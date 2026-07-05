@@ -197,6 +197,7 @@ const Divisions = () => {
             data: {
               ...submitData,
               businessUnitName: '',
+              businessUnitCode: '',
               empCode: '',
               empFullName: '',
               departmentName: '',
