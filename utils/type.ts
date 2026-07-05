@@ -502,9 +502,7 @@ export type GetEmployeeType = z.infer<typeof employeeSchema> & {
   designationName: string
   employmentTypeName: string
   companyName: string
-  workStationName: string
   divisionName: string
-  costCenterName: string
   reportingAuthorityName: string
 }
 
