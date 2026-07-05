@@ -9,13 +9,9 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div className="flex items-center justify-center min-h-max">
-          <div className="p-8 bg-white rounded">{children}</div>
-          <Toaster />
-        </div>
-      </body>
-    </html>
+    <div className="flex items-center justify-center min-h-max">
+      <div className="p-8 bg-white rounded">{children}</div>
+      <Toaster />
+    </div>
   )
 }

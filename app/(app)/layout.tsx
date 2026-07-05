@@ -20,19 +20,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ReactQueryProvider>
-          <Navbar />
-          <SidebarProvider>
-            <DashboardSidebar />
-            <SidebarInset>
-              <main className="p-6">{children}</main>
-              <Toaster />
-            </SidebarInset>
-          </SidebarProvider>
-        </ReactQueryProvider>
-      </body>
-    </html>
+    <SidebarProvider>
+      <DashboardSidebar />
+
+      <SidebarInset>
+        <Navbar />
+        <main className="p-6">{children}</main>
+        <Toaster />
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
