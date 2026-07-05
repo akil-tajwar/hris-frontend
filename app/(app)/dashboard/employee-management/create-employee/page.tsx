@@ -1,12 +1,12 @@
-import CreateEmployee from '@/components/dashboard/employee-management/create-employee/create-employee';
-import React from 'react';
+import CreateEmployee from '@/components/dashboard/employee-management/create-employee/create-employee'
+import { Suspense } from 'react'
 
 const CreateEmployeePage = () => {
-    return (
-        <div>
-            <CreateEmployee />
-        </div>
-    );
-};
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateEmployee />
+    </Suspense>
+  )
+}
 
-export default CreateEmployeePage;
+export default CreateEmployeePage
