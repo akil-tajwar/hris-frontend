@@ -205,7 +205,7 @@ export function DashboardSidebar() {
           title: 'Salary Structures',
           href: '/dashboard/salary-management/salary-structures',
         },
-        { title: 'Salary', href: '/dashboard/salary-management/salareis' },
+        { title: 'Salary', href: '/dashboard/salary-management/salary' },
       ],
     },
     {
