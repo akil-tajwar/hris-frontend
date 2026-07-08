@@ -32,7 +32,6 @@ import {
   SignInResponse,
   SignInResponseSchema,
   GetEmployeeLeaveTypeType,
-  GetLoneReportType,
   GetEmployeeLeaveSummaryType,
   GetEmployeeAttendanceSummaryType,
   GetCostCenterType,
@@ -95,6 +94,7 @@ import {
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveBalanceSummaryReport,
   GetEmployeeLeaveLedgerReport,
+  GetShiftReportType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1945,6 +1945,20 @@ export async function getEmployeeActivityReport(
   })
 }
 
+export async function getShiftReport(
+  date: string,
+  token: string
+) {
+  return fetchApi<GetShiftReportType>({
+    url: `api/reports/shift-report?date=${date}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getSalaryReport(
   salaryMonthy: string,
   salaryYear: number,
@@ -1989,21 +2003,6 @@ export async function getLeaveBalanceSummaryReport(token: string) {
 export async function getEmployeeLeaveLedgerReport(token: string) {
   return fetchApi<GetEmployeeLeaveLedgerReport[]>({
     url: 'api/reports/leave-ledger-report',
-    method: 'GET',
-    headers: {
-      Authorization: token,
-      'Content-Type': 'application/json',
-    },
-  })
-}
-
-export async function getLoneReport(
-  fromDate: string,
-  toDate: string,
-  token: string
-) {
-  return fetchApi<GetLoneReportType[]>({
-    url: `api/reports/lone-report?fromDate=${fromDate}&toDate=${toDate}`,
     method: 'GET',
     headers: {
       Authorization: token,
@@ -2112,8 +2111,8 @@ export async function getAllShiftAllocations(token: string) {
   })
 }
 
-export async function createSingleShiftAllocation(
-  data: CreateShiftAllocationType,
+export async function createShiftAllocation(
+  data: CreateShiftAllocationType[],
   token: string
 ) {
   return fetchApi<CreateShiftAllocationType>({

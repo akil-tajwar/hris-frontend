@@ -592,6 +592,37 @@ export type GetEmployeeLeaveLedgerReport = z.infer<
   typeof employeeLeaveLedgerSchema
 >
 
+export const shiftReportSchema = z.object({
+  employeeId: z.number(),
+  empCode: z.string(),
+  employeeName: z.string(),
+
+  shiftId: z.number(),
+  shiftName: z.string(),
+  shiftCode: z.string(),
+  shiftType: z.enum(['Fixed', 'Flexible', 'Rotational']),
+
+  startTime: z.string(),
+  endTime: z.string(),
+  breakMinutes: z.number(),
+  expectedWorkHours: z.number(),
+  minimumHoursForPresent: z.number(),
+
+  crossDay: z.boolean(),
+  isFlexible: z.boolean(),
+  flexibleInFrom: z.string().nullable(),
+  flexibleInTo: z.string().nullable(),
+
+  effectiveFrom: z.string(),
+  effectiveTo: z.string().nullable(),
+
+  remarks: z.string().nullable(),
+
+  recurrenceType: z.enum(['weekly', 'monthly']).nullable(),
+  recurrenceActive: z.number(),
+})
+export type GetShiftReportType = z.infer<typeof shiftReportSchema>
+
 //weekDay
 export const weekDaySchema = z.object({
   weekDayId: z.number().optional(),
@@ -1097,41 +1128,6 @@ export type GetEmployeeLeaveType = z.infer<typeof employeeLeaveSchema> & {
   leaveTypeName: string
 }
 
-export const loneReportSchema = z.array(
-  z.object({
-    lone: z.object({
-      employeeLoneId: z.number(),
-      employeeLoneName: z.string(),
-      amount: z.number(),
-      perMonth: z.number(),
-      loneDate: z.string(),
-      description: z.string(),
-      employeeId: z.number(),
-      employeeName: z.string().optional(), // only for get
-      empCode: z.string().optional(), // only for get
-      departmentId: z.number(),
-      departmentName: z.string().optional(), // only for get
-      designationId: z.number(),
-      designationName: z.string().optional(), // only for get
-    }),
-
-    installments: z.array(
-      z.object({
-        employeeSalaryComponentId: z.number(),
-        salaryComponentId: z.number(),
-        salaryMonth: z.string(),
-        salaryYear: z.number(),
-        amount: z.number(),
-        isAuthorized: z.number(),
-        isSkipped: z.number(),
-        isSalaryGiven: z.number(),
-        createdAt: z.date(),
-      })
-    ),
-  })
-)
-export type GetLoneReportType = z.infer<typeof loneReportSchema>
-
 export const employeeLeaveSummarySchema = z.array(
   z.object({
     employeeDetails: z.object({
@@ -1246,6 +1242,8 @@ export type GetShiftAllocationType = {
   effectiveTo: string | null
   remarks: string | null
   approvedBy: number | null
+  departmentId: number | null
+  departmentName: string | null
   tenantId?: number | null
   createdBy: number
   createdAt: string | null
@@ -1264,6 +1262,8 @@ export type CreateShiftAllocationType = {
   effectiveFrom: string
   effectiveTo?: string
   remarks?: string
+  recurrenceType: 'weekly' | 'monthly'
+  recurrenceActive: boolean
   approvedBy?: number
   tenantId?: number | null 
   createdBy: number
