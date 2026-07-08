@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { Fragment, useCallback, useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,31 +37,31 @@ import {
   Edit2,
   Trash2,
   Users,
-  Copy,
   CopyCheck,
   Settings2,
   RefreshCw,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
+import { CustomCombobox } from '@/utils/custom-combobox'
 import type {
   CreateShiftAllocationType,
-  CreateBulkShiftAllocationType,
   GetShiftAllocationType,
+  GetEmployeeType,
+  GetDepartmentType,
   UpdateRecurrenceType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
   useGetShiftAllocations,
-  useAddSingleShiftAllocation,
-  useAddBulkShiftAllocation,
+  useAddShiftAllocation,
   useUpdateShiftAllocation,
   useDeleteShiftAllocation,
   useUpdateShiftAllocationRecurrence,
-  useCopyShiftAllocation,
-  useCopyAllActiveAllocations,
   useGetAllEmployees,
   useGetShiftDayAndWeekDays,
+  // ⚠️ Adjust this hook name if your project exports it differently.
+  useGetDepartments,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -72,6 +72,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+
+// ─── Local (non-domain) helper types ───────────────────────────────
+// GetShiftAllocationType (from type.ts) didn't show departmentId/departmentName
+// in what you shared, but you mentioned the GET api now returns them.
+// This intersection just widens the field for this file — if type.ts already
+// has these two fields, this is a harmless no-op and can be removed.
+type AllocationRow = GetShiftAllocationType & {
+  departmentId?: number | null
+  departmentName?: string | null
+}
+
+type SortColumn =
+  | 'employee'
+  | 'shift'
+  | 'effectiveFrom'
+  | 'effectiveTo'
+  | 'recurrence'
+  | 'remarks'
+
+// Structural shape CustomCombobox expects — not a domain type.
+type ComboItem = { id: string; name: string }
+
+// Bulk create doesn't need its own domain type: it's just N copies of
+// CreateShiftAllocationType (one per employee) built right before submit.
+type BulkFormState = Omit<Partial<CreateShiftAllocationType>, 'employeeId'> & {
+  employeeIds: number[]
+}
 
 // ─── Date helpers ─────────────────────────────────────────────────
 const parseLocalDate = (dateStr: string) => {
@@ -94,36 +121,32 @@ const DAY_ORDER: Record<string, number> = {
   Saturday: 6,
 }
 
-/**
- * Extract working day numbers (0=Sun..6=Sat) from a shift's weekday list.
- * shiftEntry is one item from useGetShiftDayAndWeekDays data array.
- */
 const getWorkingDaysFromShift = (shiftEntry: any): number[] => {
-  // ✅ shiftDayConfigs, weekDays, বা days যেটাই হোক
-  const days: any[] = shiftEntry?.shiftDayConfigs ?? shiftEntry?.weekDays ?? shiftEntry?.days ?? []
+  const days: any[] =
+    shiftEntry?.shiftDayConfigs ??
+    shiftEntry?.weekDays ??
+    shiftEntry?.days ??
+    []
   return days
-    .filter((d: any) => d.dayType !== 'Weekend' && (d.weekDay ?? d.day ?? d.weekDay?.day))
+    .filter(
+      (d: any) =>
+        d.dayType !== 'Weekend' && (d.weekDay ?? d.day ?? d.weekDay?.day)
+    )
     .map((d: any) => DAY_ORDER[d.weekDay ?? d.day ?? d.weekDay?.day] ?? -1)
     .filter((n: number) => n >= 0)
     .sort((a: number, b: number) => a - b)
 }
 
-/**
- * Calculate current-week range based on shift's working days.
- * If no working days, falls back to Mon–Sun.
- */
 const calcWeekRangeFromShift = (fromDate: string, workingDays: number[]) => {
   const { year, month, day } = parseLocalDate(fromDate)
-
-  const weekStartDay = workingDays.length > 0 ? workingDays[0] : 1 // default Mon
-  const weekEndDay = workingDays.length > 0 ? workingDays[workingDays.length - 1] : 0 // default Sun
+  const weekStartDay = workingDays.length > 0 ? workingDays[0] : 1
+  const weekEndDay =
+    workingDays.length > 0 ? workingDays[workingDays.length - 1] : 0
 
   const date = new Date(year, month, day)
   const currentDow = date.getDay()
 
-  // Find Monday (or shift's first working day) of the CURRENT week containing fromDate
   let diff = weekStartDay - currentDow
-  // If diff > 0, we'd jump forward — we want the start of the CURRENT week, so go back
   if (diff > 0) diff -= 7
 
   const start = new Date(year, month, day + diff)
@@ -133,7 +156,11 @@ const calcWeekRangeFromShift = (fromDate: string, workingDays: number[]) => {
       ? weekEndDay - weekStartDay
       : 7 - weekStartDay + weekEndDay
 
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + weekLength)
+  const end = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate() + weekLength
+  )
 
   return { effectiveFrom: fmtDate(start), effectiveTo: fmtDate(end) }
 }
@@ -147,8 +174,47 @@ const calcMonthRange = (fromDate: string) => {
   }
 }
 
+// Given an existing allocation's range + its recurrence type, compute the
+// NEXT period's range for a "copy" action.
+// monthly: 1 Jun–30 Jun  -> 1 Jul–31 Jul (next full calendar month)
+// weekly:  shift both dates forward by 7 days
+const getNextPeriodRange = (
+  effectiveFrom: string,
+  effectiveTo: string,
+  recurrenceType: 'weekly' | 'monthly'
+) => {
+  if (recurrenceType === 'monthly') {
+    const { year, month } = parseLocalDate(effectiveFrom)
+    let newMonthIndex = month + 1
+    let newYear = year
+    if (newMonthIndex > 11) {
+      newMonthIndex = 0
+      newYear += 1
+    }
+    const lastDay = new Date(newYear, newMonthIndex + 1, 0).getDate()
+    return {
+      effectiveFrom: `${newYear}-${padTwo(newMonthIndex + 1)}-01`,
+      effectiveTo: `${newYear}-${padTwo(newMonthIndex + 1)}-${padTwo(lastDay)}`,
+    }
+  }
+  // weekly
+  const from = parseLocalDate(effectiveFrom)
+  const to = parseLocalDate(effectiveTo || effectiveFrom)
+  const newFrom = new Date(from.year, from.month, from.day + 7)
+  const newTo = new Date(to.year, to.month, to.day + 7)
+  return { effectiveFrom: fmtDate(newFrom), effectiveTo: fmtDate(newTo) }
+}
+
+// ─── Label helpers ─────────────────────────────────────────────────
+const buildEmployeeLabel = (emp: GetEmployeeType) =>
+  `${emp.empCode}-${emp.empFullName}-${emp.departmentName}`
+
+const buildShiftLabel = (s: any) => s?.shift?.shiftName ?? ''
+
 // ─── Default form states ──────────────────────────────────────────
-const defaultSingleForm = (userId: number): CreateShiftAllocationType => ({
+const defaultSingleForm = (
+  userId: number
+): Partial<CreateShiftAllocationType> => ({
   employeeId: 0,
   shiftId: 0,
   effectiveFrom: '',
@@ -156,9 +222,11 @@ const defaultSingleForm = (userId: number): CreateShiftAllocationType => ({
   remarks: '',
   approvedBy: undefined,
   createdBy: userId,
+  recurrenceType: undefined,
+  recurrenceActive: undefined,
 })
 
-const defaultBulkForm = (userId: number): CreateBulkShiftAllocationType => ({
+const defaultBulkForm = (userId: number): BulkFormState => ({
   employeeIds: [],
   shiftId: 0,
   effectiveFrom: '',
@@ -166,6 +234,8 @@ const defaultBulkForm = (userId: number): CreateBulkShiftAllocationType => ({
   remarks: '',
   approvedBy: undefined,
   createdBy: userId,
+  recurrenceType: undefined,
+  recurrenceActive: undefined,
 })
 
 const defaultRecurrenceForm = (): UpdateRecurrenceType => ({
@@ -181,19 +251,24 @@ const ShiftAllocationPage = () => {
   const { data: allocations } = useGetShiftAllocations()
   const { data: employeesData } = useGetAllEmployees()
   const { data: shiftsData } = useGetShiftDayAndWeekDays()
+  const { data: departmentsData } = useGetDepartments()
 
-  const employees = useMemo(() => employeesData?.data ?? [], [employeesData])
-  // const shifts = useMemo(() => shiftsData?.data ?? [], [shiftsData])
-  const shifts = useMemo(() => {
-  const data = shiftsData?.data ?? []
-  console.log('shifts raw data:', JSON.stringify(data[0], null, 2))  // প্রথমটা দেখো
-  return data
-}, [shiftsData])
+  const employees: GetEmployeeType[] = useMemo(
+    () => employeesData?.data ?? [],
+    [employeesData]
+  )
+  const shifts = useMemo(() => shiftsData?.data ?? [], [shiftsData])
+  const departments: GetDepartmentType[] = useMemo(
+    () => departmentsData?.data ?? [],
+    [departmentsData]
+  )
 
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage] = useState(10)
+  const [sortColumn, setSortColumn] = useState<SortColumn>('employee')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
+  const [showLatestOnly, setShowLatestOnly] = useState(true)
 
   // Popup states
   const [isPopupOpen, setIsPopupOpen] = useState(false)
@@ -203,21 +278,31 @@ const ShiftAllocationPage = () => {
 
   // Recurrence popup
   const [isRecurrencePopupOpen, setIsRecurrencePopupOpen] = useState(false)
-  const [recurrenceTargetId, setRecurrenceTargetId] = useState<number | null>(null)
-  const [recurrenceForm, setRecurrenceForm] = useState<UpdateRecurrenceType>(defaultRecurrenceForm())
+  const [recurrenceTargetId, setRecurrenceTargetId] = useState<number | null>(
+    null
+  )
+  const [recurrenceForm, setRecurrenceForm] = useState<UpdateRecurrenceType>(
+    defaultRecurrenceForm()
+  )
 
   // Copy All popup
   const [isCopyAllPopupOpen, setIsCopyAllPopupOpen] = useState(false)
-  const [copyAllType, setCopyAllType] = useState<'weekly' | 'monthly'>('monthly')
+  const [bulkDepartmentId, setBulkDepartmentId] = useState<number | null>(null)
+  const [copyRecurrenceType, setCopyRecurrenceType] = useState<
+    'weekly' | 'monthly'
+  >('monthly')
+  const [copyFromDate, setCopyFromDate] = useState('')
+  const [copyToDate, setCopyToDate] = useState('')
+  const [selectedCopyIds, setSelectedCopyIds] = useState<Set<number>>(new Set())
 
   // Delete
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const [singleForm, setSingleForm] = useState<CreateShiftAllocationType>(
-    defaultSingleForm(userData?.userId || 0)
-  )
-  const [bulkForm, setBulkForm] = useState<CreateBulkShiftAllocationType>(
+  const [singleForm, setSingleForm] = useState<
+    Partial<CreateShiftAllocationType>
+  >(defaultSingleForm(userData?.userId || 0))
+  const [bulkForm, setBulkForm] = useState<BulkFormState>(
     defaultBulkForm(userData?.userId || 0)
   )
 
@@ -234,6 +319,7 @@ const ShiftAllocationPage = () => {
     setEditingId(null)
     setIsEditMode(false)
     setAllocMode('single')
+    setBulkDepartmentId(null)
   }, [userData?.userId])
 
   const closePopup = useCallback(() => {
@@ -247,10 +333,31 @@ const ShiftAllocationPage = () => {
     setRecurrenceForm(defaultRecurrenceForm())
   }, [])
 
-  // Mutations
-  const singleMutation = useAddSingleShiftAllocation({ onClose: closePopup, reset: resetForm })
-  const bulkMutation = useAddBulkShiftAllocation({ onClose: closePopup, reset: resetForm })
-  const updateMutation = useUpdateShiftAllocation({ onClose: closePopup, reset: resetForm })
+  const closeCopyAllPopup = useCallback(() => {
+    setIsCopyAllPopupOpen(false)
+    setCopyRecurrenceType('monthly')
+    setCopyFromDate('')
+    setCopyToDate('')
+    setSelectedCopyIds(new Set())
+  }, [])
+
+  // ─── Mutations ──────────────────────────────────────────────────
+  // Single create + bulk create both go through this one hook, sent as an
+  // array of CreateShiftAllocationType. Copy uses a second instance so it
+  // can have its own close/reset tied to the copy popup instead of the
+  // add/edit popup.
+  const createMutation = useAddShiftAllocation({
+    onClose: closePopup,
+    reset: resetForm,
+  })
+  const copyCreateMutation = useAddShiftAllocation({
+    onClose: closeCopyAllPopup,
+    reset: () => setSelectedCopyIds(new Set()),
+  })
+  const updateMutation = useUpdateShiftAllocation({
+    onClose: closePopup,
+    reset: resetForm,
+  })
   const deleteMutation = useDeleteShiftAllocation({
     onClose: () => setIsDeleteDialogOpen(false),
     reset: () => setDeletingId(null),
@@ -259,55 +366,112 @@ const ShiftAllocationPage = () => {
     onClose: closeRecurrencePopup,
     reset: () => setRecurrenceForm(defaultRecurrenceForm()),
   })
-  const copyMutation = useCopyShiftAllocation()
-  const copyAllMutation = useCopyAllActiveAllocations()
 
   // ─── Helpers ──────────────────────────────────────────────────
-const getShiftWorkingDays = useCallback(
-  (shiftId: number): number[] => {
-    // ✅ s.shift?.shiftId দিয়ে match করো
-    const entry = shifts.find((s: any) => s.shift?.shiftId === shiftId)
-    return entry ? getWorkingDaysFromShift(entry) : []
-  },
-  [shifts]
-)
+  const getShiftWorkingDays = useCallback(
+    (shiftId: number): number[] => {
+      const entry = shifts.find((s: any) => s.shift?.shiftId === shiftId)
+      return entry ? getWorkingDaysFromShift(entry) : []
+    },
+    [shifts]
+  )
 
   const autoFillDates = useCallback(
     (
       effectiveFrom: string,
-      recurrenceType: 'weekly' | 'monthly' | 'none' | undefined,
+      recurrenceType: 'weekly' | 'monthly' | undefined,
       shiftId: number
     ): { effectiveFrom: string; effectiveTo: string } | null => {
-      if (!effectiveFrom || !recurrenceType || recurrenceType === 'none') return null
+      if (!effectiveFrom || !recurrenceType) return null
       if (recurrenceType === 'monthly') {
         return calcMonthRange(effectiveFrom)
       }
-      // weekly — shift-aware
       const workingDays = getShiftWorkingDays(shiftId)
       return calcWeekRangeFromShift(effectiveFrom, workingDays)
     },
     [getShiftWorkingDays]
   )
 
-  // ─── Table helpers ─────────────────────────────────────────────
+  // ─── "Latest per employee" lookup (based on effectiveFrom, then effectiveTo) ──
+  const latestAllocationIds = useMemo(() => {
+    const rows: AllocationRow[] = allocations?.data ?? []
+    const latestByEmployee = new Map<number, AllocationRow>()
+    for (const row of rows) {
+      const existing = latestByEmployee.get(row.employeeId)
+      if (!existing) {
+        latestByEmployee.set(row.employeeId, row)
+        continue
+      }
+      const rowFrom = row.effectiveFrom ?? ''
+      const existingFrom = existing.effectiveFrom ?? ''
+      if (rowFrom > existingFrom) {
+        latestByEmployee.set(row.employeeId, row)
+      } else if (rowFrom === existingFrom) {
+        // no end date (ongoing) counts as the latest
+        const rowTo = row.effectiveTo ?? '9999-12-31'
+        const existingTo = existing.effectiveTo ?? '9999-12-31'
+        if (rowTo >= existingTo) latestByEmployee.set(row.employeeId, row)
+      }
+    }
+    return new Set(Array.from(latestByEmployee.values()).map((r) => r.id))
+  }, [allocations?.data])
+
+  // ─── Table filtering / sorting / grouping ──────────────────────
   const filtered = useMemo(() => {
-    if (!allocations?.data) return []
-    return allocations.data.filter(
-      (a: GetShiftAllocationType) =>
+    const rows: AllocationRow[] = allocations?.data ?? []
+    return rows.filter((a) => {
+      const matchesSearch =
         a.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.shiftName?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [allocations?.data, searchTerm])
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const nameA = a.employeeName ?? ''
-      const nameB = b.employeeName ?? ''
-      return sortDirection === 'asc'
-        ? nameA.localeCompare(nameB)
-        : nameB.localeCompare(nameA)
+      const matchesLatest = !showLatestOnly || latestAllocationIds.has(a.id)
+      return matchesSearch && matchesLatest
     })
-  }, [filtered, sortDirection])
+  }, [allocations?.data, searchTerm, showLatestOnly, latestAllocationIds])
+
+  const compareByColumn = useCallback(
+    (a: AllocationRow, b: AllocationRow, column: SortColumn) => {
+      let av = ''
+      let bv = ''
+      switch (column) {
+        case 'employee':
+          av = a.employeeName ?? ''
+          bv = b.employeeName ?? ''
+          break
+        case 'shift':
+          av = a.shiftName ?? ''
+          bv = b.shiftName ?? ''
+          break
+        case 'effectiveFrom':
+          av = a.effectiveFrom ?? ''
+          bv = b.effectiveFrom ?? ''
+          break
+        case 'effectiveTo':
+          av = a.effectiveTo ?? ''
+          bv = b.effectiveTo ?? ''
+          break
+        case 'recurrence':
+          av = a.recurrenceType ?? ''
+          bv = b.recurrenceType ?? ''
+          break
+        case 'remarks':
+          av = a.remarks ?? ''
+          bv = b.remarks ?? ''
+          break
+      }
+      return av.localeCompare(bv)
+    },
+    []
+  )
+
+  // Grouped by shift (primary), then sorted by the chosen column (secondary) within each group.
+  const sorted = useMemo(() => {
+    const dir = sortDirection === 'asc' ? 1 : -1
+    return [...filtered].sort((a, b) => {
+      const shiftCompare = (a.shiftName ?? '').localeCompare(b.shiftName ?? '')
+      if (shiftCompare !== 0) return shiftCompare
+      return compareByColumn(a, b, sortColumn) * dir
+    })
+  }, [filtered, sortColumn, sortDirection, compareByColumn])
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * perPage
@@ -316,38 +480,48 @@ const getShiftWorkingDays = useCallback(
 
   const totalPages = Math.ceil(sorted.length / perPage)
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
   // ─── Single form handlers ──────────────────────────────────────
-  const handleSingleChange = (name: string, value: any) =>
-    setSingleForm((prev) => ({ ...prev, [name]: value }))
+  const handleSingleChange = (
+    name: keyof CreateShiftAllocationType,
+    value: any
+  ) => setSingleForm((prev) => ({ ...prev, [name]: value }))
 
   const handleSingleShiftChange = (shiftId: number) => {
     setSingleForm((prev) => {
-      const updated: any = { ...prev, shiftId }
-      const recType = (prev as any).recurrenceType
-      if (prev.effectiveFrom && recType && recType !== 'none') {
-        const range = autoFillDates(prev.effectiveFrom, recType, shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, shiftId }
+      if (prev.effectiveFrom && prev.recurrenceType) {
+        const range = autoFillDates(
+          prev.effectiveFrom,
+          prev.recurrenceType,
+          shiftId
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
   }
 
-  const handleSingleRecurrenceChange = (recurrenceType: 'weekly' | 'monthly' | 'none') => {
+  const handleSingleRecurrenceChange = (
+    recurrenceType: 'weekly' | 'monthly'
+  ) => {
     setSingleForm((prev) => {
-      const updated: any = {
-        ...prev,
-        recurrenceType: recurrenceType === 'none' ? undefined : recurrenceType,
-        recurrenceActive: recurrenceType !== 'none' ? 1 : 0,
-      }
-      if (prev.effectiveFrom && recurrenceType !== 'none') {
-        const range = autoFillDates(prev.effectiveFrom, recurrenceType, prev.shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, recurrenceType }
+      if (prev.effectiveFrom) {
+        const range = autoFillDates(
+          prev.effectiveFrom,
+          recurrenceType,
+          prev.shiftId ?? 0
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
@@ -355,51 +529,48 @@ const getShiftWorkingDays = useCallback(
 
   const handleSingleDateChange = (value: string) => {
     setSingleForm((prev) => {
-      const updated: any = { ...prev, effectiveFrom: value }
-      const recType = (prev as any).recurrenceType
-      if (recType && recType !== 'none') {
-        const range = autoFillDates(value, recType, prev.shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, effectiveFrom: value }
+      if (prev.recurrenceType) {
+        const range = autoFillDates(
+          value,
+          prev.recurrenceType,
+          prev.shiftId ?? 0
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
   }
 
   // ─── Bulk form handlers ────────────────────────────────────────
-  const handleBulkChange = (name: string, value: any) =>
+  const handleBulkChange = (name: keyof BulkFormState, value: any) =>
     setBulkForm((prev) => ({ ...prev, [name]: value }))
 
   const handleBulkShiftChange = (shiftId: number) => {
     setBulkForm((prev) => {
-      const updated: any = { ...prev, shiftId }
-      const recType = (prev as any).recurrenceType
-      if (prev.effectiveFrom && recType && recType !== 'none') {
-        const range = autoFillDates(prev.effectiveFrom, recType, shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, shiftId }
+      if (prev.effectiveFrom && prev.recurrenceType) {
+        const range = autoFillDates(
+          prev.effectiveFrom,
+          prev.recurrenceType,
+          shiftId
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
   }
 
-  const handleBulkRecurrenceChange = (recurrenceType: 'weekly' | 'monthly' | 'none') => {
+  const handleBulkRecurrenceChange = (recurrenceType: 'weekly' | 'monthly') => {
     setBulkForm((prev) => {
-      const updated: any = {
-        ...prev,
-        recurrenceType: recurrenceType === 'none' ? undefined : recurrenceType,
-        recurrenceActive: recurrenceType !== 'none' ? 1 : 0,
-      }
-      if (prev.effectiveFrom && recurrenceType !== 'none') {
-        const range = autoFillDates(prev.effectiveFrom, recurrenceType, prev.shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, recurrenceType }
+      if (prev.effectiveFrom) {
+        const range = autoFillDates(
+          prev.effectiveFrom,
+          recurrenceType,
+          prev.shiftId ?? 0
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
@@ -407,14 +578,14 @@ const getShiftWorkingDays = useCallback(
 
   const handleBulkDateChange = (value: string) => {
     setBulkForm((prev) => {
-      const updated: any = { ...prev, effectiveFrom: value }
-      const recType = (prev as any).recurrenceType
-      if (recType && recType !== 'none') {
-        const range = autoFillDates(value, recType, prev.shiftId)
-        if (range) {
-          updated.effectiveFrom = range.effectiveFrom
-          updated.effectiveTo = range.effectiveTo
-        }
+      const updated = { ...prev, effectiveFrom: value }
+      if (prev.recurrenceType) {
+        const range = autoFillDates(
+          value,
+          prev.recurrenceType,
+          prev.shiftId ?? 0
+        )
+        if (range) Object.assign(updated, range)
       }
       return updated
     })
@@ -429,7 +600,43 @@ const getShiftWorkingDays = useCallback(
     }))
   }
 
-  const handleEditClick = (alloc: GetShiftAllocationType) => {
+  // Employees shown in the bulk popup — filtered by department when one is picked there.
+  const bulkVisibleEmployees = useMemo(
+    () =>
+      bulkDepartmentId == null
+        ? employees
+        : employees.filter((e) => e.departmentId === bulkDepartmentId),
+    [employees, bulkDepartmentId]
+  )
+
+  const visibleEmployeeIds = useMemo(
+    () =>
+      bulkVisibleEmployees.map((e) => e.employeeId!).filter((id) => id != null),
+    [bulkVisibleEmployees]
+  )
+  const allEmployeesSelected =
+    visibleEmployeeIds.length > 0 &&
+    visibleEmployeeIds.every((id) => bulkForm.employeeIds.includes(id))
+
+  // "Select all" only affects the currently visible (department-filtered) employees —
+  // it adds them all in, or removes just them, without touching selections from
+  // outside the current department filter.
+  const toggleSelectAllEmployees = () => {
+    setBulkForm((prev) => {
+      if (allEmployeesSelected) {
+        return {
+          ...prev,
+          employeeIds: prev.employeeIds.filter(
+            (id) => !visibleEmployeeIds.includes(id)
+          ),
+        }
+      }
+      const merged = new Set([...prev.employeeIds, ...visibleEmployeeIds])
+      return { ...prev, employeeIds: Array.from(merged) }
+    })
+  }
+
+  const handleEditClick = (alloc: AllocationRow) => {
     setSingleForm({
       employeeId: alloc.employeeId,
       shiftId: alloc.shiftId,
@@ -438,6 +645,8 @@ const getShiftWorkingDays = useCallback(
       remarks: alloc.remarks ?? '',
       approvedBy: alloc.approvedBy ?? undefined,
       createdBy: userData?.userId || 0,
+      recurrenceType: undefined,
+      recurrenceActive: undefined,
     })
     setEditingId(alloc.id)
     setIsEditMode(true)
@@ -445,11 +654,11 @@ const getShiftWorkingDays = useCallback(
     setIsPopupOpen(true)
   }
 
-  const handleRecurrenceClick = (alloc: GetShiftAllocationType) => {
+  const handleRecurrenceClick = (alloc: AllocationRow) => {
     setRecurrenceTargetId(alloc.id)
     setRecurrenceForm({
       recurrenceType: alloc.recurrenceType ?? null,
-      recurrenceActive: alloc.recurrenceActive === 1,
+      recurrenceActive: Boolean(alloc.recurrenceActive),
     })
     setIsRecurrencePopupOpen(true)
   }
@@ -457,6 +666,7 @@ const getShiftWorkingDays = useCallback(
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
+
       if (isEditMode && editingId) {
         updateMutation.mutate({
           id: editingId,
@@ -470,13 +680,58 @@ const getShiftWorkingDays = useCallback(
         })
         return
       }
+
       if (allocMode === 'single') {
-        singleMutation.mutate(singleForm)
+        if (!singleForm.recurrenceType) {
+          alert('Recurrence type is required.')
+          return
+        }
+        const payload: CreateShiftAllocationType = {
+          employeeId: singleForm.employeeId!,
+          shiftId: singleForm.shiftId!,
+          effectiveFrom: singleForm.effectiveFrom!,
+          effectiveTo: singleForm.effectiveTo || undefined,
+          remarks: singleForm.remarks || undefined,
+          approvedBy: singleForm.approvedBy,
+          createdBy: singleForm.createdBy!,
+          recurrenceType: singleForm.recurrenceType,
+          recurrenceActive: true,
+        }
+        createMutation.mutate([payload])
       } else {
-        bulkMutation.mutate(bulkForm)
+        if (!bulkForm.recurrenceType) {
+          alert('Recurrence type is required.')
+          return
+        }
+        if (bulkForm.employeeIds.length === 0) {
+          alert('Select at least one employee.')
+          return
+        }
+        const payloads: CreateShiftAllocationType[] = bulkForm.employeeIds.map(
+          (employeeId) => ({
+            employeeId,
+            shiftId: bulkForm.shiftId!,
+            effectiveFrom: bulkForm.effectiveFrom!,
+            effectiveTo: bulkForm.effectiveTo || undefined,
+            remarks: bulkForm.remarks || undefined,
+            approvedBy: bulkForm.approvedBy,
+            createdBy: bulkForm.createdBy!,
+            recurrenceType: bulkForm.recurrenceType!,
+            recurrenceActive: true,
+          })
+        )
+        createMutation.mutate(payloads)
       }
     },
-    [isEditMode, editingId, allocMode, singleForm, bulkForm, singleMutation, bulkMutation, updateMutation]
+    [
+      isEditMode,
+      editingId,
+      allocMode,
+      singleForm,
+      bulkForm,
+      updateMutation,
+      createMutation,
+    ]
   )
 
   const handleRecurrenceSubmit = (e: React.FormEvent) => {
@@ -485,14 +740,148 @@ const getShiftWorkingDays = useCallback(
     recurrenceMutation.mutate({ id: recurrenceTargetId, data: recurrenceForm })
   }
 
-  const isPending =
-    singleMutation.isPending || bulkMutation.isPending || updateMutation.isPending
+  const isPending = createMutation.isPending || updateMutation.isPending
 
-  const singleRecurrenceType = (singleForm as any).recurrenceType as
-    | 'weekly'
-    | 'monthly'
-    | undefined
-  const bulkRecurrenceType = (bulkForm as any).recurrenceType as 'weekly' | 'monthly' | undefined
+  // ─── Copy All logic ─────────────────────────────────────────────
+  const copyMatches: AllocationRow[] = useMemo(() => {
+    const rows: AllocationRow[] = allocations?.data ?? []
+    if (!copyFromDate || !copyToDate) return []
+    return rows.filter((a) => {
+      const from = a.effectiveFrom?.slice(0, 10) ?? ''
+      return (
+        a.recurrenceType === copyRecurrenceType &&
+        Boolean(a.recurrenceActive) &&
+        from >= copyFromDate &&
+        from <= copyToDate
+      )
+    })
+  }, [allocations?.data, copyRecurrenceType, copyFromDate, copyToDate])
+
+  // Reset the checkbox selection whenever the filter criteria change.
+  useEffect(() => {
+    setSelectedCopyIds(new Set())
+  }, [copyRecurrenceType, copyFromDate, copyToDate])
+
+  const copyAllSelected =
+    copyMatches.length > 0 && selectedCopyIds.size === copyMatches.length
+
+  const toggleCopySelectAll = () => {
+    setSelectedCopyIds(
+      copyAllSelected ? new Set() : new Set(copyMatches.map((a) => a.id))
+    )
+  }
+
+  const toggleCopyOne = (id: number) => {
+    setSelectedCopyIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleCopySubmit = () => {
+    const selectedRows = copyMatches.filter((a) => selectedCopyIds.has(a.id))
+    if (selectedRows.length === 0) return
+
+    const payloads: CreateShiftAllocationType[] = selectedRows.map((a) => {
+      const recurrenceType = (a.recurrenceType ?? copyRecurrenceType) as
+        | 'weekly'
+        | 'monthly'
+      const range = getNextPeriodRange(
+        a.effectiveFrom.slice(0, 10),
+        (a.effectiveTo ?? a.effectiveFrom).slice(0, 10),
+        recurrenceType
+      )
+      return {
+        employeeId: a.employeeId,
+        shiftId: a.shiftId,
+        effectiveFrom: range.effectiveFrom,
+        effectiveTo: range.effectiveTo,
+        remarks: a.remarks ?? undefined,
+        approvedBy: a.approvedBy ?? undefined,
+        createdBy: userData?.userId || 0,
+        recurrenceType,
+        recurrenceActive: true,
+      }
+    })
+
+    copyCreateMutation.mutate(payloads)
+  }
+
+  // ─── Combobox item builders ─────────────────────────────────────
+  const employeeItems: ComboItem[] = useMemo(
+    () =>
+      employees.map((emp) => ({
+        id: String(emp.employeeId),
+        name: buildEmployeeLabel(emp),
+      })),
+    [employees]
+  )
+
+  const shiftItems: ComboItem[] = useMemo(
+    () =>
+      shifts.map((s: any) => ({
+        id: String(s.shift?.shiftId),
+        name: buildShiftLabel(s),
+      })),
+    [shifts]
+  )
+
+  const departmentItems: ComboItem[] = useMemo(
+    () =>
+      departments.map((d) => ({
+        id: String(d.departmentId),
+        name: d.departmentName,
+      })),
+    [departments]
+  )
+
+  const singleEmployeeValue: ComboItem | null = singleForm.employeeId
+    ? {
+        id: String(singleForm.employeeId),
+        name:
+          employeeItems.find((i) => i.id === String(singleForm.employeeId))
+            ?.name ?? String(singleForm.employeeId),
+      }
+    : null
+
+  const singleShiftValue: ComboItem | null = singleForm.shiftId
+    ? {
+        id: String(singleForm.shiftId),
+        name:
+          shiftItems.find((i) => i.id === String(singleForm.shiftId))?.name ??
+          String(singleForm.shiftId),
+      }
+    : null
+
+  const bulkShiftValue: ComboItem | null = bulkForm.shiftId
+    ? {
+        id: String(bulkForm.shiftId),
+        name:
+          shiftItems.find((i) => i.id === String(bulkForm.shiftId))?.name ??
+          String(bulkForm.shiftId),
+      }
+    : null
+
+  const bulkDepartmentValue: ComboItem | null =
+    bulkDepartmentId != null
+      ? {
+          id: String(bulkDepartmentId),
+          name:
+            departmentItems.find((i) => i.id === String(bulkDepartmentId))
+              ?.name ?? String(bulkDepartmentId),
+        }
+      : null
+
+  const sortHeader = (label: string, column: SortColumn) => (
+    <TableHead
+      onClick={() => handleSort(column)}
+      className="cursor-pointer select-none"
+    >
+      {label} <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+    </TableHead>
+  )
 
   return (
     <div className="p-6 space-y-6">
@@ -531,23 +920,32 @@ const getShiftWorkingDays = useCallback(
         </div>
       </div>
 
+      {/* Latest-only toggle */}
+      <div className="flex items-center gap-2 -mt-4">
+        <input
+          type="checkbox"
+          id="latest-only"
+          checked={showLatestOnly}
+          onChange={(e) => setShowLatestOnly(e.target.checked)}
+          className="accent-blue-500 w-4 h-4 cursor-pointer"
+        />
+        <Label htmlFor="latest-only" className="cursor-pointer text-sm">
+          Show only latest shifts of employees
+        </Label>
+      </div>
+
       {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader className="bg-blue-100">
             <TableRow>
               <TableHead>Sl No.</TableHead>
-              <TableHead
-                onClick={() => setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
-                className="cursor-pointer"
-              >
-                Employee <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Shift</TableHead>
-              <TableHead>Effective From</TableHead>
-              <TableHead>Effective To</TableHead>
-              <TableHead>Recurrence</TableHead>
-              <TableHead>Remarks</TableHead>
+              {sortHeader('Employee', 'employee')}
+              {sortHeader('Shift', 'shift')}
+              {sortHeader('Effective From', 'effectiveFrom')}
+              {sortHeader('Effective To', 'effectiveTo')}
+              {sortHeader('Recurrence', 'recurrence')}
+              {sortHeader('Remarks', 'remarks')}
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -565,95 +963,105 @@ const getShiftWorkingDays = useCallback(
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((alloc: GetShiftAllocationType, index: number) => (
-                <TableRow key={alloc.id}>
-                  <TableCell>{(currentPage - 1) * perPage + index + 1}</TableCell>
-                  <TableCell className="font-medium">{alloc.employeeName ?? '—'}</TableCell>
-                  <TableCell>{alloc.shiftName ?? '—'}</TableCell>
-                  <TableCell>{alloc.effectiveFrom?.slice(0, 10)}</TableCell>
-                  <TableCell>
-                    {alloc.effectiveTo?.slice(0, 10) ?? (
-                      <span className="text-gray-400 text-xs">No end date</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {alloc.recurrenceType ? (
-                      <div className="flex items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className={
-                            alloc.recurrenceType === 'weekly'
-                              ? 'border-purple-400 text-purple-700 bg-purple-50'
-                              : 'border-orange-400 text-orange-700 bg-orange-50'
-                          }
+              paginated.map((alloc: AllocationRow, index: number) => {
+                const showGroupHeader =
+                  index === 0 ||
+                  paginated[index - 1].shiftName !== alloc.shiftName
+                return (
+                  <Fragment key={alloc.id}>
+                    {showGroupHeader && (
+                      <TableRow className="bg-gray-100 hover:bg-gray-100">
+                        <TableCell
+                          colSpan={8}
+                          className="font-semibold text-sm py-2"
                         >
-                          {alloc.recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'}
-                        </Badge>
-                        {alloc.recurrenceActive === 1 && (
-                          <span
-                            className="w-2 h-2 rounded-full bg-green-500 inline-block"
-                            title="Active"
-                          />
+                          {alloc.shiftName ?? 'Unknown Shift'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    <TableRow>
+                      <TableCell>
+                        {(currentPage - 1) * perPage + index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {alloc.employeeName ?? '—'}
+                      </TableCell>
+                      <TableCell>{alloc.shiftName ?? '—'}</TableCell>
+                      <TableCell>{alloc.effectiveFrom?.slice(0, 10)}</TableCell>
+                      <TableCell>
+                        {alloc.effectiveTo?.slice(0, 10) ?? (
+                          <span className="text-gray-400 text-xs">
+                            No end date
+                          </span>
                         )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 text-xs">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {alloc.remarks ?? <span className="text-gray-400 text-xs">—</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {alloc.recurrenceType && alloc.recurrenceActive === 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700"
-                          title="Copy to next period"
-                          onClick={() =>
-                            copyMutation.mutate({
-                              id: alloc.id,
-                              createdBy: userData?.userId || 0,
-                            })
-                          }
-                          disabled={copyMutation.isPending}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-purple-600 hover:text-purple-700"
-                        title="Recurrence settings"
-                        onClick={() => handleRecurrenceClick(alloc)}
-                      >
-                        <Settings2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700"
-                        onClick={() => handleEditClick(alloc)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => {
-                          setDeletingId(alloc.id)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                      </TableCell>
+                      <TableCell>
+                        {alloc.recurrenceType ? (
+                          <div className="flex items-center gap-1.5">
+                            <Badge
+                              variant="outline"
+                              className={
+                                alloc.recurrenceType === 'weekly'
+                                  ? 'border-purple-400 text-purple-700 bg-purple-50'
+                                  : 'border-orange-400 text-orange-700 bg-orange-50'
+                              }
+                            >
+                              {alloc.recurrenceType === 'weekly'
+                                ? 'Weekly'
+                                : 'Monthly'}
+                            </Badge>
+                            {Boolean(alloc.recurrenceActive) && (
+                              <span
+                                className="w-2 h-2 rounded-full bg-green-500 inline-block"
+                                title="Active"
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {alloc.remarks ?? (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-purple-600 hover:text-purple-700"
+                            title="Recurrence settings"
+                            onClick={() => handleRecurrenceClick(alloc)}
+                          >
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700"
+                            onClick={() => handleEditClick(alloc)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => {
+                              setDeletingId(alloc.id)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -666,8 +1074,12 @@ const getShiftWorkingDays = useCallback(
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }
                 />
               </PaginationItem>
               {[...Array(totalPages)].map((_, index) => {
@@ -686,7 +1098,10 @@ const getShiftWorkingDays = useCallback(
                       </PaginationLink>
                     </PaginationItem>
                   )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
+                } else if (
+                  index === currentPage - 3 ||
+                  index === currentPage + 3
+                ) {
                   return (
                     <PaginationItem key={`ellipsis-${index}`}>
                       <PaginationLink>...</PaginationLink>
@@ -697,8 +1112,14 @@ const getShiftWorkingDays = useCallback(
               })}
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }
                 />
               </PaginationItem>
             </PaginationContent>
@@ -737,21 +1158,14 @@ const getShiftWorkingDays = useCallback(
                   <Label>
                     Employee <span className="text-red-500">*</span>
                   </Label>
-                  <Select
-                    value={String(singleForm.employeeId || '')}
-                    onValueChange={(v) => handleSingleChange('employeeId', Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map((emp: any) => (
-                        <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
-                          {emp.empFullName} ({emp.empCode})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CustomCombobox
+                    items={employeeItems}
+                    value={singleEmployeeValue}
+                    onChange={(v: ComboItem | null) =>
+                      handleSingleChange('employeeId', v ? Number(v.id) : 0)
+                    }
+                    placeholder="Select employee"
+                  />
                 </div>
               )}
 
@@ -759,40 +1173,34 @@ const getShiftWorkingDays = useCallback(
                 <Label>
                   Shift <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={String(singleForm.shiftId || '')}
-                  onValueChange={(v) =>
-                    isEditMode
-                      ? handleSingleChange('shiftId', Number(v))
-                      : handleSingleShiftChange(Number(v))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select shift" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shifts.map((s: any) => (
-                      <SelectItem key={s.shift?.shiftId} value={String(s.shift?.shiftId)}>
-                        {s.shift?.shiftName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomCombobox
+                  items={shiftItems}
+                  value={singleShiftValue}
+                  onChange={(v: ComboItem | null) => {
+                    const shiftId = v ? Number(v.id) : 0
+                    if (isEditMode) handleSingleChange('shiftId', shiftId)
+                    else handleSingleShiftChange(shiftId)
+                  }}
+                  placeholder="Select shift"
+                />
               </div>
 
-              {/* Recurrence — only on create */}
+              {/* Recurrence — mandatory, only on create */}
               {!isEditMode && (
                 <div className="space-y-2">
-                  <Label>Recurrence</Label>
+                  <Label>
+                    Recurrence <span className="text-red-500">*</span>
+                  </Label>
                   <Select
-                    value={singleRecurrenceType ?? 'none'}
-                    onValueChange={handleSingleRecurrenceChange}
+                    value={singleForm.recurrenceType ?? ''}
+                    onValueChange={(v) =>
+                      handleSingleRecurrenceChange(v as 'weekly' | 'monthly')
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select recurrence" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
                     </SelectContent>
@@ -819,7 +1227,7 @@ const getShiftWorkingDays = useCallback(
                 <div className="space-y-2">
                   <Label>
                     Effective To
-                    {!isEditMode && singleRecurrenceType && (
+                    {!isEditMode && singleForm.recurrenceType && (
                       <span className="ml-2 text-xs text-green-600 font-normal">
                         auto-filled
                       </span>
@@ -828,10 +1236,12 @@ const getShiftWorkingDays = useCallback(
                   <Input
                     type="date"
                     value={singleForm.effectiveTo ?? ''}
-                    onChange={(e) => handleSingleChange('effectiveTo', e.target.value)}
-                    readOnly={!isEditMode && !!singleRecurrenceType}
+                    onChange={(e) =>
+                      handleSingleChange('effectiveTo', e.target.value)
+                    }
+                    readOnly={!isEditMode && !!singleForm.recurrenceType}
                     className={
-                      !isEditMode && singleRecurrenceType
+                      !isEditMode && singleForm.recurrenceType
                         ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
                         : ''
                     }
@@ -844,7 +1254,9 @@ const getShiftWorkingDays = useCallback(
                 <Input
                   placeholder="Optional remarks"
                   value={singleForm.remarks ?? ''}
-                  onChange={(e) => handleSingleChange('remarks', e.target.value)}
+                  onChange={(e) =>
+                    handleSingleChange('remarks', e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -857,34 +1269,30 @@ const getShiftWorkingDays = useCallback(
                 <Label>
                   Shift <span className="text-red-500">*</span>
                 </Label>
-                <Select
-                  value={String(bulkForm.shiftId || '')}
-                  onValueChange={(v) => handleBulkShiftChange(Number(v))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select shift" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shifts.map((s: any) => (
-                      <SelectItem key={s.shift?.shiftId} value={String(s.shift?.shiftId)}>
-                        {s.shift?.shiftName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomCombobox
+                  items={shiftItems}
+                  value={bulkShiftValue}
+                  onChange={(v: ComboItem | null) =>
+                    handleBulkShiftChange(v ? Number(v.id) : 0)
+                  }
+                  placeholder="Select shift"
+                />
               </div>
 
               <div className="space-y-2">
-                <Label>Recurrence</Label>
+                <Label>
+                  Recurrence <span className="text-red-500">*</span>
+                </Label>
                 <Select
-                  value={bulkRecurrenceType ?? 'none'}
-                  onValueChange={handleBulkRecurrenceChange}
+                  value={bulkForm.recurrenceType ?? ''}
+                  onValueChange={(v) =>
+                    handleBulkRecurrenceChange(v as 'weekly' | 'monthly')
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select recurrence" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
                   </SelectContent>
@@ -906,7 +1314,7 @@ const getShiftWorkingDays = useCallback(
                 <div className="space-y-2">
                   <Label>
                     Effective To
-                    {bulkRecurrenceType && (
+                    {bulkForm.recurrenceType && (
                       <span className="ml-2 text-xs text-green-600 font-normal">
                         auto-filled
                       </span>
@@ -915,10 +1323,14 @@ const getShiftWorkingDays = useCallback(
                   <Input
                     type="date"
                     value={bulkForm.effectiveTo ?? ''}
-                    onChange={(e) => handleBulkChange('effectiveTo', e.target.value)}
-                    readOnly={!!bulkRecurrenceType}
+                    onChange={(e) =>
+                      handleBulkChange('effectiveTo', e.target.value)
+                    }
+                    readOnly={!!bulkForm.recurrenceType}
                     className={
-                      bulkRecurrenceType ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''
+                      bulkForm.recurrenceType
+                        ? 'bg-gray-50 text-gray-500 cursor-not-allowed'
+                        : ''
                     }
                   />
                 </div>
@@ -934,35 +1346,65 @@ const getShiftWorkingDays = useCallback(
               </div>
 
               <div className="space-y-2">
-                <Label>
-                  Select Employees{' '}
-                  <span className="text-gray-400 text-xs">
-                    ({bulkForm.employeeIds.length} selected)
-                  </span>
-                </Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label>
+                    Select Employees{' '}
+                    <span className="text-gray-400 text-xs">
+                      ({bulkForm.employeeIds.length} selected)
+                    </span>
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-48">
+                      <CustomCombobox
+                        items={departmentItems}
+                        value={bulkDepartmentValue}
+                        onChange={(v: ComboItem | null) =>
+                          setBulkDepartmentId(v ? Number(v.id) : null)
+                        }
+                        placeholder="Filter by department"
+                      />
+                    </div>
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={allEmployeesSelected}
+                        onChange={toggleSelectAllEmployees}
+                        className="accent-blue-500"
+                      />
+                      Select all
+                    </label>
+                  </div>
+                </div>
                 <div className="border rounded-md p-2 max-h-52 overflow-y-auto space-y-1">
-                  {employees.map((emp: any) => {
-                    const checked = bulkForm.employeeIds.includes(emp.employeeId)
-                    return (
-                      <label
-                        key={emp.employeeId}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${
-                          checked ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleBulkEmployee(emp.employeeId)}
-                          className="accent-blue-500"
-                        />
-                        <span>
-                          {emp.empFullName}{' '}
-                          <span className="text-gray-400">({emp.empCode})</span>
-                        </span>
-                      </label>
-                    )
-                  })}
+                  {bulkVisibleEmployees.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-4">
+                      No employees in this department
+                    </p>
+                  ) : (
+                    bulkVisibleEmployees.map((emp) => {
+                      const checked = bulkForm.employeeIds.includes(
+                        emp.employeeId!
+                      )
+                      return (
+                        <label
+                          key={emp.employeeId}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${
+                            checked
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleBulkEmployee(emp.employeeId!)}
+                            className="accent-blue-500"
+                          />
+                          <span>{buildEmployeeLabel(emp)}</span>
+                        </label>
+                      )
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -994,8 +1436,10 @@ const getShiftWorkingDays = useCallback(
               onValueChange={(v) =>
                 setRecurrenceForm((prev) => ({
                   ...prev,
-                  recurrenceType: v === 'none' ? null : (v as 'weekly' | 'monthly'),
-                  recurrenceActive: v !== 'none' ? prev.recurrenceActive : false,
+                  recurrenceType:
+                    v === 'none' ? null : (v as 'weekly' | 'monthly'),
+                  recurrenceActive:
+                    v !== 'none' ? prev.recurrenceActive : false,
                 }))
               }
             >
@@ -1033,7 +1477,11 @@ const getShiftWorkingDays = useCallback(
           )}
 
           <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" onClick={closeRecurrencePopup}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeRecurrencePopup}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={recurrenceMutation.isPending}>
@@ -1046,66 +1494,141 @@ const getShiftWorkingDays = useCallback(
       {/* ── Copy All Popup ── */}
       <Popup
         isOpen={isCopyAllPopupOpen}
-        onClose={() => setIsCopyAllPopupOpen(false)}
+        onClose={closeCopyAllPopup}
         title="Copy All Active Allocations"
-        size="sm:max-w-sm"
+        size="sm:max-w-2xl"
       >
         <div className="space-y-5 py-4">
           <p className="text-sm text-gray-600">
-            This will copy all active allocations of the selected recurrence type to the next
-            period.
+            Pick a recurrence type and a date range, then choose which matching
+            allocations to copy into their next period.
           </p>
-          <div className="space-y-2">
-            <Label>Recurrence Type</Label>
-            <Select
-              value={copyAllType}
-              onValueChange={(v) => setCopyAllType(v as 'weekly' | 'monthly')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Recurrence Type</Label>
+              <Select
+                value={copyRecurrenceType}
+                onValueChange={(v) =>
+                  setCopyRecurrenceType(v as 'weekly' | 'monthly')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>From Date</Label>
+              <Input
+                type="date"
+                value={copyFromDate}
+                onChange={(e) => setCopyFromDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>To Date</Label>
+              <Input
+                type="date"
+                value={copyToDate}
+                onChange={(e) => setCopyToDate(e.target.value)}
+              />
+            </div>
           </div>
+
+          {copyFromDate && copyToDate && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>
+                  Matching Allocations{' '}
+                  <span className="text-gray-400 text-xs">
+                    ({selectedCopyIds.size} of {copyMatches.length} selected)
+                  </span>
+                </Label>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={copyAllSelected}
+                    onChange={toggleCopySelectAll}
+                    className="accent-blue-500"
+                    disabled={copyMatches.length === 0}
+                  />
+                  Select all
+                </label>
+              </div>
+              <div className="border rounded-md max-h-72 overflow-y-auto">
+                {copyMatches.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-6">
+                    No matching allocations found
+                  </p>
+                ) : (
+                  copyMatches.map((a) => {
+                    const checked = selectedCopyIds.has(a.id)
+                    return (
+                      <label
+                        key={a.id}
+                        className={`flex items-center gap-3 px-3 py-2 border-b last:border-b-0 cursor-pointer text-sm transition-colors ${
+                          checked ? 'bg-blue-50' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCopyOne(a.id)}
+                          className="accent-blue-500"
+                        />
+                        <span className="flex-1">
+                          <span className="font-medium">{a.employeeName}</span>{' '}
+                          — {a.shiftName} ({a.effectiveFrom?.slice(0, 10)} to{' '}
+                          {a.effectiveTo?.slice(0, 10) ?? 'ongoing'})
+                        </span>
+                      </label>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsCopyAllPopupOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={closeCopyAllPopup}>
               Cancel
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
-              disabled={copyAllMutation.isPending}
-              onClick={() => {
-                copyAllMutation.mutate(
-                  { recurrenceType: copyAllType, createdBy: userData?.userId || 0 },
-                  { onSuccess: () => setIsCopyAllPopupOpen(false) }
-                )
-              }}
+              disabled={
+                copyCreateMutation.isPending || selectedCopyIds.size === 0
+              }
+              onClick={handleCopySubmit}
             >
-              {copyAllMutation.isPending ? (
+              {copyCreateMutation.isPending ? (
                 <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
               ) : (
                 <CopyCheck className="h-4 w-4 mr-1" />
               )}
-              {copyAllMutation.isPending ? 'Copying...' : 'Copy All'}
+              {copyCreateMutation.isPending
+                ? 'Copying...'
+                : `Copy Selected (${selectedCopyIds.size})`}
             </Button>
           </div>
         </div>
       </Popup>
 
       {/* ── Delete Dialog ── */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Shift Allocation</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this shift allocation? This action cannot be undone.
+              Are you sure you want to delete this shift allocation? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
