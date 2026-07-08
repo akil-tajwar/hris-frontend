@@ -91,7 +91,6 @@ import {
   getEmployeeAttendanceSummary,
   getEmployeeById,
   getEmployeeLeaveSummary,
-  getLoneReport,
   getSalaryReport,
   skipLone,
   getAllLeavePolicies,
@@ -177,6 +176,7 @@ import {
   rejectLeave,
   getLeaveBalanceSummaryReport,
   getEmployeeLeaveLedgerReport,
+  getShiftReport,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5310,6 +5310,21 @@ export const useGetEmployeeActivityReport = (employeeId: number) => {
   })
 }
 
+export const useGetShiftReport = (date: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['shiftReport', date],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getShiftReport(date, token)
+    },
+    enabled: !!token && !!date,
+    select: (data) => data,
+  })
+}
+
 export const useGetSalaryReport = (salaryMonth: string, salaryYear: number) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -5374,21 +5389,6 @@ export const useGetEmployeeLeaveLedgerReport = () => {
       return getEmployeeLeaveLedgerReport(token)
     },
     enabled: !!token,
-    select: (data) => data,
-  })
-}
-
-export const useGetLoneReport = (fromDate: string, toDate: string) => {
-  const [token] = useAtom(tokenAtom)
-  useInitializeUser()
-
-  return useQuery({
-    queryKey: ['loneReport', fromDate, toDate],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getLoneReport(fromDate, toDate, token)
-    },
-    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
   })
 }

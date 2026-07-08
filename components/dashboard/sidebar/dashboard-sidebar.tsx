@@ -223,6 +223,10 @@ export function DashboardSidebar() {
           href: '/dashboard/report/attendance-report',
         },
         {
+          title: 'Shift Report',
+          href: '/dashboard/report/shift-report',
+        },
+        {
           title: 'Attendance Report Summary',
           href: '/dashboard/report/attendance-report-summary',
         },
