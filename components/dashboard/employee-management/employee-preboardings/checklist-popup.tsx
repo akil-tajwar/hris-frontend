@@ -20,12 +20,14 @@ interface ChecklistDetailRow {
   checklistMasterId: number | null
   responsibleEmployeeId: number
   responsibleEmployeeName?: string | null
+  requiredDays: number | null
 }
 
 interface SelectedChecklistDetail {
   checklistDetailsId: number
   responsibleEmployeeId: number
   completionDate: string | null
+  deadlineDate: string | null
   status: boolean
   isComplete: boolean
   employeePreboardingChecklistId?: number | null
@@ -67,6 +69,9 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
         completionDate: a.completionDate
           ? new Date(a.completionDate).toLocaleDateString()
           : null,
+        deadlineDate: a.deadlineDate
+          ? new Date(a.deadlineDate).toLocaleDateString()
+          : null,
         status:
           typeof a.status === 'boolean' ? a.status : a.status !== 'Pending',
         isComplete: a.isComplete ?? false,
@@ -83,7 +88,6 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
   }
 
   const toggleDetail = (detail: ChecklistDetailRow) => {
-    // Prevent unchecking tasks that are already saved in the database
     if (isAlreadyAssigned(detail.checklistDetailsId)) return
 
     setSelected((prev) => {
@@ -99,12 +103,32 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
           checklistDetailsId: detail.checklistDetailsId,
           responsibleEmployeeId: detail.responsibleEmployeeId,
           completionDate: null,
+          deadlineDate: calculateDeadlineDate(detail.requiredDays), // NEW
           status: false,
           isComplete: false,
           employeePreboardingChecklistId: null,
         },
       }
     })
+  }
+
+  const calculateDeadlineDate = (
+    requiredDays: number | null | undefined
+  ): string => {
+    const days = requiredDays ?? 0
+    const date = new Date()
+    date.setDate(date.getDate() + days)
+    return date.toISOString().split('T')[0] // YYYY-MM-DD for <input type="date">
+  }
+
+  const updateDeadlineDate = (checklistDetailsId: number, value: string) => {
+    setSelected((prev) => ({
+      ...prev,
+      [checklistDetailsId]: {
+        ...prev[checklistDetailsId],
+        deadlineDate: value,
+      },
+    }))
   }
 
   const handleSave = () => {
@@ -119,6 +143,7 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
         checklistDetailsId: s.checklistDetailsId,
         responsibleEmployeeId: s.responsibleEmployeeId,
         completionDate: null,
+        deadlineDate: new Date(s.deadlineDate ?? calculateDeadlineDate(null)),
         status: s.status,
         isComplete: s.isComplete,
         createdBy: userId,
@@ -141,11 +166,41 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
           checklistMasterId: d.checklistMasterId,
           responsibleEmployeeId: d.responsibleEmployeeId,
           responsibleEmployeeName: d.responsibleEmployeeName,
+          requiredDays: d.requiredDays,
         })),
       }
     })
     return Object.values(map)
   }, [checklists])
+
+  const toggleSelectAllInGroup = (details: ChecklistDetailRow[]) => {
+    const selectableDetails = details.filter(
+      (d) => !isAlreadyAssigned(d.checklistDetailsId)
+    )
+    const allSelected = selectableDetails.every(
+      (d) => !!selected[d.checklistDetailsId]
+    )
+
+    setSelected((prev) => {
+      const next = { ...prev }
+      selectableDetails.forEach((detail) => {
+        if (allSelected) {
+          delete next[detail.checklistDetailsId]
+        } else if (!next[detail.checklistDetailsId]) {
+          next[detail.checklistDetailsId] = {
+            checklistDetailsId: detail.checklistDetailsId,
+            responsibleEmployeeId: detail.responsibleEmployeeId,
+            completionDate: null,
+            deadlineDate: calculateDeadlineDate(detail.requiredDays),
+            status: false,
+            isComplete: false,
+            employeePreboardingChecklistId: null,
+          }
+        }
+      })
+      return next
+    })
+  }
 
   return (
     <Popup
@@ -182,10 +237,28 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
               <thead className="bg-gray-50">
                 <tr>
                   <th className="w-10 px-3 py-2 text-left font-medium text-gray-600">
-                    <span className="sr-only">Select</span>
+                    <Checkbox
+                      checked={
+                        group.details
+                          .filter(
+                            (d) => !isAlreadyAssigned(d.checklistDetailsId)
+                          )
+                          .every((d) => !!selected[d.checklistDetailsId]) &&
+                        group.details.some(
+                          (d) => !isAlreadyAssigned(d.checklistDetailsId)
+                        )
+                      }
+                      onCheckedChange={() =>
+                        toggleSelectAllInGroup(group.details)
+                      }
+                      className="border border-black/20"
+                    />
                   </th>
                   <th className="w-[40%] px-3 py-2 text-left font-medium text-gray-600">
                     Task
+                  </th>
+                  <th className="w-[25%] px-3 py-2 text-left font-medium text-gray-600">
+                    Deadline
                   </th>
                   <th className="w-[25%] px-3 py-2 text-left font-medium text-gray-600">
                     Completion Date
@@ -223,6 +296,28 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
                         className={`w-[40%] px-3 py-2 ${isChecked ? 'text-gray-800' : 'text-gray-500'}`}
                       >
                         {detail.checklistDetailsName}
+                      </td>
+
+                      <td className="w-[25%] px-3 py-2 text-gray-600 text-xs">
+                        {isChecked ? (
+                          locked ? (
+                            (sel.deadlineDate ?? '—')
+                          ) : (
+                            <input
+                              type="date"
+                              value={sel.deadlineDate ?? ''}
+                              onChange={(e) =>
+                                updateDeadlineDate(
+                                  detail.checklistDetailsId,
+                                  e.target.value
+                                )
+                              }
+                              className="border rounded px-2 py-1 text-xs w-full"
+                            />
+                          )
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
 
                       <td className="w-[25%] px-3 py-2 text-gray-600 text-xs">

@@ -272,8 +272,8 @@ export const employeePreboardingSchema = z.object({
   employmentTypeId: z.number(),
   salaryStructureMasterId: z.number(),
   tenantId: z.number().optional(),
-  offeredSalary: z.number(),
-  probationMonths: z.number(),
+  offeredSalary: z.number().nullable(),
+  probationMonths: z.number().nullable(),
   isConfirmed: z.boolean().default(false),
   status: z.boolean().default(false),
   createdBy: z.number(),
@@ -315,6 +315,7 @@ export const ChecklistSchema = z.object({
     z.object({
       checklistDetailsId: z.number().optional(),
       checklistDetailsName: z.string(),
+      requiredDays: z.number(),
       checklistMasterId: z.number().nullable(),
       responsibleEmployeeId: z.number(),
       responsibleEmployeeName: z.string().optional().nullable(), // only for get
@@ -336,6 +337,7 @@ export const EmployeePreboardingChecklistSchema = z.object({
   checklistDetailsId: z.number(),
   responsibleEmployeeId: z.number(),
   tenantId: z.number().optional(),
+  deadlineDate: z.coerce.date(),
   completionDate: z.coerce.date().nullable().optional(),
   isComplete: z.boolean().default(false),
   status: z.boolean(),

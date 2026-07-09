@@ -145,13 +145,23 @@ const EmployeePreboardings = () => {
     [addChecklistMutation]
   )
 
+  const defaultDob = useMemo(() => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - 25)
+    return date.toISOString().split('T')[0]
+  }, [])
+
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+
   // ── Preboarding form ───────────────────────────────────────────────────────
 
   const defaultForm = useCallback<any>(
     () => ({
       fullName: '',
       gender: 'Male' as 'Male' | 'Female',
-      dob: '',
+      dob: defaultDob,
       personalEmail: '',
       personalPhone: '',
       tentativeJoiningDate: '',
@@ -166,7 +176,7 @@ const EmployeePreboardings = () => {
       status: true,
       createdBy: userData?.userId || 0,
     }),
-    [userData?.userId]
+    [userData?.userId, defaultDob]
   )
 
   const [formData, setFormData] =
@@ -174,14 +184,33 @@ const EmployeePreboardings = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'personalPhone'
+          ? value.replace(/[^0-9+-]/g, '') // Allow digits, + and -
+          : value,
+    }))
   }
 
   const handleSelectChange = (
     name: keyof CreateEmployeePreboardingType,
-    value: string
+    value: string | null | undefined
   ) => {
-    const parsed = value === '0' || value === '' ? 0 : Number(value)
+    // If value is null, undefined, or empty string, set to null
+    if (value === null || value === undefined || value === '') {
+      setFormData((prev) => ({ ...prev, [name]: null }))
+      return
+    }
+
+    const parsed = Number(value)
+    // If value is '0' or NaN, set to null
+    if (value === '0' || isNaN(parsed)) {
+      setFormData((prev) => ({ ...prev, [name]: null }))
+      return
+    }
+
     setFormData((prev) => ({ ...prev, [name]: parsed }))
   }
 
@@ -323,14 +352,16 @@ const EmployeePreboardings = () => {
       tentativeJoiningDate: preboarding.tentativeJoiningDate
         ? new Date(preboarding.tentativeJoiningDate).toISOString().split('T')[0]
         : '',
-      companyId: Number(preboarding.companyId ?? 0),
-      departmentId: Number(preboarding.departmentId ?? 0),
-      designationId: Number(preboarding.designationId ?? 0),
-      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? 0),
-      employmentTypeId: Number(preboarding.employmentTypeId ?? 0),
-      salaryStructureMasterId: Number(preboarding.salaryStructureMasterId ?? 0),
-      offeredSalary: preboarding.offeredSalary ?? 0,
-      probationMonths: preboarding.probationMonths ?? 0,
+      companyId: Number(preboarding.companyId ?? null),
+      departmentId: Number(preboarding.departmentId ?? null),
+      designationId: Number(preboarding.designationId ?? null),
+      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? null),
+      employmentTypeId: Number(preboarding.employmentTypeId ?? null),
+      salaryStructureMasterId: Number(
+        preboarding.salaryStructureMasterId ?? null
+      ),
+      offeredSalary: preboarding.offeredSalary ?? null,
+      probationMonths: preboarding.probationMonths ?? null,
       isConfirmed: preboarding.isConfirmed ?? false,
       status: preboarding.status ?? 'Active',
       createdBy: userData?.userId || 0,
@@ -852,7 +883,7 @@ const EmployeePreboardings = () => {
                 onChange={(value) =>
                   handleSelectChange(
                     'employmentTypeId',
-                    value ? String(value.id) : '0'
+                    value ? String(value.id) : null // Pass null, not '0'
                   )
                 }
                 placeholder="Select employment type"
@@ -913,22 +944,30 @@ const EmployeePreboardings = () => {
             </div>
 
             {/* Probation Months */}
-            <div className="space-y-2">
-              <Label htmlFor="probationMonths">Probation Months</Label>
-              <Input
-                id="probationMonths"
-                name="probationMonths"
-                type="number"
-                value={formData.probationMonths ?? ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    probationMonths:
-                      e.target.value === '' ? 0 : Number(e.target.value),
-                  }))
-                }
-              />
-            </div>
+            {formData.employmentTypeId !== null &&
+              formData.employmentTypeId !== 5 && (
+                <div className="space-y-2">
+                  <Label htmlFor="probationMonths">
+                    {formData.employmentTypeId === 7
+                      ? 'Probation'
+                      : 'Contractual'}{' '}
+                    Months
+                  </Label>
+                  <Input
+                    id="probationMonths"
+                    name="probationMonths"
+                    type="number"
+                    value={formData.probationMonths ?? ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        probationMonths:
+                          e.target.value === '' ? 0 : Number(e.target.value),
+                      }))
+                    }
+                  />
+                </div>
+              )}
 
             {/* Status */}
             <div className="space-y-2 col-span-2">

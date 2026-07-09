@@ -37,8 +37,13 @@ import {
 } from '@/hooks/use-api'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import type { GetEmployeePreboardingChecklistType } from '@/utils/type'
+import { formatDate } from '@/utils/conversions'
 
-type SortableColumn = 'checklistDetailsName' | 'status' | 'isComplete'
+type SortableColumn =
+  | 'checklistDetailsName'
+  | 'status'
+  | 'isComplete'
+  | 'deadlineDate'
 
 interface GroupedPreboarding {
   preboardingId: number
@@ -192,6 +197,21 @@ const PendingTasks = () => {
     </TableHead>
   )
 
+  const getDeadlineStatus = (
+    deadlineDate: string | Date | null | undefined
+  ) => {
+    if (!deadlineDate) return 'none'
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const deadline = new Date(deadlineDate)
+    deadline.setHours(0, 0, 0, 0)
+    const diffDays =
+      (deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    if (diffDays < 0) return 'overdue'
+    if (diffDays === 1) return 'tomorrow'
+    return 'none'
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -223,6 +243,7 @@ const PendingTasks = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <SortableHeader column="checklistDetailsName" label="Task" />
+              <SortableHeader column="deadlineDate" label="Deadline" />
               <SortableHeader column="isComplete" label="Status" />
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -230,19 +251,19 @@ const PendingTasks = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   Loading tasks...
                 </TableCell>
               </TableRow>
             ) : tasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   No tasks found
                 </TableCell>
               </TableRow>
             ) : filteredGroups.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   No tasks match your search
                 </TableCell>
               </TableRow>
@@ -254,7 +275,7 @@ const PendingTasks = () => {
                     {/* Group header row */}
                     <TableRow className="bg-blue-50 hover:bg-blue-50">
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="py-2 px-4 font-semibold text-sm text-blue-800"
                       >
                         {group.preboardingFullName}
@@ -267,7 +288,15 @@ const PendingTasks = () => {
                         <TableRow
                           key={task.checklistDetailsId}
                           className={
-                            task.isComplete ? 'bg-green-50/50' : undefined
+                            task.isComplete
+                              ? 'bg-green-50'
+                              : getDeadlineStatus(task.deadlineDate) ===
+                                  'overdue'
+                                ? 'bg-red-50'
+                                : getDeadlineStatus(task.deadlineDate) ===
+                                    'tomorrow'
+                                  ? 'bg-yellow-50'
+                                  : undefined
                           }
                         >
                           <TableCell>{serialNo}</TableCell>
@@ -276,6 +305,7 @@ const PendingTasks = () => {
                           >
                             {task.checklistDetailsName}
                           </TableCell>
+                          <TableCell>{formatDate(task.deadlineDate)}</TableCell>
                           <TableCell>
                             {task.isComplete ? (
                               <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">

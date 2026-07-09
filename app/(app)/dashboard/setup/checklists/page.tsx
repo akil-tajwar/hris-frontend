@@ -1,4 +1,4 @@
-import Checklists from '@/components/dashboard/employee-management/checklists/checklists';
+import Checklists from '@/components/dashboard/setup/checklists/checklists';
 import React from 'react';
 
 const ChecklistsPage = () => {

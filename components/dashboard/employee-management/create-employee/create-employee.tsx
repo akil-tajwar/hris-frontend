@@ -163,11 +163,18 @@ type UserFormData = {
 // ── Multi-select checklist ────────────────────────────────────────────────────
 type MultiSelectItem = { id: number; name: string }
 
+const defaultDob = new Date()
+defaultDob.setFullYear(defaultDob.getFullYear() - 25)
+
+const formatDate = (date: Date) => {
+  return date.toISOString().split('T')[0]
+}
+
 // ── Empty form default ────────────────────────────────────────────────────────
 const buildEmptyForm = (userId: number): EmployeeFormData => ({
   empFullName: '',
   empShortName: null,
-  dob: '',
+  dob: formatDate(defaultDob),
   gender: 'Male',
   nationality: null,
   nationalIdNo: null,
@@ -329,7 +336,15 @@ const CreateEmployee = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target as HTMLInputElement
-    if (type === 'number') {
+    if (name === 'officialPhone' || name === 'personalPhone') {
+       const phone = value.replace(/[^0-9+-]/g, '')
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: phone === '' ? null : phone,
+      }))
+      return
+    } else if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value === '' ? null : value }))
