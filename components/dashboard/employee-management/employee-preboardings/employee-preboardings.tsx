@@ -360,8 +360,8 @@ const EmployeePreboardings = () => {
       salaryStructureMasterId: Number(
         preboarding.salaryStructureMasterId ?? null
       ),
-      offeredSalary: preboarding.offeredSalary ?? 0,
-      probationMonths: preboarding.probationMonths ?? 0,
+      offeredSalary: preboarding.offeredSalary ?? null,
+      probationMonths: preboarding.probationMonths ?? null,
       isConfirmed: preboarding.isConfirmed ?? false,
       status: preboarding.status ?? 'Active',
       createdBy: userData?.userId || 0,
@@ -944,22 +944,30 @@ const EmployeePreboardings = () => {
             </div>
 
             {/* Probation Months */}
-            <div className="space-y-2">
-              <Label htmlFor="probationMonths">Probation Months</Label>
-              <Input
-                id="probationMonths"
-                name="probationMonths"
-                type="number"
-                value={formData.probationMonths ?? ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    probationMonths:
-                      e.target.value === '' ? 0 : Number(e.target.value),
-                  }))
-                }
-              />
-            </div>
+            {formData.employmentTypeId !== null &&
+              formData.employmentTypeId !== 5 && (
+                <div className="space-y-2">
+                  <Label htmlFor="probationMonths">
+                    {formData.employmentTypeId === 7
+                      ? 'Probation'
+                      : 'Contractual'}{' '}
+                    Months
+                  </Label>
+                  <Input
+                    id="probationMonths"
+                    name="probationMonths"
+                    type="number"
+                    value={formData.probationMonths ?? ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        probationMonths:
+                          e.target.value === '' ? 0 : Number(e.target.value),
+                      }))
+                    }
+                  />
+                </div>
+              )}
 
             {/* Status */}
             <div className="space-y-2 col-span-2">

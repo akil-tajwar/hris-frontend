@@ -37,8 +37,9 @@ import {
 } from '@/hooks/use-api'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import type { GetEmployeePreboardingChecklistType } from '@/utils/type'
+import { formatDate } from '@/utils/conversions'
 
-type SortableColumn = 'checklistDetailsName' | 'status' | 'isComplete'
+type SortableColumn = 'checklistDetailsName' | 'status' | 'isComplete' | 'deadlineDate'
 
 interface GroupedPreboarding {
   preboardingId: number
@@ -223,6 +224,7 @@ const PendingTasks = () => {
             <TableRow>
               <TableHead>Sl No.</TableHead>
               <SortableHeader column="checklistDetailsName" label="Task" />
+              <SortableHeader column="deadlineDate" label="Deadline" />
               <SortableHeader column="isComplete" label="Status" />
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -230,19 +232,19 @@ const PendingTasks = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   Loading tasks...
                 </TableCell>
               </TableRow>
             ) : tasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   No tasks found
                 </TableCell>
               </TableRow>
             ) : filteredGroups.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4">
+                <TableCell colSpan={5} className="text-center py-4">
                   No tasks match your search
                 </TableCell>
               </TableRow>
@@ -254,7 +256,7 @@ const PendingTasks = () => {
                     {/* Group header row */}
                     <TableRow className="bg-blue-50 hover:bg-blue-50">
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="py-2 px-4 font-semibold text-sm text-blue-800"
                       >
                         {group.preboardingFullName}
@@ -276,6 +278,7 @@ const PendingTasks = () => {
                           >
                             {task.checklistDetailsName}
                           </TableCell>
+                          <TableCell>{formatDate(task.deadlineDate)}</TableCell>
                           <TableCell>
                             {task.isComplete ? (
                               <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
