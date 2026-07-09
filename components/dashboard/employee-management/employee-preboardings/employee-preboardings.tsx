@@ -179,9 +179,21 @@ const EmployeePreboardings = () => {
 
   const handleSelectChange = (
     name: keyof CreateEmployeePreboardingType,
-    value: string
+    value: string | null | undefined
   ) => {
-    const parsed = value === '0' || value === '' ? 0 : Number(value)
+    // If value is null, undefined, or empty string, set to null
+    if (value === null || value === undefined || value === '') {
+      setFormData((prev) => ({ ...prev, [name]: null }))
+      return
+    }
+
+    const parsed = Number(value)
+    // If value is '0' or NaN, set to null
+    if (value === '0' || isNaN(parsed)) {
+      setFormData((prev) => ({ ...prev, [name]: null }))
+      return
+    }
+
     setFormData((prev) => ({ ...prev, [name]: parsed }))
   }
 
@@ -323,12 +335,14 @@ const EmployeePreboardings = () => {
       tentativeJoiningDate: preboarding.tentativeJoiningDate
         ? new Date(preboarding.tentativeJoiningDate).toISOString().split('T')[0]
         : '',
-      companyId: Number(preboarding.companyId ?? 0),
-      departmentId: Number(preboarding.departmentId ?? 0),
-      designationId: Number(preboarding.designationId ?? 0),
-      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? 0),
-      employmentTypeId: Number(preboarding.employmentTypeId ?? 0),
-      salaryStructureMasterId: Number(preboarding.salaryStructureMasterId ?? 0),
+      companyId: Number(preboarding.companyId ?? null),
+      departmentId: Number(preboarding.departmentId ?? null),
+      designationId: Number(preboarding.designationId ?? null),
+      reportingAuthorityId: Number(preboarding.reportingAuthorityId ?? null),
+      employmentTypeId: Number(preboarding.employmentTypeId ?? null),
+      salaryStructureMasterId: Number(
+        preboarding.salaryStructureMasterId ?? null
+      ),
       offeredSalary: preboarding.offeredSalary ?? 0,
       probationMonths: preboarding.probationMonths ?? 0,
       isConfirmed: preboarding.isConfirmed ?? false,
@@ -852,7 +866,7 @@ const EmployeePreboardings = () => {
                 onChange={(value) =>
                   handleSelectChange(
                     'employmentTypeId',
-                    value ? String(value.id) : '0'
+                    value ? String(value.id) : null // Pass null, not '0'
                   )
                 }
                 placeholder="Select employment type"

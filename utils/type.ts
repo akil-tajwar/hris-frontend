@@ -337,6 +337,7 @@ export const EmployeePreboardingChecklistSchema = z.object({
   checklistDetailsId: z.number(),
   responsibleEmployeeId: z.number(),
   tenantId: z.number().optional(),
+  deadlineDate: z.coerce.date(),
   completionDate: z.coerce.date().nullable().optional(),
   isComplete: z.boolean().default(false),
   status: z.boolean(),
