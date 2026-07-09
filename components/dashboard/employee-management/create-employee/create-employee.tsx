@@ -329,7 +329,15 @@ const CreateEmployee = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target as HTMLInputElement
-    if (type === 'number') {
+    if (name === 'officialPhone' || name === 'personalPhone') {
+       const phone = value.replace(/[^0-9+-]/g, '')
+
+      setFormData((prev) => ({
+        ...prev,
+        [name]: phone === '' ? null : phone,
+      }))
+      return
+    } else if (type === 'number') {
       setFormData((prev) => ({ ...prev, [name]: value ? Number(value) : null }))
     } else {
       setFormData((prev) => ({ ...prev, [name]: value === '' ? null : value }))

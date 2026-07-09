@@ -174,7 +174,14 @@ const EmployeePreboardings = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'personalPhone'
+          ? value.replace(/[^0-9+-]/g, '') // Allow digits, + and -
+          : value,
+    }))
   }
 
   const handleSelectChange = (

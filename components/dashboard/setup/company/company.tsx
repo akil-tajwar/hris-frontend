@@ -97,9 +97,9 @@ const Companies = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: companies } = useGetCompanies()
-  console.log("🚀 ~ Companies ~ companies:", companies)
+  console.log('🚀 ~ Companies ~ companies:', companies)
   const { data: tenants } = useGetTenants()
-  console.log("🚀 ~ Companies ~ tenants:", tenants)
+  console.log('🚀 ~ Companies ~ tenants:', tenants)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -129,7 +129,13 @@ const Companies = () => {
     >
   ) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'phone'
+          ? value.replace(/[^0-9+-]/g, '') // Allow digits, + and -
+          : value,
+    }))
   }
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
