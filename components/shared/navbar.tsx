@@ -62,7 +62,7 @@ export default function Navbar() {
       return '/dashboard/leave-management/leave-apply'
     }
 
-    return '/dashboard'
+    return '/dashboard/dashboard-overview'
   }
 
   // -------------------------

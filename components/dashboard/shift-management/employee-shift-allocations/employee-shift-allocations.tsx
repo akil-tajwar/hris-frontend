@@ -747,7 +747,7 @@ const getShiftWorkingDays = useCallback(
                     <SelectContent>
                       {employees.map((emp: any) => (
                         <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
-                          {emp.empFullName} ({emp.empCode})
+                           {emp.empCode} - {emp.empFullName} {emp.empDesignation}
                         </SelectItem>
                       ))}
                     </SelectContent>

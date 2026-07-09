@@ -315,6 +315,7 @@ export const ChecklistSchema = z.object({
     z.object({
       checklistDetailsId: z.number().optional(),
       checklistDetailsName: z.string(),
+      requiredDays: z.number(),
       checklistMasterId: z.number().nullable(),
       responsibleEmployeeId: z.number(),
       responsibleEmployeeName: z.string().optional().nullable(), // only for get

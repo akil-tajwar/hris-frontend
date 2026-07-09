@@ -126,6 +126,7 @@ const Checklists = () => {
   const handleAddDetail = () => {
     const newDetail: CreateChecklistType['checklistDetails'][number] = {
       checklistDetailsName: '',
+      requiredDays: 0,
       checklistMasterId: null,
       responsibleEmployeeId:
         formData.checklistMaster.responsibleEmployeeId || 0,
@@ -487,8 +488,12 @@ const Checklists = () => {
                                   }
                                   className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white"
                                 >
-                                  <span className="font-medium w-40">
+                                  <span className="font-medium w-96">
+                                    Checklist Details:{' '}
                                     {d.checklistDetailsName || '—'}
+                                  </span>
+                                  <span className="text-gray-500">
+                                    Required Days: {d.requiredDays || '—'}
                                   </span>
                                 </div>
                               ))
@@ -689,6 +694,33 @@ const Checklists = () => {
                                     ? {
                                         ...d,
                                         checklistDetailsName: e.target.value,
+                                      }
+                                    : d
+                              ),
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-gray-400">
+                          Required Days
+                        </span>
+                        <Input
+                          className="h-8 text-xs w-48"
+                          placeholder="e.g. 5"
+                          type="number"
+                          value={detail.requiredDays}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              checklistDetails: prev.checklistDetails.map(
+                                (d, i) =>
+                                  i === idx
+                                    ? {
+                                        ...d,
+                                        requiredDays:
+                                          parseInt(e.target.value) || 0,
                                       }
                                     : d
                               ),
