@@ -2111,8 +2111,8 @@ export async function getAllShiftAllocations(token: string) {
   })
 }
 
-export async function createSingleShiftAllocation(
-  data: CreateShiftAllocationType,
+export async function createShiftAllocation(
+  data: CreateShiftAllocationType[],
   token: string
 ) {
   return fetchApi<CreateShiftAllocationType>({

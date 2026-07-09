@@ -140,7 +140,6 @@ import {
   deleteAttendancePolicy,
   getEmployeeActivityReport,
   getAllShiftAllocations,
-  createSingleShiftAllocation,
   createBulkShiftAllocation,
   editShiftAllocation,
   deleteShiftAllocation,
@@ -177,6 +176,7 @@ import {
   getLeaveBalanceSummaryReport,
   getEmployeeLeaveLedgerReport,
   getShiftReport,
+  createShiftAllocation,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5601,7 +5601,7 @@ export const useGetShiftAllocations = () => {
   })
 }
 
-export const useAddSingleShiftAllocation = ({
+export const useAddShiftAllocation = ({
   onClose,
   reset,
 }: {
@@ -5613,8 +5613,8 @@ export const useAddSingleShiftAllocation = ({
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: CreateShiftAllocationType) => {
-      const res = await createSingleShiftAllocation(data, token)
+    mutationFn: async (data: CreateShiftAllocationType[]) => {
+      const res = await createShiftAllocation(data, token)
       return res
     },
     onSuccess: (res) => {

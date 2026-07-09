@@ -1243,6 +1243,8 @@ export type GetShiftAllocationType = {
   effectiveTo: string | null
   remarks: string | null
   approvedBy: number | null
+  departmentId: number | null
+  departmentName: string | null
   tenantId?: number | null
   createdBy: number
   createdAt: string | null
@@ -1261,6 +1263,8 @@ export type CreateShiftAllocationType = {
   effectiveFrom: string
   effectiveTo?: string
   remarks?: string
+  recurrenceType: 'weekly' | 'monthly'
+  recurrenceActive: boolean
   approvedBy?: number
   tenantId?: number | null 
   createdBy: number
