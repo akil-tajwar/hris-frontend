@@ -145,13 +145,23 @@ const EmployeePreboardings = () => {
     [addChecklistMutation]
   )
 
+  const defaultDob = useMemo(() => {
+    const date = new Date()
+    date.setFullYear(date.getFullYear() - 25)
+    return date.toISOString().split('T')[0]
+  }, [])
+
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+
   // ── Preboarding form ───────────────────────────────────────────────────────
 
   const defaultForm = useCallback<any>(
     () => ({
       fullName: '',
       gender: 'Male' as 'Male' | 'Female',
-      dob: '',
+      dob: defaultDob,
       personalEmail: '',
       personalPhone: '',
       tentativeJoiningDate: '',
@@ -166,7 +176,7 @@ const EmployeePreboardings = () => {
       status: true,
       createdBy: userData?.userId || 0,
     }),
-    [userData?.userId]
+    [userData?.userId, defaultDob]
   )
 
   const [formData, setFormData] =
