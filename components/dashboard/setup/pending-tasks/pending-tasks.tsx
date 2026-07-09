@@ -39,7 +39,11 @@ import { useInitializeUser, userDataAtom } from '@/utils/user'
 import type { GetEmployeePreboardingChecklistType } from '@/utils/type'
 import { formatDate } from '@/utils/conversions'
 
-type SortableColumn = 'checklistDetailsName' | 'status' | 'isComplete' | 'deadlineDate'
+type SortableColumn =
+  | 'checklistDetailsName'
+  | 'status'
+  | 'isComplete'
+  | 'deadlineDate'
 
 interface GroupedPreboarding {
   preboardingId: number
@@ -193,6 +197,21 @@ const PendingTasks = () => {
     </TableHead>
   )
 
+  const getDeadlineStatus = (
+    deadlineDate: string | Date | null | undefined
+  ) => {
+    if (!deadlineDate) return 'none'
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const deadline = new Date(deadlineDate)
+    deadline.setHours(0, 0, 0, 0)
+    const diffDays =
+      (deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    if (diffDays < 0) return 'overdue'
+    if (diffDays === 1) return 'tomorrow'
+    return 'none'
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -269,7 +288,15 @@ const PendingTasks = () => {
                         <TableRow
                           key={task.checklistDetailsId}
                           className={
-                            task.isComplete ? 'bg-green-50/50' : undefined
+                            task.isComplete
+                              ? 'bg-green-50'
+                              : getDeadlineStatus(task.deadlineDate) ===
+                                  'overdue'
+                                ? 'bg-red-50'
+                                : getDeadlineStatus(task.deadlineDate) ===
+                                    'tomorrow'
+                                  ? 'bg-yellow-50'
+                                  : undefined
                           }
                         >
                           <TableCell>{serialNo}</TableCell>
