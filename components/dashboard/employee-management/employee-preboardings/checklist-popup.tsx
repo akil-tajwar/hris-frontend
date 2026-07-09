@@ -173,6 +173,35 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
     return Object.values(map)
   }, [checklists])
 
+  const toggleSelectAllInGroup = (details: ChecklistDetailRow[]) => {
+    const selectableDetails = details.filter(
+      (d) => !isAlreadyAssigned(d.checklistDetailsId)
+    )
+    const allSelected = selectableDetails.every(
+      (d) => !!selected[d.checklistDetailsId]
+    )
+
+    setSelected((prev) => {
+      const next = { ...prev }
+      selectableDetails.forEach((detail) => {
+        if (allSelected) {
+          delete next[detail.checklistDetailsId]
+        } else if (!next[detail.checklistDetailsId]) {
+          next[detail.checklistDetailsId] = {
+            checklistDetailsId: detail.checklistDetailsId,
+            responsibleEmployeeId: detail.responsibleEmployeeId,
+            completionDate: null,
+            deadlineDate: calculateDeadlineDate(detail.requiredDays),
+            status: false,
+            isComplete: false,
+            employeePreboardingChecklistId: null,
+          }
+        }
+      })
+      return next
+    })
+  }
+
   return (
     <Popup
       isOpen={isOpen}
@@ -208,7 +237,22 @@ export const ChecklistPopup: React.FC<ChecklistPopupProps> = ({
               <thead className="bg-gray-50">
                 <tr>
                   <th className="w-10 px-3 py-2 text-left font-medium text-gray-600">
-                    <span className="sr-only">Select</span>
+                    <Checkbox
+                      checked={
+                        group.details
+                          .filter(
+                            (d) => !isAlreadyAssigned(d.checklistDetailsId)
+                          )
+                          .every((d) => !!selected[d.checklistDetailsId]) &&
+                        group.details.some(
+                          (d) => !isAlreadyAssigned(d.checklistDetailsId)
+                        )
+                      }
+                      onCheckedChange={() =>
+                        toggleSelectAllInGroup(group.details)
+                      }
+                      className="border border-black/20"
+                    />
                   </th>
                   <th className="w-[40%] px-3 py-2 text-left font-medium text-gray-600">
                     Task
