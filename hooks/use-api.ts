@@ -177,6 +177,7 @@ import {
   getEmployeeLeaveLedgerReport,
   getShiftReport,
   createShiftAllocation,
+  uploadAttendance,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -240,6 +241,7 @@ import {
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveApply,
   GetTenantType,
+  UploadAttendanceType,
 } from '@/utils/type'
 
 //roles
@@ -6272,6 +6274,46 @@ export const useGetAllAttendanceDaily = () => {
     enabled: !!token,
     select: (data) => data,
   })
+}
+
+export const useUploadAttendance = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation<any, any, FormData>({
+    mutationFn: async (data: FormData) => {
+      const res = await uploadAttendance(data, token)
+      return res
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: result.failed > 0 ? 'Import Finished with Errors' : 'Success',
+        description: `Import complete. ${result.inserted} inserted, ${result.failed} failed.`,
+        variant: result.failed > 0 ? 'destructive' : undefined,
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['employeeAttendances'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error uploading attendance CSV:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Failed to import attendance punches.',
+      })
+    },
+  })
+
+  return mutation
 }
 
 export const useAddAttendanceDaily = ({

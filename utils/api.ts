@@ -95,6 +95,7 @@ import {
   GetEmployeeLeaveBalanceSummaryReport,
   GetEmployeeLeaveLedgerReport,
   GetShiftReportType,
+  UploadAttendanceType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1945,10 +1946,7 @@ export async function getEmployeeActivityReport(
   })
 }
 
-export async function getShiftReport(
-  date: string,
-  token: string
-) {
+export async function getShiftReport(date: string, token: string) {
   return fetchApi<GetShiftReportType>({
     url: `api/reports/shift-report?date=${date}`,
     method: 'GET',
@@ -2422,7 +2420,28 @@ export async function getAllAttendanceDaily(token: string) {
   return fetchApi<GetAttendanceDailyType[]>({
     url: 'api/attendanceDaily/getAll',
     method: 'GET',
-    headers: { Authorization: token, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//upload attendance
+export async function uploadAttendance(data: FormData, token: string) {
+  return fetchApiWithFile<{
+    savedFile: string
+    total: number
+    inserted: number
+    failed: number
+    errors: { row: number; reason: string }[]
+  }>({
+    url: 'api/csv/import',
+    method: 'POST',
+    body: data,
+    headers: {
+      Authorization: token,
+    },
   })
 }
 

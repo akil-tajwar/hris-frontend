@@ -1450,6 +1450,14 @@ export type GetAttendanceDailyType = {
   updatedAt: string | null
 }
 
+export const uploadAttendanceSchema = z.object({
+  device_id: z.string(),
+  employee_id: z.string(),
+  punch_time: z.string(),
+  verify_mode: z.string(),
+})
+export type UploadAttendanceType = z.infer<typeof uploadAttendanceSchema>
+
 export type CreateAttendanceDailyType = {
   employeeId: number
   attendanceDate: string

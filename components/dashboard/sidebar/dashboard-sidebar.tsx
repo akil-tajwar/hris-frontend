@@ -133,6 +133,10 @@ export function DashboardSidebar() {
           href: '/dashboard/attendance-management/attendance-policies',
         },
         {
+          title: 'Upload Attendance',
+          href: '/dashboard/attendance-management/upload-attendance',
+        },
+        {
           title: 'Attendance Processing',
           href: '/dashboard/attendance-management/attendance-processing',
         },

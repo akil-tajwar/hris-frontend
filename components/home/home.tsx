@@ -144,8 +144,8 @@ export default function Home() {
       return
     }
 
-    if (regPassword.length < 6) {
-      setRegisterError('Password must be at least 6 characters long.')
+    if (regPassword.length < 8) {
+      setRegisterError('Password must be at least 8 characters long.')
       return
     }
 
