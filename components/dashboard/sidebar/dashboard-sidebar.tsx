@@ -220,16 +220,20 @@ export function DashboardSidebar() {
           href: '/dashboard/report/employee-activity-report',
         },
         {
-          title: 'Daily Attendance Report',
-          href: '/dashboard/report/attendance-report',
-        },
-        {
           title: 'Shift Report',
           href: '/dashboard/report/shift-report',
         },
         {
+          title: 'Daily Attendance Report',
+          href: '/dashboard/report/attendance-report',
+        },
+        {
           title: 'Attendance Report Summary',
           href: '/dashboard/report/attendance-report-summary',
+        },
+        {
+          title: 'Individual Attendance Report',
+          href: '/dashboard/report/individual-attendance-report',
         },
         {
           title: 'Leave Balance Summary Report',
