@@ -65,6 +65,7 @@ export function CustomCombobox<T extends ComboboxItem>({
               displayValue={(item: T | null) => item?.name || ''}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={placeholder}
+              autoComplete="off"
             />
             <Combobox.Button className="absolute inset-y-0 top-2 right-0 flex items-center pr-2">
               <ChevronsUpDown

@@ -24,6 +24,7 @@ import {
   CalendarOff,
   AlertCircle,
   CalendarDays,
+  FileText,
 } from 'lucide-react'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
@@ -239,8 +240,17 @@ const AttendanceProcessing = () => {
         halfDay: acc.halfDay + r.summary.halfDay,
         holiday: acc.holiday + r.summary.holiday,
         weekend: acc.weekend + r.summary.weekend,
+        leave: acc.leave + r.summary.onLeave,
       }),
-      { present: 0, absent: 0, late: 0, halfDay: 0, holiday: 0, weekend: 0 }
+      {
+        present: 0,
+        absent: 0,
+        late: 0,
+        halfDay: 0,
+        holiday: 0,
+        weekend: 0,
+        leave: 0,
+      }
     )
   }, [rangeResults])
 
@@ -306,7 +316,7 @@ const AttendanceProcessing = () => {
                   {singleResult.processed} employees processed
                 </span>
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
                 <SummaryCard
                   label="Present"
                   value={singleResult.summary.present}
@@ -342,6 +352,12 @@ const AttendanceProcessing = () => {
                   value={singleResult.summary.weekend}
                   icon={<CalendarOff className="h-4 w-4 text-blue-500" />}
                   color="border-blue-200 bg-blue-50"
+                />
+                <SummaryCard
+                  label="Leave"
+                  value={singleResult.summary.onLeave}
+                  icon={<FileText className="h-4 w-4 text-indigo-500" />}
+                  color="border-indigo-200 bg-indigo-50"
                 />
               </div>
             </div>
@@ -401,7 +417,7 @@ const AttendanceProcessing = () => {
                 <h3 className="font-medium text-sm">
                   Total Summary — {rangeResults.length} days
                 </h3>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
                   <SummaryCard
                     label="Present"
                     value={rangeTotals.present}
@@ -437,6 +453,12 @@ const AttendanceProcessing = () => {
                     value={rangeTotals.weekend}
                     icon={<CalendarOff className="h-4 w-4 text-blue-500" />}
                     color="border-blue-200 bg-blue-50"
+                  />
+                  <SummaryCard
+                    label="Leave"
+                    value={rangeTotals.leave}
+                    icon={<FileText className="h-4 w-4 text-indigo-500" />}
+                    color="border-indigo-200 bg-indigo-50"
                   />
                 </div>
               </div>

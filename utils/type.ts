@@ -1372,6 +1372,7 @@ export type ProcessAttendanceSummary = {
   late: number
   halfDay: number
   absent: number
+  onLeave: number
 }
 
 export type ProcessAttendanceResultType = {
