@@ -13,25 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   CalendarClock,
-  History,
   Loader2,
   CheckCircle2,
   XCircle,
@@ -39,50 +23,50 @@ import {
   Umbrella,
   CalendarOff,
   AlertCircle,
+  CalendarDays,
 } from 'lucide-react'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
   useProcessAttendanceDate,
   useProcessAttendanceRange,
-  useGetAttendanceAuditLogs,
+  useGetAllAttendanceDailyWithParams,
+  // TODO: confirm the real hook name/path for fetching the employee list used
+  // elsewhere for CustomCombobox (e.g. in ProbationPromotionPopup / ShiftAllocationPage)
+  useGetAllEmployees,
 } from '@/hooks/use-api'
 import type {
   ProcessAttendanceResultType,
-  AttendanceAuditType,
+  GetAttendanceDailyType,
+  GetEmployeeType,
 } from '@/utils/type'
+import { CustomCombobox } from '@/utils/custom-combobox'
+import { formatDate } from '@/utils/conversions'
+// TODO: confirm the actual import path for CustomCombobox in this project
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }: { status: string }) => {
   const map: Record<string, { label: string; className: string }> = {
-    PRESENT:  { label: 'Present',  className: 'bg-green-100 text-green-700' },
-    ABSENT:   { label: 'Absent',   className: 'bg-red-100 text-red-600' },
-    LATE:     { label: 'Late',     className: 'bg-yellow-100 text-yellow-700' },
+    PRESENT: { label: 'Present', className: 'bg-green-100 text-green-700' },
+    ABSENT: { label: 'Absent', className: 'bg-red-100 text-red-600' },
+    LATE: { label: 'Late', className: 'bg-yellow-100 text-yellow-700' },
     HALF_DAY: { label: 'Half Day', className: 'bg-orange-100 text-orange-700' },
-    HOLIDAY:  { label: 'Holiday',  className: 'bg-purple-100 text-purple-700' },
-    WEEKEND:  { label: 'Weekend',  className: 'bg-blue-100 text-blue-600' },
+    HOLIDAY: { label: 'Holiday', className: 'bg-purple-100 text-purple-700' },
+    WEEKEND: { label: 'Weekend', className: 'bg-blue-100 text-blue-600' },
     ON_LEAVE: { label: 'On Leave', className: 'bg-teal-100 text-teal-700' },
   }
-  const s = map[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' }
+  const s = map[status] ?? {
+    label: status,
+    className: 'bg-gray-100 text-gray-600',
+  }
   return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}>
+    <span
+      className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.className}`}
+    >
       {s.label}
     </span>
   )
 }
-
-// ─── Action Badge ─────────────────────────────────────────────────────────────
-const ActionBadge = ({ action }: { action: string }) => (
-  <span
-    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-      action === 'INSERT'
-        ? 'bg-green-100 text-green-700'
-        : 'bg-blue-100 text-blue-700'
-    }`}
-  >
-    {action}
-  </span>
-)
 
 // ─── Summary Card ─────────────────────────────────────────────────────────────
 const SummaryCard = ({
@@ -106,11 +90,17 @@ const SummaryCard = ({
 )
 
 // ─── Process Result Card ──────────────────────────────────────────────────────
-const ProcessResultCard = ({ result }: { result: ProcessAttendanceResultType }) => (
+const ProcessResultCard = ({
+  result,
+}: {
+  result: ProcessAttendanceResultType
+}) => (
   <div className="border rounded-lg p-4 space-y-3">
     <div className="flex items-center justify-between">
       <span className="font-medium text-sm">{result.date}</span>
-      <span className="text-xs text-gray-500">{result.processed} employees</span>
+      <span className="text-xs text-gray-500">
+        {result.processed} employees
+      </span>
     </div>
     <div className="grid grid-cols-3 gap-2 text-xs">
       <div className="flex items-center gap-1">
@@ -150,6 +140,15 @@ const formatTime = (val: string | null) => {
   })
 }
 
+// ─── Format minutes as Xh Ym ──────────────────────────────────────────────────
+const formatMinutes = (val: number | null) => {
+  if (val === null || val === undefined) return '—'
+  const h = Math.floor(val / 60)
+  const m = val % 60
+  if (h === 0) return `${m}m`
+  return `${h}h ${m}m`
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const AttendanceProcessing = () => {
   useInitializeUser()
@@ -157,41 +156,55 @@ const AttendanceProcessing = () => {
 
   // ── Single date processing ──
   const [singleDate, setSingleDate] = useState('')
-  const [singleResult, setSingleResult] = useState<ProcessAttendanceResultType | null>(null)
+  const [singleResult, setSingleResult] =
+    useState<ProcessAttendanceResultType | null>(null)
 
   // ── Range processing ──
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [rangeResults, setRangeResults] = useState<ProcessAttendanceResultType[]>([])
+  const [rangeResults, setRangeResults] = useState<
+    ProcessAttendanceResultType[]
+  >([])
 
-  // ── Audit filters ──
-  const [auditPage, setAuditPage] = useState(1)
-  const [auditLimit] = useState(20)
-  const [auditEmployeeId, setAuditEmployeeId] = useState('')
-  const [auditFromDate, setAuditFromDate] = useState('')
-  const [auditToDate, setAuditToDate] = useState('')
-  const [auditAction, setAuditAction] = useState<'INSERT' | 'UPDATE' | ''>('')
-
-  // ── Applied audit filters (only when search is clicked) ──
-  const [appliedFilters, setAppliedFilters] = useState<{
-    employeeId?: number
-    fromDate?: string
-    toDate?: string
-    action?: 'INSERT' | 'UPDATE'
-    page: number
-    limit: number
-  }>({ page: 1, limit: 20 })
+  // ── Attendance (daily) tab filters ──
+  // These now drive the query directly — no "Search" button needed.
+  // Selecting/clearing any filter re-fetches automatically.
+  const [attendanceEmployee, setAttendanceEmployee] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [attendanceFromDate, setAttendanceFromDate] = useState('')
+  const [attendanceToDate, setAttendanceToDate] = useState('')
 
   // ── Mutations ──
-  const dateMutation  = useProcessAttendanceDate()
+  const dateMutation = useProcessAttendanceDate()
   const rangeMutation = useProcessAttendanceRange()
 
-  // ── Audit query ──
-  const { data: auditData, isLoading: auditLoading } = useGetAttendanceAuditLogs(appliedFilters)
+  // ── Attendance (daily) query — driven live by filter state ──
+  const attendanceEmployeeId = attendanceEmployee
+    ? Number(attendanceEmployee.id)
+    : undefined
 
-  const auditLogs: AttendanceAuditType[] = auditData?.data?.data ?? []
-  const auditTotal      = auditData?.data?.total ?? 0
-  const auditTotalPages = auditData?.data?.totalPages ?? 1
+  const { data: attendanceData, isLoading: attendanceLoading } =
+    useGetAllAttendanceDailyWithParams(
+      attendanceEmployeeId,
+      attendanceFromDate || undefined,
+      attendanceToDate || undefined
+    )
+
+  // TODO: verify actual response shape — assumed axios response.data.data like the audit log endpoint
+  const attendanceLogs: GetAttendanceDailyType[] = attendanceData?.data ?? []
+
+  // ── Employee list for CustomCombobox ──
+  const { data: employeesData } = useGetAllEmployees()
+  const employeeItems = useMemo(
+    () =>
+      (employeesData?.data ?? []).map((emp: GetEmployeeType) => ({
+        id: emp.employeeId!.toString(),
+        name: `${emp.empCode} - ${emp.empFullName}`,
+      })),
+    [employeesData]
+  )
 
   // ── Process single date ──
   const handleProcessDate = async (e: React.FormEvent) => {
@@ -209,43 +222,23 @@ const AttendanceProcessing = () => {
     if (res?.data?.results) setRangeResults(res.data.results)
   }
 
-  // ── Apply audit filters ──
-  const handleAuditSearch = () => {
-    setAuditPage(1)
-    setAppliedFilters({
-      employeeId: auditEmployeeId ? Number(auditEmployeeId) : undefined,
-      fromDate:   auditFromDate || undefined,
-      toDate:     auditToDate   || undefined,
-      action:     auditAction   || undefined,
-      page:       1,
-      limit:      auditLimit,
-    })
-  }
-
-  const handleAuditPageChange = (page: number) => {
-    setAuditPage(page)
-    setAppliedFilters((prev) => ({ ...prev, page }))
-  }
-
-  const handleAuditReset = () => {
-    setAuditEmployeeId('')
-    setAuditFromDate('')
-    setAuditToDate('')
-    setAuditAction('')
-    setAuditPage(1)
-    setAppliedFilters({ page: 1, limit: auditLimit })
+  // ── Reset attendance filters ──
+  const handleAttendanceReset = () => {
+    setAttendanceEmployee(null)
+    setAttendanceFromDate('')
+    setAttendanceToDate('')
   }
 
   // ── Range summary totals ──
   const rangeTotals = useMemo(() => {
     return rangeResults.reduce(
       (acc, r) => ({
-        present:  acc.present  + r.summary.present,
-        absent:   acc.absent   + r.summary.absent,
-        late:     acc.late     + r.summary.late,
-        halfDay:  acc.halfDay  + r.summary.halfDay,
-        holiday:  acc.holiday  + r.summary.holiday,
-        weekend:  acc.weekend  + r.summary.weekend,
+        present: acc.present + r.summary.present,
+        absent: acc.absent + r.summary.absent,
+        late: acc.late + r.summary.late,
+        halfDay: acc.halfDay + r.summary.halfDay,
+        holiday: acc.holiday + r.summary.holiday,
+        weekend: acc.weekend + r.summary.weekend,
       }),
       { present: 0, absent: 0, late: 0, halfDay: 0, holiday: 0, weekend: 0 }
     )
@@ -266,9 +259,9 @@ const AttendanceProcessing = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="single">Process Single Date</TabsTrigger>
           <TabsTrigger value="range">Process Date Range</TabsTrigger>
-          <TabsTrigger value="audit">
-            <History className="h-4 w-4 mr-1" />
-            Audit Log
+          <TabsTrigger value="attendance">
+            <CalendarDays className="h-4 w-4 mr-1" />
+            Attendance
           </TabsTrigger>
         </TabsList>
 
@@ -308,9 +301,7 @@ const AttendanceProcessing = () => {
           {singleResult && (
             <div className="border rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">
-                  Result — {singleResult.date}
-                </h3>
+                <h3 className="font-medium">Result — {singleResult.date}</h3>
                 <span className="text-sm text-gray-500">
                   {singleResult.processed} employees processed
                 </span>
@@ -360,7 +351,10 @@ const AttendanceProcessing = () => {
         {/* ── Tab 2: Date Range ── */}
         <TabsContent value="range" className="space-y-4">
           <div className="border rounded-lg p-4">
-            <form onSubmit={handleProcessRange} className="flex items-end gap-4 flex-wrap">
+            <form
+              onSubmit={handleProcessRange}
+              className="flex items-end gap-4 flex-wrap"
+            >
               <div className="space-y-1">
                 <Label htmlFor="fromDate">From Date</Label>
                 <Input
@@ -408,12 +402,42 @@ const AttendanceProcessing = () => {
                   Total Summary — {rangeResults.length} days
                 </h3>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                  <SummaryCard label="Present"  value={rangeTotals.present}  icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}  color="border-green-200 bg-green-50" />
-                  <SummaryCard label="Absent"   value={rangeTotals.absent}   icon={<XCircle className="h-4 w-4 text-red-500" />}         color="border-red-200 bg-red-50" />
-                  <SummaryCard label="Late"     value={rangeTotals.late}     icon={<Clock className="h-4 w-4 text-yellow-600" />}         color="border-yellow-200 bg-yellow-50" />
-                  <SummaryCard label="Half Day" value={rangeTotals.halfDay}  icon={<AlertCircle className="h-4 w-4 text-orange-500" />}   color="border-orange-200 bg-orange-50" />
-                  <SummaryCard label="Holiday"  value={rangeTotals.holiday}  icon={<Umbrella className="h-4 w-4 text-purple-600" />}      color="border-purple-200 bg-purple-50" />
-                  <SummaryCard label="Weekend"  value={rangeTotals.weekend}  icon={<CalendarOff className="h-4 w-4 text-blue-500" />}     color="border-blue-200 bg-blue-50" />
+                  <SummaryCard
+                    label="Present"
+                    value={rangeTotals.present}
+                    icon={<CheckCircle2 className="h-4 w-4 text-green-600" />}
+                    color="border-green-200 bg-green-50"
+                  />
+                  <SummaryCard
+                    label="Absent"
+                    value={rangeTotals.absent}
+                    icon={<XCircle className="h-4 w-4 text-red-500" />}
+                    color="border-red-200 bg-red-50"
+                  />
+                  <SummaryCard
+                    label="Late"
+                    value={rangeTotals.late}
+                    icon={<Clock className="h-4 w-4 text-yellow-600" />}
+                    color="border-yellow-200 bg-yellow-50"
+                  />
+                  <SummaryCard
+                    label="Half Day"
+                    value={rangeTotals.halfDay}
+                    icon={<AlertCircle className="h-4 w-4 text-orange-500" />}
+                    color="border-orange-200 bg-orange-50"
+                  />
+                  <SummaryCard
+                    label="Holiday"
+                    value={rangeTotals.holiday}
+                    icon={<Umbrella className="h-4 w-4 text-purple-600" />}
+                    color="border-purple-200 bg-purple-50"
+                  />
+                  <SummaryCard
+                    label="Weekend"
+                    value={rangeTotals.weekend}
+                    icon={<CalendarOff className="h-4 w-4 text-blue-500" />}
+                    color="border-blue-200 bg-blue-50"
+                  />
                 </div>
               </div>
 
@@ -427,28 +451,27 @@ const AttendanceProcessing = () => {
           )}
         </TabsContent>
 
-        {/* ── Tab 3: Audit Log ── */}
-        <TabsContent value="audit" className="space-y-4">
-          {/* Filters */}
+        {/* ── Tab 3: Attendance (daily records) ── */}
+        <TabsContent value="attendance" className="space-y-4">
+          {/* Filters — auto-apply on change, no Search button */}
           <div className="border rounded-lg p-4 space-y-3">
             <p className="text-sm font-medium text-gray-700">Filters</p>
             <div className="flex flex-wrap gap-3 items-end">
               <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Employee ID</Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 6"
-                  value={auditEmployeeId}
-                  onChange={(e) => setAuditEmployeeId(e.target.value)}
-                  className="w-32 h-8 text-sm"
+                <Label className="text-xs text-gray-500">Employee</Label>
+                <CustomCombobox
+                  items={employeeItems}
+                  value={attendanceEmployee}
+                  onChange={(value) => setAttendanceEmployee(value)}
+                  placeholder="Select employee"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-gray-500">From Date</Label>
                 <Input
                   type="date"
-                  value={auditFromDate}
-                  onChange={(e) => setAuditFromDate(e.target.value)}
+                  value={attendanceFromDate}
+                  onChange={(e) => setAttendanceFromDate(e.target.value)}
                   className="w-40 h-8 text-sm"
                 />
               </div>
@@ -456,55 +479,30 @@ const AttendanceProcessing = () => {
                 <Label className="text-xs text-gray-500">To Date</Label>
                 <Input
                   type="date"
-                  value={auditToDate}
-                  onChange={(e) => setAuditToDate(e.target.value)}
+                  value={attendanceToDate}
+                  onChange={(e) => setAttendanceToDate(e.target.value)}
                   className="w-40 h-8 text-sm"
                 />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-gray-500">Action</Label>
-                <Select
-                  value={auditAction || 'all'}
-                  onValueChange={(v) =>
-                    setAuditAction(v === 'all' ? '' : (v as 'INSERT' | 'UPDATE'))
-                  }
-                >
-                  <SelectTrigger className="w-32 h-8 text-sm">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="INSERT">INSERT</SelectItem>
-                    <SelectItem value="UPDATE">UPDATE</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={handleAuditSearch}
-                  className="bg-blue-500 hover:bg-blue-600 text-white h-8"
-                >
-                  Search
-                </Button>
-                <Button
-                  size="sm"
                   variant="outline"
-                  onClick={handleAuditReset}
+                  onClick={handleAttendanceReset}
                   className="h-8"
                 >
                   Reset
                 </Button>
               </div>
             </div>
-            {auditTotal > 0 && (
+            {attendanceLogs.length > 0 && (
               <p className="text-xs text-gray-500">
-                {auditTotal} records found
+                {attendanceLogs.length} records found
               </p>
             )}
           </div>
 
-          {/* Audit Table */}
+          {/* Attendance Table */}
           <div className="rounded-md border">
             <Table>
               <TableHeader className="bg-blue-100">
@@ -512,82 +510,66 @@ const AttendanceProcessing = () => {
                   <TableHead>Sl No.</TableHead>
                   <TableHead>Employee</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Old Status</TableHead>
-                  <TableHead>New Status</TableHead>
-                  <TableHead>Old In/Out</TableHead>
-                  <TableHead>New In/Out</TableHead>
-                  <TableHead>Changed At</TableHead>
+                  <TableHead>First In</TableHead>
+                  <TableHead>Last Out</TableHead>
+                  <TableHead>Worked</TableHead>
+                  <TableHead>Late</TableHead>
+                  <TableHead>Early Out</TableHead>
+                  <TableHead>Overtime</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {auditLoading ? (
+                {attendanceLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
+                    <TableCell colSpan={10} className="text-center py-8">
                       <Loader2 className="h-5 w-5 animate-spin mx-auto text-blue-500" />
                     </TableCell>
                   </TableRow>
-                ) : auditLogs.length === 0 ? (
+                ) : attendanceLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-400">
-                      No audit logs found
+                    <TableCell
+                      colSpan={10}
+                      className="text-center py-8 text-gray-400"
+                    >
+                      No attendance records found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  auditLogs.map((log, index) => (
+                  attendanceLogs.map((log, index) => (
                     <TableRow key={log.id}>
-                      <TableCell>
-                        {(appliedFilters.page - 1) * auditLimit + index + 1}
-                      </TableCell>
+                      <TableCell>{index + 1}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="text-sm font-medium">{log.employeeName ?? '—'}</p>
+                          <p className="text-sm font-medium">
+                            {log.employeeName ?? '—'}
+                          </p>
                           <p className="text-xs text-gray-400">{log.empCode}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{log.attendanceDate}</TableCell>
-                      <TableCell>
-                        <ActionBadge action={log.action} />
-                      </TableCell>
-                      <TableCell>
-                        {log.oldStatus ? (
-                          <StatusBadge status={log.oldStatus} />
-                        ) : (
-                          <span className="text-gray-400 text-xs">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={log.newStatus} />
+                      <TableCell className="text-sm">
+                        {formatDate(new Date(log.attendanceDate))}
                       </TableCell>
                       <TableCell className="text-xs text-gray-500">
-                        {log.oldFirstIn || log.oldLastOut ? (
-                          <>
-                            <span>{formatTime(log.oldFirstIn)}</span>
-                            <span className="mx-1">→</span>
-                            <span>{formatTime(log.oldLastOut)}</span>
-                          </>
-                        ) : (
-                          '—'
-                        )}
+                        {formatTime(log.firstIn)}
                       </TableCell>
                       <TableCell className="text-xs text-gray-500">
-                        {log.newFirstIn || log.newLastOut ? (
-                          <>
-                            <span>{formatTime(log.newFirstIn)}</span>
-                            <span className="mx-1">→</span>
-                            <span>{formatTime(log.newLastOut)}</span>
-                          </>
-                        ) : (
-                          '—'
-                        )}
+                        {formatTime(log.lastOut)}
                       </TableCell>
                       <TableCell className="text-xs text-gray-500">
-                        {log.changedAt
-                          ? new Date(log.changedAt).toLocaleString('en-BD', {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })
-                          : '—'}
+                        {formatMinutes(log.workedMinutes)}
+                      </TableCell>
+                      <TableCell className="text-xs text-gray-500">
+                        {formatMinutes(log.lateMinutes)}
+                      </TableCell>
+                      <TableCell className="text-xs text-gray-500">
+                        {formatMinutes(log.earlyOutMinutes)}
+                      </TableCell>
+                      <TableCell className="text-xs text-gray-500">
+                        {formatMinutes(log.overtimeMinutes)}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={log.status} />
                       </TableCell>
                     </TableRow>
                   ))
@@ -595,57 +577,6 @@ const AttendanceProcessing = () => {
               </TableBody>
             </Table>
           </div>
-
-          {/* Audit Pagination */}
-          {auditTotalPages > 1 && (
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => handleAuditPageChange(Math.max(auditPage - 1, 1))}
-                      className={auditPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  {[...Array(auditTotalPages)].map((_, index) => {
-                    if (
-                      index === 0 ||
-                      index === auditTotalPages - 1 ||
-                      (index >= auditPage - 2 && index <= auditPage + 2)
-                    ) {
-                      return (
-                        <PaginationItem key={`page-${index}`}>
-                          <PaginationLink
-                            onClick={() => handleAuditPageChange(index + 1)}
-                            isActive={auditPage === index + 1}
-                          >
-                            {index + 1}
-                          </PaginationLink>
-                        </PaginationItem>
-                      )
-                    } else if (index === auditPage - 3 || index === auditPage + 3) {
-                      return (
-                        <PaginationItem key={`ellipsis-${index}`}>
-                          <PaginationLink>...</PaginationLink>
-                        </PaginationItem>
-                      )
-                    }
-                    return null
-                  })}
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() =>
-                        handleAuditPageChange(Math.min(auditPage + 1, auditTotalPages))
-                      }
-                      className={
-                        auditPage === auditTotalPages ? 'pointer-events-none opacity-50' : ''
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
         </TabsContent>
       </Tabs>
     </div>

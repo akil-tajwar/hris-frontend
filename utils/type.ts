@@ -1470,7 +1470,6 @@ export type CreateAttendanceDailyType = {
   status: AttendanceDailyStatus
   createdBy: number
 }
-
 export type UpdateAttendanceDailyType = Partial<CreateAttendanceDailyType> & {
   updatedBy?: number
 }

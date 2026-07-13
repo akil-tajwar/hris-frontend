@@ -2427,6 +2427,22 @@ export async function getAllAttendanceDaily(token: string) {
   })
 }
 
+export async function getAllAttendanceDailyWithParams(
+  token: string,
+  employeeId?: number,
+  fromDate?: string,
+  toDate?: string
+) {
+  return fetchApi<GetAttendanceDailyType[]>({
+    url: `api/attendanceDaily/getAll?employeeId=${employeeId ?? ''}&fromDate=${fromDate ?? ''}&toDate=${toDate ?? ''}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 //upload attendance
 export async function uploadAttendance(data: FormData, token: string) {
   return fetchApiWithFile<{

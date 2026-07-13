@@ -178,6 +178,7 @@ import {
   getShiftReport,
   createShiftAllocation,
   uploadAttendance,
+  getAllAttendanceDailyWithParams,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -6270,6 +6271,30 @@ export const useGetAllAttendanceDaily = () => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getAllAttendanceDaily(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetAllAttendanceDailyWithParams = (
+  employeeId?: number,
+  fromDate?: string,
+  toDate?: string
+) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendanceDaily', { employeeId, fromDate, toDate }],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAllAttendanceDailyWithParams(
+        token,
+        employeeId,
+        fromDate,
+        toDate
+      )
     },
     enabled: !!token,
     select: (data) => data,
