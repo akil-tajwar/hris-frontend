@@ -110,7 +110,10 @@ const toIsoFromDateTime = (date: string, time: string) => {
   return d.toISOString()
 }
 
-const computeWorkedMinutes = (firstIn: string | null, lastOut: string | null) => {
+const computeWorkedMinutes = (
+  firstIn: string | null,
+  lastOut: string | null
+) => {
   if (!firstIn || !lastOut) return 0
   const diff = new Date(lastOut).getTime() - new Date(firstIn).getTime()
   return diff > 0 ? Math.round(diff / 60000) : 0
@@ -158,7 +161,10 @@ const ManualAttendanceEntry = () => {
     () => attendanceRes?.data ?? [],
     [attendanceRes?.data]
   )
-  const employees = useMemo(() => employeesRes?.data ?? [], [employeesRes?.data])
+  const employees = useMemo(
+    () => employeesRes?.data ?? [],
+    [employeesRes?.data]
+  )
 
   // ── create/edit dialog state ──
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -192,7 +198,8 @@ const ManualAttendanceEntry = () => {
 
   const filteredRecords = useMemo(() => {
     return records.filter((r) => {
-      if (filterEmployeeId && r.employeeId !== Number(filterEmployeeId)) return false
+      if (filterEmployeeId && r.employeeId !== Number(filterEmployeeId))
+        return false
       if (filterStatus && r.status !== filterStatus) return false
       const dateOnly = r.attendanceDate.slice(0, 10)
       if (filterFromDate && dateOnly < filterFromDate) return false
@@ -244,8 +251,12 @@ const ManualAttendanceEntry = () => {
     e.preventDefault()
     if (!form.employeeId || !form.attendanceDate || !form.status) return
 
-    const firstIn = needsTime ? toIsoFromDateTime(form.attendanceDate, form.firstInTime) : null
-    const lastOut = needsTime ? toIsoFromDateTime(form.attendanceDate, form.lastOutTime) : null
+    const firstIn = needsTime
+      ? toIsoFromDateTime(form.attendanceDate, form.firstInTime)
+      : null
+    const lastOut = needsTime
+      ? toIsoFromDateTime(form.attendanceDate, form.lastOutTime)
+      : null
     const workedMinutes = needsTime ? computeWorkedMinutes(firstIn, lastOut) : 0
 
     const payload = {
@@ -320,7 +331,10 @@ const ManualAttendanceEntry = () => {
               <SelectContent>
                 <SelectItem value="all">All employees</SelectItem>
                 {employees.map((emp) => (
-                  <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
+                  <SelectItem
+                    key={emp.employeeId}
+                    value={String(emp.employeeId)}
+                  >
                     {emp.empFullName} ({emp.empCode})
                   </SelectItem>
                 ))}
@@ -377,12 +391,19 @@ const ManualAttendanceEntry = () => {
             />
           </div>
 
-          <Button size="sm" variant="outline" onClick={handleResetFilters} className="h-8">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleResetFilters}
+            className="h-8"
+          >
             <X className="h-3.5 w-3.5 mr-1" />
             Reset
           </Button>
         </div>
-        <p className="text-xs text-gray-500">{filteredRecords.length} records found</p>
+        <p className="text-xs text-gray-500">
+          {filteredRecords.length} records found
+        </p>
       </div>
 
       {/* Table */}
@@ -412,7 +433,10 @@ const ManualAttendanceEntry = () => {
               </TableRow>
             ) : paginatedRecords.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-8 text-gray-400">
+                <TableCell
+                  colSpan={11}
+                  className="text-center py-8 text-gray-400"
+                >
                   No attendance records found
                 </TableCell>
               </TableRow>
@@ -422,20 +446,36 @@ const ManualAttendanceEntry = () => {
                   <TableCell>{(page - 1) * PAGE_SIZE + index + 1}</TableCell>
                   <TableCell>
                     <div>
-                      <p className="text-sm font-medium">{r.employeeName ?? '—'}</p>
+                      <p className="text-sm font-medium">
+                        {r.employeeName ?? '—'}
+                      </p>
                       <p className="text-xs text-gray-400">{r.empCode}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm">{r.attendanceDate.slice(0, 10)}</TableCell>
+                  <TableCell className="text-sm">
+                    {r.attendanceDate.slice(0, 10)}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge status={r.status} />
                   </TableCell>
-                  <TableCell className="text-xs text-gray-500">{formatTime(r.firstIn)}</TableCell>
-                  <TableCell className="text-xs text-gray-500">{formatTime(r.lastOut)}</TableCell>
-                  <TableCell className="text-xs text-gray-500">{r.workedMinutes ?? 0}m</TableCell>
-                  <TableCell className="text-xs text-gray-500">{r.lateMinutes ?? 0}m</TableCell>
-                  <TableCell className="text-xs text-gray-500">{r.earlyOutMinutes ?? 0}m</TableCell>
-                  <TableCell className="text-xs text-gray-500">{r.overtimeMinutes ?? 0}m</TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {formatTime(r.firstIn)}
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {formatTime(r.lastOut)}
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {r.workedMinutes ?? 0}m
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {r.lateMinutes ?? 0}m
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {r.earlyOutMinutes ?? 0}m
+                  </TableCell>
+                  <TableCell className="text-xs text-gray-500">
+                    {r.overtimeMinutes ?? 0}m
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       size="icon"
@@ -463,29 +503,55 @@ const ManualAttendanceEntry = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-            {[...Array(totalPages)].map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink onClick={() => setPage(i + 1)} isActive={page === i + 1}>
-                  {i + 1}
-                </PaginationLink>
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
               </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+
+              {[...Array(totalPages)].map((_, index) => {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= page - 3 && index <= page + 1)
+                ) {
+                  return (
+                    <PaginationItem key={`page-${index}`}>
+                      <PaginationLink
+                        onClick={() => setPage(index + 1)}
+                        isActive={page === index + 1}
+                      >
+                        {index + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                } else if (index === page - 4 || index === page + 2) {
+                  return (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <PaginationLink>...</PaginationLink>
+                    </PaginationItem>
+                  )
+                }
+                return null
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    page === totalPages ? 'pointer-events-none opacity-50' : ''
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       )}
 
       {/* Create / Edit Dialog */}
@@ -493,7 +559,9 @@ const ManualAttendanceEntry = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? 'Edit Attendance Record' : 'Add Manual Attendance Entry'}
+              {editingId
+                ? 'Edit Attendance Record'
+                : 'Add Manual Attendance Entry'}
             </DialogTitle>
           </DialogHeader>
 
@@ -510,7 +578,10 @@ const ManualAttendanceEntry = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((emp) => (
-                    <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
+                    <SelectItem
+                      key={emp.employeeId}
+                      value={String(emp.employeeId)}
+                    >
                       {emp.empFullName} ({emp.empCode})
                     </SelectItem>
                   ))}
@@ -536,7 +607,10 @@ const ManualAttendanceEntry = () => {
                 <Select
                   value={form.status}
                   onValueChange={(v) =>
-                    setForm((f) => ({ ...f, status: v as AttendanceDailyStatus }))
+                    setForm((f) => ({
+                      ...f,
+                      status: v as AttendanceDailyStatus,
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -598,7 +672,10 @@ const ManualAttendanceEntry = () => {
                     min={0}
                     value={form.earlyOutMinutes}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, earlyOutMinutes: e.target.value }))
+                      setForm((f) => ({
+                        ...f,
+                        earlyOutMinutes: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -609,7 +686,10 @@ const ManualAttendanceEntry = () => {
                     min={0}
                     value={form.overtimeMinutes}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, overtimeMinutes: e.target.value }))
+                      setForm((f) => ({
+                        ...f,
+                        overtimeMinutes: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -656,7 +736,8 @@ const ManualAttendanceEntry = () => {
           </DialogHeader>
 
           <p className="text-sm text-gray-500">
-            এই attendance record টা delete করতে চাও? এই action আর ফিরিয়ে নেওয়া যাবে না।
+            এই attendance record টা delete করতে চাও? এই action আর ফিরিয়ে নেওয়া
+            যাবে না।
           </p>
 
           <DialogFooter>
@@ -691,8 +772,6 @@ const ManualAttendanceEntry = () => {
 }
 
 export default ManualAttendanceEntry
-
-
 
 // 'use client'
 

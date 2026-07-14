@@ -317,7 +317,11 @@ const UploadAttendance = () => {
         workbook.SheetNames.find((name) => name !== 'Lookup') ??
         workbook.SheetNames[0]
       const sheet = workbook.Sheets[sheetName]
-      const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+      const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, {
+        defval: '',
+        raw: false, // return formatted strings, not Date objects/serials
+        dateNF: 'yyyy-mm-dd hh:mm:ss', // force this exact format for date-typed cells
+      })
 
       // drop fully-blank rows (trailing empty lines/rows in the source file)
       const rows = rawRows.filter((row) =>

@@ -32,8 +32,6 @@ import {
   useProcessAttendanceDate,
   useProcessAttendanceRange,
   useGetAllAttendanceDailyWithParams,
-  // TODO: confirm the real hook name/path for fetching the employee list used
-  // elsewhere for CustomCombobox (e.g. in ProbationPromotionPopup / ShiftAllocationPage)
   useGetAllEmployees,
 } from '@/hooks/use-api'
 import type {
@@ -43,7 +41,14 @@ import type {
 } from '@/utils/type'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import { formatDate } from '@/utils/conversions'
-// TODO: confirm the actual import path for CustomCombobox in this project
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }: { status: string }) => {
@@ -150,6 +155,8 @@ const formatMinutes = (val: number | null) => {
   return `${h}h ${m}m`
 }
 
+const PAGE_SIZE = 15
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const AttendanceProcessing = () => {
   useInitializeUser()
@@ -176,6 +183,7 @@ const AttendanceProcessing = () => {
   } | null>(null)
   const [attendanceFromDate, setAttendanceFromDate] = useState('')
   const [attendanceToDate, setAttendanceToDate] = useState('')
+  const [attendancePage, setAttendancePage] = useState(1)
 
   // ── Mutations ──
   const dateMutation = useProcessAttendanceDate()
@@ -195,6 +203,18 @@ const AttendanceProcessing = () => {
 
   // TODO: verify actual response shape — assumed axios response.data.data like the audit log endpoint
   const attendanceLogs: GetAttendanceDailyType[] = attendanceData?.data ?? []
+  const attendanceTotalPages = Math.max(
+    1,
+    Math.ceil(attendanceLogs.length / PAGE_SIZE)
+  )
+  const paginatedAttendanceLogs = useMemo(
+    () =>
+      attendanceLogs.slice(
+        (attendancePage - 1) * PAGE_SIZE,
+        attendancePage * PAGE_SIZE
+      ),
+    [attendanceLogs, attendancePage]
+  )
 
   // ── Employee list for CustomCombobox ──
   const { data: employeesData } = useGetAllEmployees()
@@ -228,6 +248,7 @@ const AttendanceProcessing = () => {
     setAttendanceEmployee(null)
     setAttendanceFromDate('')
     setAttendanceToDate('')
+    setAttendancePage(1)
   }
 
   // ── Range summary totals ──
@@ -484,7 +505,10 @@ const AttendanceProcessing = () => {
                 <CustomCombobox
                   items={employeeItems}
                   value={attendanceEmployee}
-                  onChange={(value) => setAttendanceEmployee(value)}
+                  onChange={(value) => {
+                    setAttendanceEmployee(value)
+                    setAttendancePage(1)
+                  }}
                   placeholder="Select employee"
                 />
               </div>
@@ -493,7 +517,10 @@ const AttendanceProcessing = () => {
                 <Input
                   type="date"
                   value={attendanceFromDate}
-                  onChange={(e) => setAttendanceFromDate(e.target.value)}
+                  onChange={(e) => {
+                    setAttendanceFromDate(e.target.value)
+                    setAttendancePage(1)
+                  }}
                   className="w-40 h-8 text-sm"
                 />
               </div>
@@ -502,7 +529,10 @@ const AttendanceProcessing = () => {
                 <Input
                   type="date"
                   value={attendanceToDate}
-                  onChange={(e) => setAttendanceToDate(e.target.value)}
+                  onChange={(e) => {
+                    setAttendanceToDate(e.target.value)
+                    setAttendancePage(1)
+                  }}
                   className="w-40 h-8 text-sm"
                 />
               </div>
@@ -548,7 +578,7 @@ const AttendanceProcessing = () => {
                       <Loader2 className="h-5 w-5 animate-spin mx-auto text-blue-500" />
                     </TableCell>
                   </TableRow>
-                ) : attendanceLogs.length === 0 ? (
+                ) : paginatedAttendanceLogs.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={10}
@@ -558,7 +588,7 @@ const AttendanceProcessing = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  attendanceLogs.map((log, index) => (
+                  paginatedAttendanceLogs.map((log, index) => (
                     <TableRow key={log.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
@@ -599,6 +629,71 @@ const AttendanceProcessing = () => {
               </TableBody>
             </Table>
           </div>
+          {attendanceTotalPages > 1 && (
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setAttendancePage((prev) => Math.max(prev - 1, 1))
+                      }
+                      className={
+                        attendancePage === 1
+                          ? 'pointer-events-none opacity-50'
+                          : ''
+                      }
+                    />
+                  </PaginationItem>
+
+                  {[...Array(attendanceTotalPages)].map((_, index) => {
+                    if (
+                      index === 0 ||
+                      index === attendanceTotalPages - 1 ||
+                      (index >= attendancePage - 3 &&
+                        index <= attendancePage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={`page-${index}`}>
+                          <PaginationLink
+                            onClick={() => setAttendancePage(index + 1)}
+                            isActive={attendancePage === index + 1}
+                          >
+                            {index + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    } else if (
+                      index === attendancePage - 4 ||
+                      index === attendancePage + 2
+                    ) {
+                      return (
+                        <PaginationItem key={`ellipsis-${index}`}>
+                          <PaginationLink>...</PaginationLink>
+                        </PaginationItem>
+                      )
+                    }
+                    return null
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setAttendancePage((prev) =>
+                          Math.min(prev + 1, attendanceTotalPages)
+                        )
+                      }
+                      className={
+                        attendancePage === attendanceTotalPages
+                          ? 'pointer-events-none opacity-50'
+                          : ''
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
