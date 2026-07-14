@@ -179,6 +179,12 @@ import {
   createShiftAllocation,
   uploadAttendance,
   getAllAttendanceDailyWithParams,
+  getAttendanceDailyByUserId,
+  addManualAttendanceDailyApply,
+  editManualAttendanceDailyApply,
+  approveManualAttendanceByRepAuth,
+  approveManualAttendanceByHr,
+  rejectManualAttendance,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -243,6 +249,8 @@ import {
   GetEmployeeLeaveApply,
   GetTenantType,
   UploadAttendanceType,
+  CreateAttendanceDailyApplyType,
+  GetAttendanceDailyApplyType,
 } from '@/utils/type'
 
 //roles
@@ -6465,6 +6473,154 @@ export const useDeleteAttendanceDaily = ({
         title: 'Error',
         variant: 'destructive',
         description: 'This data is needed elsewhere',
+      })
+    },
+  })
+}
+
+// user will be able to see his/her attendance daily data
+export const useGetAllAttendanceDailyByUserId = (userId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendanceDaily', { userId }],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAttendanceDailyByUserId(userId, token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+// user will be able to apply for attendance daily manually
+export const useAddManualAttendanceDailyApply = () => {
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: CreateAttendanceDailyApplyType
+    }) => {
+      if (!token) throw new Error('Token not found')
+      return addManualAttendanceDailyApply(id, data, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDaily'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDailyApply'],
+      })
+    },
+  })
+}
+
+// responsible authority will be able to change data if needed
+export const useEditManualAttendanceDailyApply = () => {
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetAttendanceDailyApplyType
+    }) => {
+      if (!token) throw new Error('Token not found')
+      return editManualAttendanceDailyApply(id, data, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDailyApply'],
+      })
+    },
+  })
+}
+
+// APPROVE BY REPORTING AUTHORITY
+export const useApproveManualAttendanceByRepAuth = () => {
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      updatedBy,
+    }: {
+      id: number
+      updatedBy: number
+    }) => {
+      if (!token) throw new Error('Token not found')
+      return approveManualAttendanceByRepAuth(id, updatedBy, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDailyApply'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDaily'],
+      })
+    },
+  })
+}
+
+// APPROVE BY HR
+export const useApproveManualAttendanceByHr = () => {
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      updatedBy,
+    }: {
+      id: number
+      updatedBy: number
+    }) => {
+      if (!token) throw new Error('Token not found')
+      return approveManualAttendanceByHr(id, updatedBy, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDailyApply'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDaily'],
+      })
+    },
+  })
+}
+
+// REJECT MANUAL ATTENDANCE
+export const useRejectManualAttendance = () => {
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      updatedBy,
+    }: {
+      id: number
+      updatedBy: number
+    }) => {
+      if (!token) throw new Error('Token not found')
+      return rejectManualAttendance(id, updatedBy, token)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDailyApply'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['attendanceDaily'],
       })
     },
   })

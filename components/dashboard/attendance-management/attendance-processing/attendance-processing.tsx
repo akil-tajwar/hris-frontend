@@ -201,8 +201,10 @@ const AttendanceProcessing = () => {
       attendanceToDate || undefined
     )
 
-  // TODO: verify actual response shape — assumed axios response.data.data like the audit log endpoint
-  const attendanceLogs: GetAttendanceDailyType[] = attendanceData?.data ?? []
+  const attendanceLogs: GetAttendanceDailyType[] = useMemo(
+    () => attendanceData?.data ?? [],
+    [attendanceData]
+  )
   const attendanceTotalPages = Math.max(
     1,
     Math.ceil(attendanceLogs.length / PAGE_SIZE)

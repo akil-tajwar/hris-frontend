@@ -96,6 +96,8 @@ import {
   GetEmployeeLeaveLedgerReport,
   GetShiftReportType,
   UploadAttendanceType,
+  CreateAttendanceDailyApplyType,
+  GetAttendanceDailyApplyType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -2461,17 +2463,6 @@ export async function uploadAttendance(data: FormData, token: string) {
   })
 }
 
-export async function getAttendanceDailyByEmployee(
-  employeeId: number,
-  token: string
-) {
-  return fetchApi<GetAttendanceDailyType[]>({
-    url: `api/attendanceDaily/getByEmployee/${employeeId}`,
-    method: 'GET',
-    headers: { Authorization: token, 'Content-Type': 'application/json' },
-  })
-}
-
 export async function createAttendanceDaily(
   data: CreateAttendanceDailyType,
   token: string
@@ -2502,5 +2493,95 @@ export async function deleteAttendanceDaily(id: number, token: string) {
     url: `api/attendanceDaily/delete/${id}`,
     method: 'DELETE',
     headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+//user will be able to see his/her attendance daily data
+export async function getAttendanceDailyByUserId(
+  userId: number,
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyType[]>({
+    url: `api/attendanceDaily/getByUserId/${userId}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
+//user will be able to apply for attendance daily manually
+export async function addManualAttendanceDailyApply(
+  id: number,
+  data: CreateAttendanceDailyApplyType,
+  token: string
+) {
+  return fetchApi<CreateAttendanceDailyApplyType>({
+    url: `api/attendanceDailyApply/create/${id}`,
+    method: 'POST',
+    body: data,
+    headers: { Authorization: `${token}`, 'Content-Type': 'application/json' },
+  })
+}
+
+// responsible authority  will be able to change data if needed
+export async function editManualAttendanceDailyApply(
+  id: number,
+  data: GetAttendanceDailyApplyType,
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyApplyType>({
+    url: `api/attendanceDailyApply/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+    headers: { Authorization: `${token}`, 'Content-Type': 'application/json' },
+  })
+}
+
+// APPROVE BY REPORTING AUTHORITY
+export async function approveManualAttendanceByRepAuth(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/attendanceDailyApply/approve-rep-auth/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+// APPROVE BY HR
+export async function approveManualAttendanceByHr(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/attendanceDailyApply/approve-hr/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function rejectManualAttendance(
+  id: number,
+  updatedBy: number,
+  token: string
+) {
+  return fetchApi({
+    url: `api/attendanceDailyApply/reject/${id}`,
+    method: 'PATCH',
+    body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
   })
 }
