@@ -43,27 +43,21 @@ import { Popup } from '@/utils/popup'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
-  useGetAllAttendanceDailyApply,
+  useGetAllAttendanceDailyApplyByUserId,
   useGetAllEmployees,
   useGetEmpIdByUserId,
   useEditManualAttendanceDailyApply,
   useApproveManualAttendanceByRepAuth,
   useApproveManualAttendanceByHr,
   useRejectManualAttendance,
+  useGetAllAttendanceDailyApply,
+  useGetEmployeeWeekDays,
 } from '@/hooks/use-api'
 import { CustomCombobox } from '@/utils/custom-combobox'
 import type {
   AttendanceDailyStatus,
   GetAttendanceDailyApplyType,
 } from '@/utils/type'
-
-// ---------------------------------------------------------------------------
-// NOTE: this page needs to see attendance applies across *all* employees
-// (not just the signed-in user's own), so it calls a `useGetAllAttendanceDailyApply`
-// hook with no userId — the same pattern `useGetEmployeeLeaveApplications` uses
-// in the leave module. Rename this import if your actual hook is named
-// differently.
-// ---------------------------------------------------------------------------
 
 const HR_ROLE_ID = 2
 
@@ -116,6 +110,77 @@ const combineDateTime = (date: string, time: string): string | null => {
   return `${date}T${time}:00`
 }
 
+const timeStrToMinutes = (t: string): number => {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + (m || 0)
+}
+
+// Maps a JS Date's getDay() (Sun=0..Sat=6) to the app's custom weekDayId
+// scheme returned by useGetEmployeeWeekDays (Friday=1 .. Thursday=7).
+const getWeekDayIdForDate = (date: Date): number =>
+  ((date.getDay() + 2) % 7) + 1
+
+// Shape of a single row returned by useGetEmployeeWeekDays. Move this to
+// utils/type.ts alongside the other Get*Type definitions if you'd rather
+// keep all API shapes in one place.
+type EmployeeWeekDay = {
+  employeeId: number
+  shiftId: number
+  weekDayId: number
+  day: string
+  dayType: 'Weekend' | 'HalfDay' | 'FullDay' | string
+  startTime: string
+  endTime: string
+  breakMinutes: number
+  expectedWorkHours: number
+  minimumHoursForPresent: number
+}
+
+type AttendanceMinutes = {
+  workedMinutes: number
+  lateMinutes: number
+  earlyOutMinutes: number
+  overtimeMinutes: number
+}
+
+// Recomputes worked/late/earlyOut/overtime minutes from firstIn/lastOut
+// against the employee's shift config. Status is NOT derived here — this
+// popup lets HR/reporting authority pick the status directly, unlike the
+// employee-facing form where it's auto-determined.
+const computeAttendanceMinutes = (
+  firstIn: string,
+  lastOut: string,
+  shiftDay: EmployeeWeekDay | undefined
+): AttendanceMinutes => {
+  if (!shiftDay || !firstIn || !lastOut) {
+    return {
+      workedMinutes: 0,
+      lateMinutes: 0,
+      earlyOutMinutes: 0,
+      overtimeMinutes: 0,
+    }
+  }
+
+  const shiftStart = timeStrToMinutes(shiftDay.startTime)
+  const shiftEnd = timeStrToMinutes(shiftDay.endTime)
+  const inMinutes = timeStrToMinutes(firstIn)
+  const outMinutes = timeStrToMinutes(lastOut)
+
+  const grossMinutes = Math.max(0, outMinutes - inMinutes)
+  const workedMinutes = Math.max(0, grossMinutes - (shiftDay.breakMinutes ?? 0))
+  const lateMinutes = Math.max(0, inMinutes - shiftStart)
+  const earlyOutMinutes = Math.max(0, shiftEnd - outMinutes)
+  const expectedMinutes = (shiftDay.expectedWorkHours ?? 0) * 60
+
+  // Overtime = actual clock-time span worked beyond the expected gross
+  // shift span — NOT based on workedMinutes (which already excludes
+  // break). A worker who's late can still rack up overtime if they stay
+  // late enough to cover the full expected duration and then some.
+  const overtimeMinutes = Math.max(0, grossMinutes - expectedMinutes)
+
+  return { workedMinutes, lateMinutes, earlyOutMinutes, overtimeMinutes }
+}
+
 type ChangeFormState = {
   firstIn: string
   lastOut: string
@@ -139,6 +204,7 @@ const ManualAttendanceApprove = () => {
   const isHr = userData?.roleId === HR_ROLE_ID
 
   const { data: appliesRes } = useGetAllAttendanceDailyApply()
+  console.log('🚀 ~ ManualAttendanceApprove ~ appliesRes:', appliesRes)
   const { data: empId } = useGetEmpIdByUserId(userData?.userId || 0)
   const { data: employees } = useGetAllEmployees()
 
@@ -155,6 +221,23 @@ const ManualAttendanceApprove = () => {
     useState<GetAttendanceDailyApplyType | null>(null)
   const [changeForm, setChangeForm] = useState<ChangeFormState>(emptyChangeForm)
   const [changeError, setChangeError] = useState<string | null>(null)
+
+  // Shift config for the employee currently being edited in the Change popup —
+  // used to recompute worked/late/earlyOut/overtime minutes on save.
+  const { data: weekDaysRes } = useGetEmployeeWeekDays(
+    changingRecord?.employeeId ?? 0
+  )
+
+  const weekDays = useMemo<EmployeeWeekDay[]>(
+    () => (weekDaysRes as { data: EmployeeWeekDay[] } | undefined)?.data ?? [],
+    [weekDaysRes]
+  )
+
+  const changingShiftDay = useMemo(() => {
+    if (!changingRecord || weekDays.length === 0) return undefined
+    const wid = getWeekDayIdForDate(new Date(changingRecord.attendanceDate))
+    return weekDays.find((w) => w.weekDayId === wid)
+  }, [changingRecord, weekDays])
 
   // Approve confirmation
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
@@ -180,26 +263,29 @@ const ManualAttendanceApprove = () => {
   }, [employees, isHr, empId])
 
   // Applications visible to this user
+  // Applications visible to this user
+  // Applications visible to this user
   const visibleApplies = useMemo<GetAttendanceDailyApplyType[]>(() => {
     if (!appliesRes?.data) return []
     const all = appliesRes.data as GetAttendanceDailyApplyType[]
 
     if (isHr) {
-      // HR sees applications already approved by the reporting authority
-      // and not yet acted on by HR.
+      // HR sees applications where reporting authority approved but HR
+      // hasn't yet, and that haven't been rejected.
       return all.filter(
         (a) =>
-          a.applyStatus === 'Pending' && a.approvedByRepAuth && !a.approvedByHr
+          a.approvedByRepAuth && !a.approvedByHr && a.applyStatus !== 'Rejected'
       )
     }
 
-    // Reporting authority sees pending applications from their subordinates
-    // that they haven't acted on yet.
+    // Reporting authority sees applications from their subordinates that
+    // are fully pending — neither rep auth nor HR has acted, and not rejected.
     return all.filter(
       (a) =>
         subordinateEmployeeIds.has(a.employeeId) &&
-        a.applyStatus === 'Pending' &&
-        !a.approvedByRepAuth
+        !a.approvedByRepAuth &&
+        !a.approvedByHr &&
+        a.applyStatus !== 'Rejected'
     )
   }, [appliesRes, isHr, subordinateEmployeeIds])
 
@@ -271,14 +357,24 @@ const ManualAttendanceApprove = () => {
       }
 
       const dateStr = String(changingRecord.attendanceDate).split('T')[0]
+      const minutes = computeAttendanceMinutes(
+        changeForm.firstIn,
+        changeForm.lastOut,
+        changingShiftDay
+      )
 
       editMutation.mutate(
         {
           id: changingRecord.id,
           data: {
             ...changingRecord,
+            employeeId: changingRecord.employeeId, // always keep original, never change on edit
             firstIn: combineDateTime(dateStr, changeForm.firstIn),
             lastOut: combineDateTime(dateStr, changeForm.lastOut),
+            workedMinutes: minutes.workedMinutes,
+            lateMinutes: minutes.lateMinutes,
+            earlyOutMinutes: minutes.earlyOutMinutes,
+            overtimeMinutes: minutes.overtimeMinutes,
             status: changeForm.status,
             updatedBy: userData?.userId ?? changingRecord.updatedBy,
           },
@@ -289,6 +385,7 @@ const ManualAttendanceApprove = () => {
     [
       changeForm,
       changingRecord,
+      changingShiftDay,
       editMutation,
       closeChangePopup,
       userData?.userId,
@@ -375,9 +472,9 @@ const ManualAttendanceApprove = () => {
               >
                 Date <ArrowUpDown className="ml-1 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Type</TableHead>
               <TableHead>First In</TableHead>
               <TableHead>Last Out</TableHead>
+              <TableHead>Overtime (Minutes)</TableHead>
               <TableHead
                 className="cursor-pointer"
                 onClick={() => handleSort('status')}
@@ -417,13 +514,13 @@ const ManualAttendanceApprove = () => {
                   <TableCell>
                     {String(a.attendanceDate).split('T')[0]}
                   </TableCell>
-                  <TableCell>{applyTypeBadge(a.applyType)}</TableCell>
                   <TableCell>
                     {a.firstIn ? toTimeInputValue(a.firstIn) : '—'}
                   </TableCell>
                   <TableCell>
                     {a.lastOut ? toTimeInputValue(a.lastOut) : '—'}
                   </TableCell>
+                  <TableCell>{a.overtimeMinutes}</TableCell>
                   <TableCell>{attendanceStatusBadge(a.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -516,11 +613,6 @@ const ManualAttendanceApprove = () => {
       >
         <form onSubmit={handleChangeSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label>Employee</Label>
-              <Input value={changingRecord?.employeeName ?? ''} disabled />
-            </div>
-
             <div className="space-y-2">
               <Label>Date</Label>
               <Input

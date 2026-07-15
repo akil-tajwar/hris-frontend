@@ -2534,6 +2534,17 @@ export async function getAttendanceDailyApplyByUserId(
   })
 }
 
+// rep auth will be able to see his/her applied attendance daily
+export async function getAllAttendanceApply(
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyApplyType[]>({
+    url: `api/attendanceDailyApply/getAll`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
 // responsible authority  will be able to change data if needed
 export async function editManualAttendanceDailyApply(
   id: number,
