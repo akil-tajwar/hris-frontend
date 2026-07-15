@@ -114,6 +114,7 @@ export function CustomComboboxWithApi<T extends ComboboxItem>({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
             disabled={disabled}
+            autoComplete="off"
           />
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
             {isLoading ? (

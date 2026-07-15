@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -93,6 +93,33 @@ const defaultFormData: CreateShiftType = {
   shiftDayAndWeekDays: [],
 }
 
+// ─── Time helpers (for HalfDay end-time calculation) ────────────────────────
+
+const timeToMinutes = (time: string): number => {
+  const [h, m] = time.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+const minutesToTime = (mins: number): string => {
+  const normalized = ((mins % 1440) + 1440) % 1440
+  const h = Math.floor(normalized / 60)
+  const m = normalized % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+// Given a full-day start/end, return the "half day" end time (start + half the duration)
+const computeHalfDayEndTime = (
+  startTime: string | null | undefined,
+  endTime: string | null | undefined
+): string | null => {
+  if (!startTime || !endTime) return endTime ?? null
+  const startMin = timeToMinutes(startTime)
+  let endMin = timeToMinutes(endTime)
+  if (endMin <= startMin) endMin += 1440 // handle cross-day shifts
+  const halfDuration = (endMin - startMin) / 2
+  return minutesToTime(startMin + halfDuration)
+}
+
 const ShiftAndWeekDays = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
@@ -116,6 +143,11 @@ const ShiftAndWeekDays = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deletingTimingId, setDeletingTimingId] = useState<number | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+
+  // When we just loaded a shift into the form for editing, we want to skip the
+  // very next "re-sync day configs from shift fields" pass so the DB-loaded
+  // per-day data isn't immediately overwritten with recomputed defaults.
+  const skipNextResyncRef = useRef(false)
 
   const toggleRowExpand = (shiftId: number) => {
     setExpandedRows((prev) => {
@@ -186,9 +218,13 @@ const ShiftAndWeekDays = () => {
       }
     }
     if (dayType === 'HalfDay') {
+      const halfEndTime = computeHalfDayEndTime(
+        shiftData.startTime,
+        shiftData.endTime
+      )
       return {
         startTime: shiftData.startTime ?? null,
-        endTime: shiftData.endTime ?? null,
+        endTime: halfEndTime,
         breakMinutes:
           shiftData.breakMinutes != null
             ? Math.round(shiftData.breakMinutes / 2)
@@ -431,9 +467,18 @@ const ShiftAndWeekDays = () => {
   ])
 
   // ─── Re-sync day configs when shift values change ─────────────────────────
+  // NOTE: this intentionally skips one run right after edit-mode data is loaded
+  // (see skipNextResyncRef), so DB-loaded per-day configs aren't clobbered by
+  // freshly recomputed defaults the instant the popup opens in edit mode.
 
   useEffect(() => {
     if (!isPopupOpen || formData.shiftDayAndWeekDays.length === 0) return
+
+    if (skipNextResyncRef.current) {
+      skipNextResyncRef.current = false
+      return
+    }
+
     setFormData((prev) => ({
       ...prev,
       shiftDayAndWeekDays: prev.shiftDayAndWeekDays.map((c) => ({
@@ -454,6 +499,10 @@ const ShiftAndWeekDays = () => {
   // ─── Edit handler ─────────────────────────────────────────────────────────
 
   const handleEditClick = (item: any) => {
+    // Prevent the re-sync effect from immediately overwriting the DB-loaded
+    // per-day configs with recomputed defaults on the next render pass.
+    skipNextResyncRef.current = true
+
     setIsEditMode(true)
     setEditingTimingId(item.shift?.shiftId || null)
     setFormData({
@@ -562,6 +611,7 @@ const ShiftAndWeekDays = () => {
             ) : (
               paginatedTimings.map((item: any, index: number) => {
                 const shiftId = item.shift?.shiftId
+                const rowKey = shiftId ?? `idx-${index}`
                 const isExpanded = expandedRows.has(shiftId)
                 const dayConfigs: any[] =
                   item.shiftDayConfigs || item.shiftDayAndWeekDays || []
@@ -573,9 +623,8 @@ const ShiftAndWeekDays = () => {
                       : 'bg-green-100 text-green-700'
 
                 return (
-                  <>
+                  <React.Fragment key={`shift-${rowKey}`}>
                     <TableRow
-                      key={`row-${index}`}
                       className="cursor-pointer hover:bg-blue-50"
                       onClick={() => toggleRowExpand(shiftId)}
                     >
@@ -637,10 +686,7 @@ const ShiftAndWeekDays = () => {
                     </TableRow>
 
                     {isExpanded && (
-                      <TableRow
-                        key={`expand-${index}`}
-                        className="bg-blue-50/40"
-                      >
+                      <TableRow className="bg-blue-50/40">
                         <TableCell colSpan={9} className="py-3 px-6">
                           <div className="text-xs font-semibold text-gray-500 mb-2">
                             Weekday Configuration
@@ -653,67 +699,68 @@ const ShiftAndWeekDays = () => {
                               </p>
                             ) : (
                               dayConfigs.map((c: any, idx: number) => (
-                                <React.Fragment key={idx}>
-                                  <div className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white">
-                                    <span className="font-medium w-20">
-                                      {c.weekDay}
-                                    </span>
+                                <div
+                                  key={`${rowKey}-day-${c.weekDayId ?? idx}`}
+                                  className="flex items-center gap-4 text-xs border rounded px-3 py-1.5 bg-white"
+                                >
+                                  <span className="font-medium w-20">
+                                    {c.weekDay}
+                                  </span>
 
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full font-medium ${dayTypeBadgeClass(
-                                        c.dayType
-                                      )}`}
-                                    >
-                                      {c.dayType}
-                                    </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full font-medium ${dayTypeBadgeClass(
+                                      c.dayType
+                                    )}`}
+                                  >
+                                    {c.dayType}
+                                  </span>
 
-                                    {c.dayType !== 'Weekend' && (
-                                      <>
-                                        <span className="text-gray-500">
-                                          Start:{' '}
-                                          <span className="text-gray-800">
-                                            {formatTime(c.startTime)}
-                                          </span>
+                                  {c.dayType !== 'Weekend' && (
+                                    <>
+                                      <span className="text-gray-500">
+                                        Start:{' '}
+                                        <span className="text-gray-800">
+                                          {formatTime(c.startTime)}
                                         </span>
+                                      </span>
 
-                                        <span className="text-gray-500">
-                                          End:{' '}
-                                          <span className="text-gray-800">
-                                            {formatTime(c.endTime)}
-                                          </span>
+                                      <span className="text-gray-500">
+                                        End:{' '}
+                                        <span className="text-gray-800">
+                                          {formatTime(c.endTime)}
                                         </span>
+                                      </span>
 
-                                        <span className="text-gray-500">
-                                          Break:{' '}
-                                          <span className="text-gray-800">
-                                            {c.breakMinutes} min
-                                          </span>
+                                      <span className="text-gray-500">
+                                        Break:{' '}
+                                        <span className="text-gray-800">
+                                          {c.breakMinutes} min
                                         </span>
+                                      </span>
 
-                                        <span className="text-gray-500">
-                                          Exp Hrs:{' '}
-                                          <span className="text-gray-800">
-                                            {c.expectedWorkHours}
-                                          </span>
+                                      <span className="text-gray-500">
+                                        Exp Hrs:{' '}
+                                        <span className="text-gray-800">
+                                          {c.expectedWorkHours}
                                         </span>
+                                      </span>
 
-                                        <span className="text-gray-500">
-                                          Min Hrs:{' '}
-                                          <span className="text-gray-800">
-                                            {c.minimumHoursForPresent}
-                                          </span>
+                                      <span className="text-gray-500">
+                                        Min Hrs:{' '}
+                                        <span className="text-gray-800">
+                                          {c.minimumHoursForPresent}
                                         </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </React.Fragment>
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               ))
                             )}
                           </div>
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 )
               })
             )}
@@ -1036,7 +1083,7 @@ const ShiftAndWeekDays = () => {
               Weekday Configuration <span className="text-red-500">*</span>
             </h3>
             <div className="space-y-2">
-              {formData.shiftDayAndWeekDays.map((config, index) => {
+              {formData.shiftDayAndWeekDays.map((config) => {
                 const dayTypeBadge =
                   config.dayType === 'Weekend'
                     ? 'bg-red-100 text-red-600'
@@ -1045,7 +1092,7 @@ const ShiftAndWeekDays = () => {
                       : 'bg-green-100 text-green-700'
 
                 return (
-                  <div key={index} className="border rounded-md p-3">
+                  <div key={config.weekDayId} className="border rounded-md p-3">
                     {/* Single row: day name | dayType | all fields */}
                     <div className="flex items-center gap-3 flex-wrap">
                       {/* Day name */}

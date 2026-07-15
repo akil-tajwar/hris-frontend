@@ -50,13 +50,13 @@ export function DashboardSidebar() {
       title: 'Dashboard Overview',
       icon: Home,
       href: '/dashboard/dashboard-overview',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
     },
     {
       title: 'Setup',
       icon: Settings,
       href: '/dashboard/setup',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         { title: 'Companies', href: '/dashboard/setup/company' },
         // { title: 'Register User', href: '/dashboard/setup/register-user' },
@@ -78,7 +78,7 @@ export function DashboardSidebar() {
       title: 'Shift Management',
       icon: LucideAirVent,
       href: '/dashboard/shift-management',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Shift and Week Days',
@@ -94,7 +94,7 @@ export function DashboardSidebar() {
       title: 'Employee Management',
       icon: UserCog,
       href: '/dashboard/employee-management',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Employee Preboardings',
@@ -126,7 +126,7 @@ export function DashboardSidebar() {
       title: 'Attendance Management',
       icon: ListChecks,
       href: '/dashboard/attendance-management',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Attendance Policies',
@@ -141,8 +141,12 @@ export function DashboardSidebar() {
           href: '/dashboard/attendance-management/attendance-processing',
         },
         {
-          title: 'Manual Attendance Entry',
-          href: '/dashboard/attendance-management/manual-attendance-entry',
+          title: 'Manual Attendance Apply',
+          href: '/dashboard/attendance-management/manual-daily-attendance-apply',
+        },
+        {
+          title: 'Manual Attendance Approve',
+          href: '/dashboard/attendance-management/manual-daily-attendance-approve',
         },
       ],
     },
@@ -150,7 +154,7 @@ export function DashboardSidebar() {
       title: 'Asset Management',
       icon: Briefcase,
       href: '/dashboard/asset-management',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Asset Category',
@@ -163,32 +167,27 @@ export function DashboardSidebar() {
       title: 'Leave Management',
       icon: LucideAirVent,
       href: '/dashboard/leave-management',
-      roles: [1, 2, 4],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Leave Types',
           href: '/dashboard/leave-management/leave-types',
-          roles: [1, 2],
         },
         {
           title: 'Leave Policy',
           href: '/dashboard/leave-management/leave-policy',
-          roles: [1, 2],
         },
         {
           title: 'Employee Leave Assignments',
           href: '/dashboard/leave-management/employee-leave-assignments',
-          roles: [1, 2],
         },
         {
           title: 'Leave Apply',
           href: '/dashboard/leave-management/leave-apply',
-          roles: [1, 2, 4],
         },
         {
           title: 'Approve Leaves',
           href: '/dashboard/leave-management/approve-leaves',
-          roles: [1, 2],
         },
       ],
     },
@@ -196,7 +195,7 @@ export function DashboardSidebar() {
       title: 'Salary Management',
       icon: DollarSign,
       href: '/dashboard/salary-management',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Salary Components',
@@ -213,23 +212,27 @@ export function DashboardSidebar() {
       title: 'Reports',
       icon: FileChartColumn,
       href: '/dashboard/report',
-      roles: [1, 2],
+      roles: [1, 2, 3, 4],
       subItems: [
         {
           title: 'Activity Report',
           href: '/dashboard/report/employee-activity-report',
         },
         {
-          title: 'Daily Attendance Report',
-          href: '/dashboard/report/attendance-report',
-        },
-        {
           title: 'Shift Report',
           href: '/dashboard/report/shift-report',
         },
         {
+          title: 'Daily Attendance Report',
+          href: '/dashboard/report/attendance-report',
+        },
+        {
           title: 'Attendance Report Summary',
           href: '/dashboard/report/attendance-report-summary',
+        },
+        {
+          title: 'Individual Attendance Report',
+          href: '/dashboard/report/individual-attendance-report',
         },
         {
           title: 'Leave Balance Summary Report',

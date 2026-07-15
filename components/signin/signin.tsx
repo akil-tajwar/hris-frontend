@@ -97,15 +97,21 @@ export default function Home() {
           Array.isArray(companyResponse.data) &&
           companyResponse.data.some((c: any) => c.tenantId === tenantId)
 
-        if (roleId == 4) {
-          router.push('/dashboard/leave-management/leave-apply')
-        } else if (roleId == 1 || roleId == 2) {
-          if (!hasCompany) {
-            setShowWelcomePopup(true)
-          } else {
-            router.push('/dashboard/dashboard-overview')
-          }
+        if (!hasCompany) {
+          setShowWelcomePopup(true)
+        } else {
+          router.push('/dashboard/dashboard-overview')
         }
+
+        // if (roleId == 4) {
+        //   router.push('/dashboard/leave-management/leave-apply')
+        // } else if (roleId == 1 || roleId == 2) {
+        //   if (!hasCompany) {
+        //     setShowWelcomePopup(true)
+        //   } else {
+        //     router.push('/dashboard/dashboard-overview')
+        //   }
+        // }
 
         toast({ title: 'Success', description: 'You are signed in' })
       }

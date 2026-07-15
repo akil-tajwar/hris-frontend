@@ -98,7 +98,7 @@ export const tenantSchema = z.object({
 })
 export const createTenantSchema = z.object({
   tenantData: tenantSchema,
-  userData: RegisterUserSchema
+  userData: RegisterUserSchema,
 })
 export type CreateTenantType = z.infer<typeof createTenantSchema>
 export type GetTenantType = z.infer<typeof tenantSchema>
@@ -1267,7 +1267,7 @@ export type CreateShiftAllocationType = {
   recurrenceType: 'weekly' | 'monthly'
   recurrenceActive: boolean
   approvedBy?: number
-  tenantId?: number | null 
+  tenantId?: number | null
   createdBy: number
 }
 
@@ -1372,6 +1372,7 @@ export type ProcessAttendanceSummary = {
   late: number
   halfDay: number
   absent: number
+  onLeave: number
 }
 
 export type ProcessAttendanceResultType = {
@@ -1470,7 +1471,66 @@ export type CreateAttendanceDailyType = {
   status: AttendanceDailyStatus
   createdBy: number
 }
-
 export type UpdateAttendanceDailyType = Partial<CreateAttendanceDailyType> & {
   updatedBy?: number
+}
+
+export type CreateAttendanceDailyApplyType = {
+  employeeId: number
+  attendanceDate: string
+  firstIn?: string | null
+  lastOut?: string | null
+  workedMinutes?: number | null
+  lateMinutes?: number | null
+  earlyOutMinutes?: number | null
+  overtimeMinutes?: number | null
+  status:
+    | 'PRESENT'
+    | 'ABSENT'
+    | 'LATE'
+    | 'HALF_DAY'
+    | 'HOLIDAY'
+    | 'WEEKEND'
+    | 'ON_LEAVE'
+  applyType: 'CREATE' | 'UPDATE'
+  applyStatus: 'Pending' | 'Approved' | 'Rejected'
+  createdBy: number
+}
+
+export type UpdateAttendanceDailyApplyType =
+  Partial<CreateAttendanceDailyApplyType> & {
+    attendanceDailyId: number //foreign key from attendancy applpy table
+    updatedBy?: number
+    applyType: 'CREATE' | 'UPDATE'
+  }
+
+export type GetAttendanceDailyApplyType = {
+  id: number
+  employeeId: number
+  employeeName: string | null
+  empCode: string | null
+  attendanceDate: string
+  firstIn: string | null
+  lastOut: string | null
+  workedMinutes: number | null
+  lateMinutes: number | null
+  earlyOutMinutes: number | null
+  overtimeMinutes: number | null
+  status:
+    | 'PRESENT'
+    | 'ABSENT'
+    | 'LATE'
+    | 'HALF_DAY'
+    | 'HOLIDAY'
+    | 'WEEKEND'
+    | 'ON_LEAVE'
+  approvedByRepAuth: boolean
+  approvedByHr: boolean
+  attendanceDailyId: number
+  applyType: 'CREATE' | 'UPDATE'
+  applyStatus: 'Pending' | 'Approved' | 'Rejected'
+  createdBy: number
+  createdAt: string | null
+  updatedBy: number | null
+  updatedAt: string | null
 }
