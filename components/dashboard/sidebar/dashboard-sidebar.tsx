@@ -141,8 +141,12 @@ export function DashboardSidebar() {
           href: '/dashboard/attendance-management/attendance-processing',
         },
         {
-          title: 'Manual Attendance Entry',
-          href: '/dashboard/attendance-management/manual-attendance-entry',
+          title: 'Manual Attendance Apply',
+          href: '/dashboard/attendance-management/manual-daily-attendance-apply',
+        },
+        {
+          title: 'Manual Attendance Approve',
+          href: '/dashboard/attendance-management/manual-daily-attendance-approve',
         },
       ],
     },

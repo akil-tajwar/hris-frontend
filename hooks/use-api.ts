@@ -185,6 +185,7 @@ import {
   approveManualAttendanceByRepAuth,
   approveManualAttendanceByHr,
   rejectManualAttendance,
+  getAttendanceDailyApplyByUserId,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -6488,6 +6489,22 @@ export const useGetAllAttendanceDailyByUserId = (userId: number) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getAttendanceDailyByUserId(userId, token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+// user will be able to see his/her applied attendance daily
+export const useGetAllAttendanceDailyApplyByUserId = (userId: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['attendanceDailyApply', { userId }],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getAttendanceDailyApplyByUserId(userId, token)
     },
     enabled: !!token,
     select: (data) => data,

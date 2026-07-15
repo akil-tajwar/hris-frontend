@@ -2522,6 +2522,18 @@ export async function addManualAttendanceDailyApply(
   })
 }
 
+// user will be able to see his/her applied attendance daily
+export async function getAttendanceDailyApplyByUserId(
+  userId: number,
+  token: string
+) {
+  return fetchApi<GetAttendanceDailyApplyType[]>({
+    url: `api/attendanceDailyApply/getByUserId/${userId}`,
+    method: 'GET',
+    headers: { Authorization: token, 'Content-Type': 'application/json' },
+  })
+}
+
 // responsible authority  will be able to change data if needed
 export async function editManualAttendanceDailyApply(
   id: number,
