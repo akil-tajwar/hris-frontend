@@ -530,6 +530,23 @@ export type GetEmployeeActivityHistoryReport = z.infer<
   typeof employeeActivityHistoryReportSchema
 >
 
+export const individualAttendanceSummaryReportSchema = z.object({
+  employeeId: z.number(),
+  empCode: z.string(),
+  empFullName: z.string(),
+  totalDays: z.number(),
+  present: z.number(),
+  late: z.number(),
+  absent: z.number(),
+  halfDay: z.number(),
+  weekend: z.number(),
+  holiday: z.number(),
+  onLeave: z.number(),
+})
+export type GetIndividualAttendanceSummaryReportType = z.infer<
+  typeof individualAttendanceSummaryReportSchema
+>
+
 export const employeeLeaveBalanceSummarySchema = z.array(
   z.object({
     employeeId: z.number(),

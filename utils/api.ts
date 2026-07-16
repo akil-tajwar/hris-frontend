@@ -98,6 +98,7 @@ import {
   UploadAttendanceType,
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
+  GetIndividualAttendanceSummaryReportType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1974,6 +1975,21 @@ export async function getSalaryReport(
   })
 }
 
+export async function getIndividualAttendanceSummaryReport(
+  fromDate: string,
+  toDate: string,
+  token: string
+) {
+  return fetchApi<GetIndividualAttendanceSummaryReportType[]>({
+    url: `api/reports/individual-attendance-summary?fromDate=${fromDate}&toDate=${toDate}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getAttendanceReport(
   fromDate: string,
   toDate: string,
@@ -2535,9 +2551,7 @@ export async function getAttendanceDailyApplyByUserId(
 }
 
 // rep auth will be able to see his/her applied attendance daily
-export async function getAllAttendanceApply(
-  token: string
-) {
+export async function getAllAttendanceApply(token: string) {
   return fetchApi<GetAttendanceDailyApplyType[]>({
     url: `api/attendanceDailyApply/getAll`,
     method: 'GET',

@@ -227,8 +227,12 @@ export function DashboardSidebar() {
           href: '/dashboard/report/attendance-report',
         },
         {
-          title: 'Attendance Report Summary',
-          href: '/dashboard/report/attendance-report-summary',
+          title: 'Attendance Summary Report',
+          href: '/dashboard/report/attendance-summary-report',
+        },
+        {
+          title: 'Individual Attendance Summary Report',
+          href: '/dashboard/report/individual-attendance-summary-report',
         },
         {
           title: 'Individual Attendance Report',

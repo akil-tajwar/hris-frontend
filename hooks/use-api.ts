@@ -187,6 +187,7 @@ import {
   rejectManualAttendance,
   getAttendanceDailyApplyByUserId,
   getAllAttendanceApply,
+  getIndividualAttendanceSummaryReport,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5362,6 +5363,21 @@ export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getAttendanceReport(fromDate, toDate, token)
+    },
+    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    select: (data) => data,
+  })
+}
+
+export const useGetIndividualAttendanceSummaryReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['individualAttendanceSummaryReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getIndividualAttendanceSummaryReport(fromDate, toDate, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
