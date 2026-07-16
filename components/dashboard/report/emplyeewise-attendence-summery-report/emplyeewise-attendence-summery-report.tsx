@@ -120,7 +120,7 @@ const IndividualAttendanceSummaryReport = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">
-          Individual Attendance Summary Report
+          Employeewise Attendance Summary Report
         </h2>
         <Button
           onClick={exportToExcel}

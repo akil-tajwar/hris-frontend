@@ -231,8 +231,8 @@ export function DashboardSidebar() {
           href: '/dashboard/report/attendance-summary-report',
         },
         {
-          title: 'Individual Attendance Summary Report',
-          href: '/dashboard/report/individual-attendance-summary-report',
+          title: 'Employeewise Attendance Summary Report',
+          href: '/dashboard/report/emplyeewise-attendence-summery-report',
         },
         {
           title: 'Individual Attendance Report',

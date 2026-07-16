@@ -1,4 +1,4 @@
-import IndividualAttendanceSummaryReport from '@/components/dashboard/report/individual-attendance-summary-report/individual-attendance-summary-report';
+import IndividualAttendanceSummaryReport from '@/components/dashboard/report/emplyeewise-attendence-summery-report/emplyeewise-attendence-summery-report';
 import React from 'react';
 
 const IndividualAttendanceSummaryReportPage = () => {
