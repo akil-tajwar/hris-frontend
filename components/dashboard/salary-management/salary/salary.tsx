@@ -29,6 +29,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   ArrowUpDown,
   Search,
   DollarSign,
@@ -74,6 +84,11 @@ const MONTHS = [
   'November',
   'December',
 ]
+
+// `GetSalaryType` (from the schema) is `z.array(...)` — the FULL array type.
+// Use this alias for a single row so TS actually knows what `.salary` /
+// `.otherSalary` look like.
+type SalaryRecord = GetSalaryType[number]
 
 interface SalaryFormData {
   salaryMonth: string
@@ -126,18 +141,16 @@ const computeRowTotals = (row: {
   }
 }
 
-// ---- Existing-record ("otherSalary") shape, matches the real GET payload ----
-interface OtherSalaryComponent {
-  employeeSalaryDetailsId: number
-  salaryComponentId: number
-  componentName: string
-  componentType: string
-  amount: number
-}
+// ---- Existing-record ("otherSalary") shape — derived from the schema
+// directly so it can never drift from what the API actually returns.
+// NOTE: this shape does NOT have `employeeSalaryDetailsId` — only
+// salaryComponentId, componentName, componentType, amount. If your backend
+// really does return employeeSalaryDetailsId, add it to `salarySchema`'s
+// `otherSalary` in type.ts and it'll flow through here automatically.
+type OtherSalaryComponent = SalaryRecord['otherSalary'][number]
 
 // ---- Edit-popup local shapes ----
 interface EditComponent {
-  employeeSalaryDetailsId: number
   salaryComponentId: number
   componentName: string
   componentType: string
@@ -162,6 +175,7 @@ const Salaries = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: salaries } = useGetSalaries()
+  console.log("🚀 ~ Salaries ~ salaries:", salaries)
   const { data: employees } = useGetAllEmployees()
 
   const [error, setError] = useState<string | null>(null)
@@ -201,31 +215,46 @@ const Salaries = () => {
 
   const addMutation = useAddSalary({ onClose: closePopup, reset: resetForm })
 
-  // NOTE: assuming mutate() accepts the salaryId directly (mutate(salaryId)) —
-  // confirmed working pattern from useMakeSalaryPermanent already in use below.
   const makePermanentMutation = useMakeSalaryPermanent({
     onClose: () => {},
     reset: () => {},
   })
   const handleMakePermanent = useCallback(
     (salaryId: number) => {
-      makePermanentMutation.mutate(salaryId)
+      makePermanentMutation.mutate({ id: salaryId })
     },
     [makePermanentMutation]
   )
 
-  // Same defensive assumption as makePermanent — mutate(salaryId) directly.
-  // Flag this to me if useGiveSalary's actual signature differs.
   const giveSalaryMutation = useGiveSalary({
     onClose: () => {},
     reset: () => {},
   })
   const handleGiveSalary = useCallback(
     (salaryId: number) => {
-      giveSalaryMutation.mutate(salaryId)
+      giveSalaryMutation.mutate({ id: salaryId })
     },
     [giveSalaryMutation]
   )
+
+  // ---- Confirmation dialog for "make permanent" / "give salary" ----
+  const [confirmDialog, setConfirmDialog] = useState<{
+    type: 'permanent' | 'give'
+    salaryId: number
+    employeeName: string
+  } | null>(null)
+
+  const closeConfirmDialog = useCallback(() => setConfirmDialog(null), [])
+
+  const handleConfirmAction = useCallback(() => {
+    if (!confirmDialog) return
+    if (confirmDialog.type === 'permanent') {
+      handleMakePermanent(confirmDialog.salaryId)
+    } else {
+      handleGiveSalary(confirmDialog.salaryId)
+    }
+    setConfirmDialog(null)
+  }, [confirmDialog, handleMakePermanent, handleGiveSalary])
 
   // Generate salary preview for the selected month/year — seeds popupRows.
   const {
@@ -249,7 +278,7 @@ const Salaries = () => {
       (employees?.data ?? []).map((e: any) => [e.employeeId, e])
     )
 
-    const rows: PopupRow[] = genData.map((g: GenerateSalaryType[number]) => {
+    const rows: PopupRow[] = genData.map((g: any) => {
       const emp = empMap.get(g.employeeId)
       return {
         employeeId: g.employeeId,
@@ -259,7 +288,7 @@ const Salaries = () => {
         doj: emp?.doj ?? '',
         departmentId: emp?.departmentId ?? 0,
         designationId: emp?.designationId ?? 0,
-        components: g.components.map((c) => ({
+        components: g.components.map((c: any) => ({
           salaryStructureDetailId: c.salaryStructureDetailId,
           salaryComponentId: c.salaryComponentId,
           componentName: c.componentName,
@@ -284,14 +313,14 @@ const Salaries = () => {
 
   const filteredSalaries = useMemo(() => {
     if (!salaries?.data || !Array.isArray(salaries.data)) return []
-    return salaries.data.filter((s: GetSalaryType) =>
+    return ((salaries.data as unknown) as SalaryRecord[]).filter((s) =>
       s.salary.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [salaries?.data, searchTerm])
 
   const groupedSalaries = useMemo(() => {
     const groups = filteredSalaries.reduce(
-      (acc: Record<string, GetSalaryType[]>, salary: GetSalaryType) => {
+      (acc: Record<string, SalaryRecord[]>, salary: SalaryRecord) => {
         const key = `${salary.salary.salaryYear}-${salary.salary.salaryMonth}`
         if (!acc[key]) acc[key] = []
         acc[key].push(salary)
@@ -301,7 +330,7 @@ const Salaries = () => {
     )
 
     Object.keys(groups).forEach((key) => {
-      groups[key].sort((a: GetSalaryType, b: GetSalaryType) => {
+      groups[key].sort((a: SalaryRecord, b: SalaryRecord) => {
         const aVal = (a.salary as any)[sortColumn] ?? ''
         const bVal = (b.salary as any)[sortColumn] ?? ''
         if (typeof aVal === 'string' && typeof bVal === 'string') {
@@ -408,10 +437,9 @@ const Salaries = () => {
     reset: closeEditPopup,
   })
 
-  const handleOpenEdit = useCallback((salary: GetSalaryType) => {
-    const s = salary.salary as any
-    const otherSalary = ((salary as any).otherSalary ??
-      []) as OtherSalaryComponent[]
+  const handleOpenEdit = useCallback((salary: SalaryRecord) => {
+    const s = salary.salary
+    const otherSalary = salary.otherSalary ?? []
 
     setEditRow({
       salaryId: s.salaryId,
@@ -424,7 +452,6 @@ const Salaries = () => {
       departmentId: s.departmentId,
       designationId: s.designationId,
       components: otherSalary.map((c) => ({
-        employeeSalaryDetailsId: c.employeeSalaryDetailsId,
         salaryComponentId: c.salaryComponentId,
         componentName: c.componentName,
         componentType: c.componentType,
@@ -436,13 +463,13 @@ const Salaries = () => {
   }, [])
 
   const handleEditComponentAmountChange = useCallback(
-    (employeeSalaryDetailsId: number, value: number) => {
+    (salaryComponentId: number, value: number) => {
       setEditRow((prev) =>
         prev
           ? {
               ...prev,
               components: prev.components.map((c) =>
-                c.employeeSalaryDetailsId === employeeSalaryDetailsId
+                c.salaryComponentId === salaryComponentId
                   ? { ...c, amount: Number.isNaN(value) ? 0 : value }
                   : c
               ),
@@ -460,10 +487,9 @@ const Salaries = () => {
       setEditError(null)
 
       try {
-        // NOTE: there's no published update-salary schema, so this mirrors
-        // createSalarySchema's per-row shape, using employeeSalaryDetailsId
-        // (the existing stored detail row) instead of salaryStructureDetailId
-        // since we're updating existing records, not generating new ones.
+        // Backend matches the record by employeeId + salaryMonth + salaryYear
+        // and overwrites it, so we don't need a per-component detail id —
+        // salaryComponentId is enough to identify each component.
         const data = {
           salaryMonth: editRow.salaryMonth,
           salaryYear: editRow.salaryYear,
@@ -474,14 +500,13 @@ const Salaries = () => {
           doj: editRow.doj,
           updatedBy: userData?.userId || 0,
           components: editRow.components.map((c) => ({
-            employeeSalaryDetailsId: c.employeeSalaryDetailsId,
             salaryComponentId: c.salaryComponentId,
             componentType: c.componentType,
             amount: c.amount,
           })),
         }
 
-        await updateMutation.mutateAsync({ id: editRow.salaryId, data })
+        await updateMutation.mutateAsync({ data })
       } catch (err) {
         setEditError('Failed to update salary')
         console.error(err)
@@ -593,18 +618,16 @@ const Salaries = () => {
                       </TableHeader>
                       <TableBody>
                         {groupSalaries.map(
-                          (salary: GetSalaryType, index: number) => {
-                            const salaryId = (salary.salary as any).salaryId
-                            const isDraft = Boolean(
-                              (salary.salary as any).isDraft
-                            )
-                            const isSalaryGiven = Boolean(
-                              (salary.salary as any).isSalaryGiven
-                            )
+                          (salary: SalaryRecord, index: number) => {
+                            const salaryId = salary.salary.salaryId
+                            const isDraft = salary.salary.isDraft === true
+
+                            const salaryGiven =
+                              salary.salary.isSalaryGiven === true
                             const isExpanded = expandedSalaryId === salaryId
 
-                            const otherSalary = ((salary as any).otherSalary ??
-                              []) as OtherSalaryComponent[]
+                            const otherSalary: OtherSalaryComponent[] =
+                              salary.otherSalary ?? []
 
                             const allowanceTotal = otherSalary
                               .filter((c) => c.componentType === 'Allowance')
@@ -661,7 +684,7 @@ const Salaries = () => {
                                           Permanent
                                         </span>
                                       )}
-                                      {isSalaryGiven ? (
+                                      {salaryGiven ? (
                                         <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full w-fit">
                                           <CheckCircle className="h-3 w-3" />{' '}
                                           Given
@@ -679,28 +702,32 @@ const Salaries = () => {
                                       className="flex justify-end gap-2"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      {isDraft && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                          title="Mark as permanent"
-                                          disabled={
-                                            makePermanentMutation.isPending
-                                          }
-                                          onClick={() =>
-                                            handleMakePermanent(salaryId)
-                                          }
-                                        >
-                                          <Unlock className="h-4 w-4" />
-                                        </Button>
-                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        title="Mark as permanent"
+                                        disabled={isDraft === false}
+                                        onClick={() =>
+                                          setConfirmDialog({
+                                            type: 'permanent',
+                                            salaryId,
+                                            employeeName:
+                                              salary.salary.employeeName,
+                                          })
+                                        }
+                                      >
+                                        <Unlock className="h-4 w-4" />
+                                      </Button>
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         className="text-gray-600 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30"
                                         title="Edit salary"
-                                        disabled={isDraft}
+                                        disabled={
+                                          isDraft === false ||
+                                          salaryGiven === true
+                                        }
                                         onClick={() => handleOpenEdit(salary)}
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -711,11 +738,16 @@ const Salaries = () => {
                                         className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 disabled:opacity-30"
                                         title="Give salary"
                                         disabled={
-                                          isSalaryGiven ||
+                                          salaryGiven ||
                                           giveSalaryMutation.isPending
                                         }
                                         onClick={() =>
-                                          handleGiveSalary(salaryId)
+                                          setConfirmDialog({
+                                            type: 'give',
+                                            salaryId,
+                                            employeeName:
+                                              salary.salary.employeeName,
+                                          })
                                         }
                                       >
                                         <Send className="h-4 w-4" />
@@ -756,7 +788,7 @@ const Salaries = () => {
                                           <TableBody>
                                             {otherSalary.map((c, idx) => (
                                               <TableRow
-                                                key={c.employeeSalaryDetailsId}
+                                                key={c.salaryComponentId}
                                                 className="bg-white"
                                               >
                                                 <TableCell className="text-gray-500 text-sm">
@@ -1184,10 +1216,7 @@ const Salaries = () => {
                 </TableHeader>
                 <TableBody>
                   {editRow.components.map((c, idx) => (
-                    <TableRow
-                      key={c.employeeSalaryDetailsId}
-                      className="bg-white"
-                    >
+                    <TableRow key={c.salaryComponentId} className="bg-white">
                       <TableCell className="text-gray-500 text-sm">
                         {idx + 1}
                       </TableCell>
@@ -1212,7 +1241,7 @@ const Salaries = () => {
                           value={c.amount}
                           onChange={(e) =>
                             handleEditComponentAmountChange(
-                              c.employeeSalaryDetailsId,
+                              c.salaryComponentId,
                               Number(e.target.value)
                             )
                           }
@@ -1286,6 +1315,35 @@ const Salaries = () => {
           </form>
         )}
       </Popup>
+
+      {/* Confirm dialog: make permanent / give salary */}
+      <AlertDialog
+        open={!!confirmDialog}
+        onOpenChange={(open) => !open && closeConfirmDialog()}
+      >
+        <AlertDialogContent className='bg-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog?.type === 'permanent'
+                ? 'Make salary permanent?'
+                : 'Give salary?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.type === 'permanent'
+                ? `This will lock ${confirmDialog?.employeeName}'s salary as permanent. It can no longer be edited after this.`
+                : `This will mark ${confirmDialog?.employeeName}'s salary as given. This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeConfirmDialog}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAction} className='bg-blue-600 hover:bg-blue-700'>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

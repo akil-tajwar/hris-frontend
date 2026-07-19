@@ -99,6 +99,7 @@ import {
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
   GetIndividualAttendanceSummaryReportType,
+  GenerateSalaryType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1634,7 +1635,7 @@ export async function generateSalary(
   salaryMonth: string,
   salaryYear: number
 ) {
-  return fetchApi<GetAttendanceDailyType[]>({
+  return fetchApi<GenerateSalaryType[]>({
     url: `api/salary/generate-salary?salaryMonth=${salaryMonth ?? ''}&salaryYear=${salaryYear ?? ''}`,
     method: 'GET',
     headers: {
@@ -1668,12 +1669,11 @@ export async function createSalary(data: CreateSalaryType, token: string) {
 }
 
 export async function editSalary(
-  id: number,
   data: GetSalaryType,
   token: string
 ) {
   return fetchApi<GetSalaryType>({
-    url: `api/salary/edit/${id}`,
+    url: 'api/salary/edit',
     method: 'PATCH',
     body: data,
     headers: {
@@ -1683,10 +1683,21 @@ export async function editSalary(
   })
 }
 
-export async function deleteSalary(id: number, token: string) {
+export async function giveSalary(id: number, token: string) {
   return fetchApi<{ id: number }>({
-    url: `api/salary/delete/${id}`,
-    method: 'DELETE',
+    url: `api/salary/give-salary/${id}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function makeSalaryPermanent(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/salary/make-salary-permanent/${id}`,
+    method: 'PATCH',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

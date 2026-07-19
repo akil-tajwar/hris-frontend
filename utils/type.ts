@@ -989,9 +989,11 @@ export const salarySchema = z.array(
       departmentName: z.string(),
       designationId: z.number(),
       designationName: z.string(),
+      isDraft: z.boolean(),
+      isSalaryGiven: z.boolean(),
       createdAt: z.coerce.date(),
     }),
-    components: z.array(
+    otherSalary: z.array(
       z.object({
         salaryComponentId: z.number(),
         componentName: z.string(),

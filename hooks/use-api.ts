@@ -41,7 +41,7 @@ import {
   deleteLone,
   deleteShiftDayAndWeekDays,
   deleteSalaryComponent,
-  deleteSalary,
+  giveSalary,
   deleteTenant,
   deleteWorkStation,
   editBusinessUnit,
@@ -189,6 +189,7 @@ import {
   getAllAttendanceApply,
   getIndividualAttendanceSummaryReport,
   generateSalary,
+  makeSalaryPermanent,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -4854,42 +4855,8 @@ export const useUpdateSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => {
-      return editSalary(id, data, token)
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success!',
-        description: 'salary edited successfully.',
-      })
-      queryClient.invalidateQueries({ queryKey: ['salaries'] })
-
-      reset()
-      onClose()
-    },
-    onError: (error) => {
-      console.error('Error editing salary:', error)
-    },
-  })
-
-  return mutation
-}
-
-export const useMakeSalaryPermanent = ({
-  onClose,
-  reset,
-}: {
-  onClose: () => void
-  reset: () => void
-}) => {
-  useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
-  const queryClient = useQueryClient()
-
-  const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => {
-      return editSalary(id, data, token)
+    mutationFn: ({ data }: { data: any }) => {
+      return editSalary(data, token)
     },
     onSuccess: () => {
       toast({
@@ -4922,13 +4889,13 @@ export const useGiveSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => {
-      return editSalary(id, data, token)
+    mutationFn: ({ id }: { id: number }) => {
+      return giveSalary(id, token)
     },
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'salary edited successfully.',
+        description: 'salary is given successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaries'] })
 
@@ -4943,7 +4910,7 @@ export const useGiveSalary = ({
   return mutation
 }
 
-export const useDeleteSalary = ({
+export const useMakeSalaryPermanent = ({
   onClose,
   reset,
 }: {
@@ -4956,41 +4923,21 @@ export const useDeleteSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteSalary(id, token)
-
-      console.log('DELETE RESPONSE:', res)
-
-      const apiError = res?.error || (res?.data === null && res?.error?.message)
-
-      const successFlag = (res?.error?.details as any)?.success
-
-      if (apiError || successFlag === false) {
-        throw new Error('Failed to delete salary')
-      }
-
-      return res
+    mutationFn: ({ id }: { id: number }) => {
+      return makeSalaryPermanent(id, token)
     },
-
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'Salary is deleted successfully.',
+        description: 'salary has made permanent successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaries'] })
 
       reset()
       onClose()
     },
-
-    onError: (error: any) => {
-      console.error('Delete error:', error)
-
-      toast({
-        title: 'Error',
-        variant: 'destructive',
-        description: 'This data is needed elsewhere',
-      })
+    onError: (error) => {
+      console.error('Error editing salary:', error)
     },
   })
 
