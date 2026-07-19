@@ -52,7 +52,6 @@ const STATUS_OPTIONS: { id: AttendanceDailyStatus; name: string }[] = [
   { id: 'HALF_DAY', name: 'Half Day' },
   { id: 'HOLIDAY', name: 'Holiday' },
   { id: 'WEEKEND', name: 'Weekend' },
-  { id: 'ON_LEAVE', name: 'On Leave' },
 ]
 
 // The form only ever lets the employee pick from these three — Late /
@@ -63,7 +62,6 @@ const FORM_STATUS_OPTIONS: {
 }[] = [
   { id: 'PRESENT', name: 'Present' },
   { id: 'ABSENT', name: 'Absent' },
-  { id: 'ON_LEAVE', name: 'On Leave' },
 ]
 
 const statusLabel = (status: AttendanceDailyStatus) =>

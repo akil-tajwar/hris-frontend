@@ -41,7 +41,7 @@ import {
   deleteLone,
   deleteShiftDayAndWeekDays,
   deleteSalaryComponent,
-  deleteSalary,
+  giveSalary,
   deleteTenant,
   deleteWorkStation,
   editBusinessUnit,
@@ -187,6 +187,9 @@ import {
   rejectManualAttendance,
   getAttendanceDailyApplyByUserId,
   getAllAttendanceApply,
+  getIndividualAttendanceSummaryReport,
+  generateSalary,
+  makeSalaryPermanent,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -4592,7 +4595,7 @@ export const useDeleteSalaryComponent = ({
   return mutation
 }
 
-//employee other salary components
+//employee salary components
 export const useGetEmployeeSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -4759,6 +4762,21 @@ export const useDeleteEmployeeSalaryComponent = ({
 }
 
 //salary
+export const useGenerateSalary = (salaryMonth: string, salaryYear: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['generateSalary', salaryMonth, salaryYear],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return generateSalary(token, salaryMonth, salaryYear)
+    },
+    enabled: !!token && salaryMonth.length > 0 && salaryYear > 0,
+    select: (data) => data,
+  })
+}
+
 export const useGetSalaries = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -4837,8 +4855,8 @@ export const useUpdateSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => {
-      return editSalary(id, data, token)
+    mutationFn: ({ data }: { data: any }) => {
+      return editSalary(data, token)
     },
     onSuccess: () => {
       toast({
@@ -4858,7 +4876,7 @@ export const useUpdateSalary = ({
   return mutation
 }
 
-export const useDeleteSalary = ({
+export const useGiveSalary = ({
   onClose,
   reset,
 }: {
@@ -4871,41 +4889,55 @@ export const useDeleteSalary = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteSalary(id, token)
-
-      console.log('DELETE RESPONSE:', res)
-
-      const apiError = res?.error || (res?.data === null && res?.error?.message)
-
-      const successFlag = (res?.error?.details as any)?.success
-
-      if (apiError || successFlag === false) {
-        throw new Error('Failed to delete salary')
-      }
-
-      return res
+    mutationFn: ({ id }: { id: number }) => {
+      return giveSalary(id, token)
     },
-
     onSuccess: () => {
       toast({
         title: 'Success!',
-        description: 'Salary is deleted successfully.',
+        description: 'salary is given successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['salaries'] })
 
       reset()
       onClose()
     },
+    onError: (error) => {
+      console.error('Error editing salary:', error)
+    },
+  })
 
-    onError: (error: any) => {
-      console.error('Delete error:', error)
+  return mutation
+}
 
+export const useMakeSalaryPermanent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return makeSalaryPermanent(id, token)
+    },
+    onSuccess: () => {
       toast({
-        title: 'Error',
-        variant: 'destructive',
-        description: 'This data is needed elsewhere',
+        title: 'Success!',
+        description: 'salary has made permanent successfully.',
       })
+      queryClient.invalidateQueries({ queryKey: ['salaries'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing salary:', error)
     },
   })
 
@@ -4993,13 +5025,13 @@ export const useSkipLone = ({
 
   const mutation = useMutation({
     mutationFn: async ({
-      employeeSalaryComponentId,
+      employeeSalaryDetailsId,
       updatedBy,
     }: {
-      employeeSalaryComponentId: number
+      employeeSalaryDetailsId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(employeeSalaryComponentId, updatedBy, token)
+      const res = await skipLone(employeeSalaryDetailsId, updatedBy, token)
       return res
     },
     onSuccess: (res) => {
@@ -5362,6 +5394,21 @@ export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
     queryFn: () => {
       if (!token) throw new Error('Token not found')
       return getAttendanceReport(fromDate, toDate, token)
+    },
+    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    select: (data) => data,
+  })
+}
+
+export const useGetIndividualAttendanceSummaryReport = (fromDate: string, toDate: string) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['individualAttendanceSummaryReport', fromDate, toDate],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return getIndividualAttendanceSummaryReport(fromDate, toDate, token)
     },
     enabled: !!token && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,

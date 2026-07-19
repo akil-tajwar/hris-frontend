@@ -41,23 +41,24 @@ const YEARS = Array.from({ length: 10 }, (_, i) => currentYear - i)
 
 // Helper: group otherSalary by type for a given employeeId
 const groupOtherSalaryForEmployee = (
-  otherSalaries: GetSalaryType['otherSalary'],
+  // otherSalaries: GetSalaryType['otherSalary'],
+  otherSalaries: any['otherSalary'],
   employeeId: number
 ) => {
-  const relevant = otherSalaries.filter((o) => o.employeeId === employeeId)
+  const relevant = otherSalaries.filter((o : any) => o.employeeId === employeeId)
 
-  const allowances = relevant.filter((o) => o.componentType === 'Allowance')
-  const deductions = relevant.filter((o) => o.componentType === 'Deduction')
+  const allowances = relevant.filter((o : any) => o.componentType === 'Allowance')
+  const deductions = relevant.filter((o : any) => o.componentType === 'Deduction')
 
   const formatComponents = (items: typeof relevant): string =>
     items.length > 0
       ? items
-          .map((item) => `${item.componentName}: ${formatNumber(item.amount)}`)
+          .map((item : any) => `${item.componentName}: ${formatNumber(item.amount)}`)
           .join(', ')
       : '-'
 
-  const totalAllowance = allowances.reduce((sum, o) => sum + o.amount, 0)
-  const totalDeduction = deductions.reduce((sum, o) => sum + o.amount, 0)
+  const totalAllowance = allowances.reduce((sum : any, o: any) => sum + o.amount, 0)
+  const totalDeduction = deductions.reduce((sum : any, o: any) => sum + o.amount, 0)
 
   return {
     allowanceText: formatComponents(allowances),
