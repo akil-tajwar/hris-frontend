@@ -948,67 +948,102 @@ export const SalaryStructureSchema = z.object({
 export type GetSalaryStructureType = z.infer<typeof SalaryStructureSchema>
 export type CreateSalaryStructureType = z.infer<typeof SalaryStructureSchema>
 
-export const salarySchema = z.object({
-  salary: z.object({
+export const GenerateSalarySchema = z.array(
+  z.object({
+    employeeId: z.number(),
+    empCode: z.string(),
+    employeeName: z.string(),
     salaryMonth: z.string(),
     salaryYear: z.number(),
-    employeeId: z.number(),
-    employeeName: z.string().optional(), // only for get
-    departmentId: z.number(),
-    departmentName: z.string().optional(), //only for get
-    designationId: z.number(),
-    designationName: z.string().optional(), //only for get
-    tenantId: z.number().optional(),
     basicSalary: z.number(),
     grossSalary: z.number(),
     netSalary: z.number(),
-    doj: z.string(),
-    createdBy: z.number(),
-    createdAt: z.date().optional(),
-    updatedBy: z.number().nullable().optional(),
-    updatedAt: z.date().optional(),
-  }),
+    components: z.array(
+      z.object({
+        salaryStructureDetailId: z.number(),
+        salaryComponentId: z.number(),
+        componentName: z.string(),
+        componentType: z.string(),
+        calculationType: z.string(),
+        amount: z.number(),
+      })
+    ),
+  })
+)
+export type GenerateSalaryType = z.infer<typeof GenerateSalarySchema>
 
-  otherSalary: z.array(
-    z.object({
-      employeeId: z.number(),
-      employeeName: z.string().optional(), // only for get
-      salaryComponentId: z.number(),
-      componentName: z.string().optional(), //only for get
-      componentType: z.enum(['Allowance', 'Deduction']).optional(), //only for get
-      tenantId: z.number().optional(),
+export const salarySchema = z.array(
+  z.object({
+    salary: z.object({
+      salaryId: z.number(),
       salaryMonth: z.string(),
       salaryYear: z.number(),
-      amount: z.number(),
-      createdBy: z.number(),
-      createdAt: z.date().optional(),
-      updatedBy: z.number().nullable().optional(),
-      updatedAt: z.date().optional(),
-    })
-  ),
-})
+      basicSalary: z.number(),
+      grossSalary: z.number(),
+      netSalary: z.number(),
+      doj: z.string(),
+      employeeId: z.number(),
+      empCode: z.string(),
+      employeeName: z.string(),
+      departmentId: z.number(),
+      departmentName: z.string(),
+      designationId: z.number(),
+      designationName: z.string(),
+      createdAt: z.coerce.date(),
+    }),
+    components: z.array(
+      z.object({
+        salaryComponentId: z.number(),
+        componentName: z.string(),
+        componentType: z.string(),
+        amount: z.number(),
+      })
+    ),
+  })
+)
 export type GetSalaryType = z.infer<typeof salarySchema>
 
-export const createSalarySchema = z.object({
-  salaryMonth: z.string(),
-  salaryYear: z.number(),
-  employeeId: z.number(),
-  tenantId: z.number().optional(),
-  departmentId: z.number(),
-  designationId: z.number(),
-  basicSalary: z.number(),
-  grossSalary: z.number(),
-  netSalary: z.number(),
-  doj: z.string(),
-  createdBy: z.number(),
-  createdAt: z.date().optional(),
-  updatedBy: z.number().nullable().optional(),
-  updatedAt: z.date().optional(),
-})
+export const createSalarySchema = z.array(
+  z.object({
+    salaryMonth: z.enum([
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]),
+    salaryYear: z.number(),
+    employeeId: z.number(),
+    departmentId: z.number(),
+    designationId: z.number(),
+    basicSalary: z.number(),
+    doj: z.coerce.date(),
+    createdBy: z.number(),
+    components: z.array(
+      z.object({
+        salaryStructureDetailId: z.number(),
+        salaryComponentId: z.number(),
+        componentName: z.string().optional(),
+        componentType: z.enum([
+          'Allowance',
+          'Deduction',
+        ]),
+        amount: z.number(),
+      })
+    ),
+  })
+)
 export type CreateSalaryType = z.infer<typeof createSalarySchema>
 
 export const employeeSalaryComponentSchema = z.object({
-  employeeSalaryComponentId: z.number().optional(),
+  employeeSalaryDetailsId: z.number().optional(),
   employeeId: z.number(),
   salaryComponentId: z.number(),
   employeeLoneId: z.number().optional().nullable(),

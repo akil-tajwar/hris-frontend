@@ -188,6 +188,7 @@ import {
   getAttendanceDailyApplyByUserId,
   getAllAttendanceApply,
   getIndividualAttendanceSummaryReport,
+  generateSalary,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -4593,7 +4594,7 @@ export const useDeleteSalaryComponent = ({
   return mutation
 }
 
-//employee other salary components
+//employee salary components
 export const useGetEmployeeSalaryComponents = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -4760,6 +4761,21 @@ export const useDeleteEmployeeSalaryComponent = ({
 }
 
 //salary
+export const useGenerateSalary = (salaryMonth: string, salaryYear: number) => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['generateSalary', salaryMonth, salaryYear],
+    queryFn: () => {
+      if (!token) throw new Error('Token not found')
+      return generateSalary(token, salaryMonth, salaryYear)
+    },
+    enabled: !!token && salaryMonth.length > 0 && salaryYear > 0,
+    select: (data) => data,
+  })
+}
+
 export const useGetSalaries = () => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
@@ -4826,6 +4842,74 @@ export const useAddSalary = ({
 }
 
 export const useUpdateSalary = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      return editSalary(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'salary edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['salaries'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing salary:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useMakeSalaryPermanent = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      return editSalary(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'salary edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['salaries'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing salary:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useGiveSalary = ({
   onClose,
   reset,
 }: {
@@ -4994,13 +5078,13 @@ export const useSkipLone = ({
 
   const mutation = useMutation({
     mutationFn: async ({
-      employeeSalaryComponentId,
+      employeeSalaryDetailsId,
       updatedBy,
     }: {
-      employeeSalaryComponentId: number
+      employeeSalaryDetailsId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(employeeSalaryComponentId, updatedBy, token)
+      const res = await skipLone(employeeSalaryDetailsId, updatedBy, token)
       return res
     },
     onSuccess: (res) => {

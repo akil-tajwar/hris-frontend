@@ -32,36 +32,32 @@ import {
   ArrowUpDown,
   Search,
   DollarSign,
-  Trash2,
   Calendar,
   ChevronDown,
   XCircle,
   CheckCircle,
+  Lock,
+  Unlock,
+  Pencil,
+  Send,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
   CreateSalaryType,
   GetSalaryType,
-  GetEmployeeSalaryComponentType,
+  GenerateSalaryType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import {
   useAddSalary,
-  useDeleteSalary,
+  useUpdateSalary,
   useGetSalaries,
   useGetAllEmployees,
-  useGetEmployeeSalaryComponents,
+  useGenerateSalary,
+  useMakeSalaryPermanent,
+  useGiveSalary,
 } from '@/hooks/use-api'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 
 const MONTHS = [
@@ -89,19 +85,84 @@ const defaultForm = (): SalaryFormData => ({
   salaryYear: new Date().getFullYear(),
 })
 
+// ---- Add-popup (generate-salary) local shapes ----
+interface PopupComponent {
+  salaryStructureDetailId: number
+  salaryComponentId: number
+  componentName: string
+  componentType: string
+  calculationType: string
+  amount: number
+}
+
+interface PopupRow {
+  employeeId: number
+  empCode: string
+  employeeName: string
+  basicSalary: number
+  doj: string
+  departmentId: number
+  designationId: number
+  components: PopupComponent[]
+}
+
+const computeRowTotals = (row: {
+  basicSalary: number
+  components: { componentType: string; amount: number }[]
+}) => {
+  const allowanceTotal = row.components
+    .filter((c) => c.componentType === 'Allowance')
+    .reduce((sum, c) => sum + (c.amount || 0), 0)
+
+  const deductionTotal = row.components
+    .filter((c) => c.componentType === 'Deduction')
+    .reduce((sum, c) => sum + (c.amount || 0), 0)
+
+  return {
+    allowanceTotal,
+    deductionTotal,
+    grossSalary: row.basicSalary + allowanceTotal,
+    netSalary: row.basicSalary + allowanceTotal - deductionTotal,
+  }
+}
+
+// ---- Existing-record ("otherSalary") shape, matches the real GET payload ----
+interface OtherSalaryComponent {
+  employeeSalaryDetailsId: number
+  salaryComponentId: number
+  componentName: string
+  componentType: string
+  amount: number
+}
+
+// ---- Edit-popup local shapes ----
+interface EditComponent {
+  employeeSalaryDetailsId: number
+  salaryComponentId: number
+  componentName: string
+  componentType: string
+  amount: number
+}
+
+interface EditRow {
+  salaryId: number
+  employeeId: number
+  employeeName: string
+  salaryMonth: string
+  salaryYear: number
+  basicSalary: number
+  doj: string
+  departmentId: number
+  designationId: number
+  components: EditComponent[]
+}
+
 const Salaries = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
 
   const { data: salaries } = useGetSalaries()
-  const { data: employeeSalaryComponents } =
-    useGetEmployeeSalaryComponents()
-  console.log(
-    '🚀 ~ Salaries ~ employeeSalaryComponents:',
-    employeeSalaryComponents
-  )
   const { data: employees } = useGetAllEmployees()
-  console.log('🚀 ~ Salaries ~ employees:', employees)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -112,24 +173,24 @@ const Salaries = () => {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
 
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingSalaryId, setDeletingSalaryId] = useState<number | null>(null)
-
-  // Accordion state for main table
+  // Only one group open at a time, collapsed by default
+  const [expandedGroupKey, setExpandedGroupKey] = useState<string | null>(null)
+  // Only one row's component accordion open at a time (within a group)
   const [expandedSalaryId, setExpandedSalaryId] = useState<number | null>(null)
-
-  // Accordion state for create popup (keyed by employeeId)
+  // Add-popup accordion (keyed by employeeId)
   const [expandedPopupEmpId, setExpandedPopupEmpId] = useState<number | null>(
     null
   )
 
   const [form, setForm] = useState<SalaryFormData>(defaultForm())
+  const [popupRows, setPopupRows] = useState<PopupRow[]>([])
 
   const resetForm = useCallback(() => {
     setForm(defaultForm())
     setIsPopupOpen(false)
     setError(null)
     setExpandedPopupEmpId(null)
+    setPopupRows([])
   }, [])
 
   const closePopup = useCallback(() => {
@@ -139,65 +200,78 @@ const Salaries = () => {
   }, [resetForm])
 
   const addMutation = useAddSalary({ onClose: closePopup, reset: resetForm })
-  const deleteMutation = useDeleteSalary({
-    onClose: closePopup,
-    reset: resetForm,
+
+  // NOTE: assuming mutate() accepts the salaryId directly (mutate(salaryId)) —
+  // confirmed working pattern from useMakeSalaryPermanent already in use below.
+  const makePermanentMutation = useMakeSalaryPermanent({
+    onClose: () => {},
+    reset: () => {},
   })
-
-  // Helper: get other components for a given employee + month + year
-  const getEmpComponents = useCallback(
-    (
-      employeeId: number,
-      salaryMonth: string,
-      salaryYear: number
-    ): GetEmployeeSalaryComponentType[] => {
-      return (employeeSalaryComponents?.data ?? []).filter(
-        (c: GetEmployeeSalaryComponentType) =>
-          c.employeeId === employeeId &&
-          c.salaryMonth === salaryMonth &&
-          c.salaryYear === salaryYear
-      )
+  const handleMakePermanent = useCallback(
+    (salaryId: number) => {
+      makePermanentMutation.mutate(salaryId)
     },
-    [employeeSalaryComponents?.data]
+    [makePermanentMutation]
   )
 
-  /**
-   * Authorization logic:
-   * - Allowance: always counted regardless of isAuthorized
-   * - Deduction: counted if isAuthorized !== 1 OR if salaryComponentId === 6 (always counted)
-   *   If isAuthorized === 1 AND salaryComponentId !== 6, skip the deduction.
-   */
-  const calcSalaries = useCallback(
-    (
-      employeeId: number,
-      salaryMonth: string,
-      salaryYear: number,
-      basicSalary: number
-    ) => {
-      const comps = getEmpComponents(employeeId, salaryMonth, salaryYear)
+  // Same defensive assumption as makePermanent — mutate(salaryId) directly.
+  // Flag this to me if useGiveSalary's actual signature differs.
+  const giveSalaryMutation = useGiveSalary({
+    onClose: () => {},
+    reset: () => {},
+  })
+  const handleGiveSalary = useCallback(
+    (salaryId: number) => {
+      giveSalaryMutation.mutate(salaryId)
+    },
+    [giveSalaryMutation]
+  )
 
-      const allowances = comps
-        .filter((c) => c.componentType === 'Allowance')
-        .reduce((sum, c) => sum + c.amount, 0)
+  // Generate salary preview for the selected month/year — seeds popupRows.
+  const {
+    data: generatedSalaryData,
+    isFetching: isGeneratingSalary,
+    refetch: refetchGeneratedSalary,
+  } = useGenerateSalary(form.salaryMonth, form.salaryYear)
 
-      const deductions = comps
-        .filter(
-          (c) =>
-            c.componentType === 'Deduction' &&
-            (c.isAuthorized !== 1 || c.isLoneFee === 1) &&
-            c.isSkipped !== 1
-        )
-        .reduce((sum, c) => sum + c.amount, 0)
+  useEffect(() => {
+    if (isPopupOpen) {
+      refetchGeneratedSalary()
+    }
+  }, [isPopupOpen, form.salaryMonth, form.salaryYear, refetchGeneratedSalary])
 
+  useEffect(() => {
+    if (!isPopupOpen) return
+    const genData = generatedSalaryData?.data
+    if (!genData || !Array.isArray(genData)) return
+
+    const empMap = new Map(
+      (employees?.data ?? []).map((e: any) => [e.employeeId, e])
+    )
+
+    const rows: PopupRow[] = genData.map((g: GenerateSalaryType[number]) => {
+      const emp = empMap.get(g.employeeId)
       return {
-        grossSalary: basicSalary + allowances,
-        netSalary: basicSalary + allowances - deductions,
-        allowances,
-        deductions,
+        employeeId: g.employeeId,
+        empCode: g.empCode,
+        employeeName: g.employeeName,
+        basicSalary: g.basicSalary,
+        doj: emp?.doj ?? '',
+        departmentId: emp?.departmentId ?? 0,
+        designationId: emp?.designationId ?? 0,
+        components: g.components.map((c) => ({
+          salaryStructureDetailId: c.salaryStructureDetailId,
+          salaryComponentId: c.salaryComponentId,
+          componentName: c.componentName,
+          componentType: c.componentType,
+          calculationType: c.calculationType,
+          amount: c.amount,
+        })),
       }
-    },
-    [getEmpComponents]
-  )
+    })
+
+    setPopupRows(rows)
+  }, [generatedSalaryData, employees?.data, isPopupOpen])
 
   const handleSort = (column: string) => {
     if (column === sortColumn) {
@@ -215,7 +289,6 @@ const Salaries = () => {
     )
   }, [salaries?.data, searchTerm])
 
-  // Group by salaryMonth + salaryYear
   const groupedSalaries = useMemo(() => {
     const groups = filteredSalaries.reduce(
       (acc: Record<string, GetSalaryType[]>, salary: GetSalaryType) => {
@@ -256,56 +329,166 @@ const Salaries = () => {
 
   const totalPages = Math.ceil(groupedSalaries.length / groupsPerPage)
 
-  // Bulk create: build array of CreateSalaryType and send in one call
+  const handleComponentAmountChange = useCallback(
+    (employeeId: number, salaryComponentId: number, value: number) => {
+      setPopupRows((prev) =>
+        prev.map((row) =>
+          row.employeeId === employeeId
+            ? {
+                ...row,
+                components: row.components.map((c) =>
+                  c.salaryComponentId === salaryComponentId
+                    ? { ...c, amount: Number.isNaN(value) ? 0 : value }
+                    : c
+                ),
+              }
+            : row
+        )
+      )
+    },
+    []
+  )
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
       setError(null)
 
       try {
-        if (!employees?.data) {
-          setError('Employee data not loaded')
+        if (popupRows.length === 0) {
+          setError('No employee salary data to save')
           return
         }
-        const activeEmployees = employees.data.filter(
-          (e: any) => e.isActive === 1
-        )
 
-        const payload: CreateSalaryType[] = activeEmployees.map((emp: any) => {
-          const basicSalary: number = emp.basicSalary ?? 0
-          const { grossSalary, netSalary } = calcSalaries(
-            emp.employeeId,
-            form.salaryMonth,
-            form.salaryYear,
-            basicSalary
-          )
-          return {
-            salaryMonth: form.salaryMonth,
-            salaryYear: form.salaryYear,
-            employeeId: emp.employeeId,
-            departmentId: emp.departmentId ?? 0,
-            designationId: emp.designationId ?? 0,
-            basicSalary,
-            grossSalary,
-            netSalary,
-            doj: emp.doj ?? '',
-            createdBy: userData?.userId || 0,
-          }
-        })
+        const payload: CreateSalaryType = popupRows.map((row) => ({
+          salaryMonth: form.salaryMonth as any,
+          salaryYear: form.salaryYear,
+          employeeId: row.employeeId,
+          departmentId: row.departmentId,
+          designationId: row.designationId,
+          basicSalary: row.basicSalary,
+          doj: row.doj as any,
+          createdBy: userData?.userId || 0,
+          components: row.components.map((c) => ({
+            salaryStructureDetailId: c.salaryStructureDetailId,
+            salaryComponentId: c.salaryComponentId,
+            componentName: c.componentName,
+            componentType: c.componentType as 'Allowance' | 'Deduction',
+            amount: c.amount,
+          })),
+        }))
 
-        await addMutation.mutateAsync(payload as any)
+        await addMutation.mutateAsync(payload)
       } catch (err) {
         setError('Failed to save salary')
         console.error(err)
       }
     },
-    [form, addMutation, userData, employees?.data, calcSalaries]
+    [popupRows, form, addMutation, userData]
   )
 
   const formatGroupLabel = (key: string) => {
     const [year, month] = key.split('-')
     return `${month} ${year}`
   }
+
+  // ---- Edit popup ----
+  const [isEditPopupOpen, setIsEditPopupOpen] = useState(false)
+  const [editRow, setEditRow] = useState<EditRow | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  const closeEditPopup = useCallback(() => {
+    setIsEditPopupOpen(false)
+    setEditRow(null)
+    setEditError(null)
+  }, [])
+
+  const updateMutation = useUpdateSalary({
+    onClose: closeEditPopup,
+    reset: closeEditPopup,
+  })
+
+  const handleOpenEdit = useCallback((salary: GetSalaryType) => {
+    const s = salary.salary as any
+    const otherSalary = ((salary as any).otherSalary ??
+      []) as OtherSalaryComponent[]
+
+    setEditRow({
+      salaryId: s.salaryId,
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
+      salaryMonth: s.salaryMonth,
+      salaryYear: s.salaryYear,
+      basicSalary: s.basicSalary,
+      doj: s.doj,
+      departmentId: s.departmentId,
+      designationId: s.designationId,
+      components: otherSalary.map((c) => ({
+        employeeSalaryDetailsId: c.employeeSalaryDetailsId,
+        salaryComponentId: c.salaryComponentId,
+        componentName: c.componentName,
+        componentType: c.componentType,
+        amount: c.amount,
+      })),
+    })
+    setEditError(null)
+    setIsEditPopupOpen(true)
+  }, [])
+
+  const handleEditComponentAmountChange = useCallback(
+    (employeeSalaryDetailsId: number, value: number) => {
+      setEditRow((prev) =>
+        prev
+          ? {
+              ...prev,
+              components: prev.components.map((c) =>
+                c.employeeSalaryDetailsId === employeeSalaryDetailsId
+                  ? { ...c, amount: Number.isNaN(value) ? 0 : value }
+                  : c
+              ),
+            }
+          : prev
+      )
+    },
+    []
+  )
+
+  const handleEditSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!editRow) return
+      setEditError(null)
+
+      try {
+        // NOTE: there's no published update-salary schema, so this mirrors
+        // createSalarySchema's per-row shape, using employeeSalaryDetailsId
+        // (the existing stored detail row) instead of salaryStructureDetailId
+        // since we're updating existing records, not generating new ones.
+        const data = {
+          salaryMonth: editRow.salaryMonth,
+          salaryYear: editRow.salaryYear,
+          employeeId: editRow.employeeId,
+          departmentId: editRow.departmentId,
+          designationId: editRow.designationId,
+          basicSalary: editRow.basicSalary,
+          doj: editRow.doj,
+          updatedBy: userData?.userId || 0,
+          components: editRow.components.map((c) => ({
+            employeeSalaryDetailsId: c.employeeSalaryDetailsId,
+            salaryComponentId: c.salaryComponentId,
+            componentType: c.componentType,
+            amount: c.amount,
+          })),
+        }
+
+        await updateMutation.mutateAsync({ id: editRow.salaryId, data })
+      } catch (err) {
+        setEditError('Failed to update salary')
+        console.error(err)
+      }
+    },
+    [editRow, updateMutation, userData]
+  )
 
   return (
     <div className="p-6 space-y-6">
@@ -349,274 +532,297 @@ const Salaries = () => {
             No salaries match your search
           </div>
         ) : (
-          paginatedGroups.map(([key, groupSalaries]) => (
-            <div
-              key={key}
-              className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
-            >
-              {/* Group Header */}
-              <div className="bg-blue-200 px-6 py-4 flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-black" />
-                <h3 className="text-lg font-semibold text-black">
-                  {formatGroupLabel(key)}
-                </h3>
-                <span className="ml-auto bg-black/10 px-3 py-1 rounded-full text-sm font-medium text-black">
-                  {groupSalaries.length}{' '}
-                  {groupSalaries.length === 1 ? 'employee' : 'employees'}
-                </span>
-              </div>
-
-              {/* Salary Table */}
-              <div className="bg-white">
-                <Table>
-                  <TableHeader className="bg-blue-50">
-                    <TableRow>
-                      <TableHead className="w-10" />
-                      <TableHead className="w-20">Sl No.</TableHead>
-                      <TableHead
-                        onClick={() => handleSort('employeeName')}
-                        className="cursor-pointer"
-                      >
-                        Employee Name
-                        <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-                      </TableHead>
-                      <TableHead
-                        onClick={() => handleSort('basicSalary')}
-                        className="cursor-pointer"
-                      >
-                        Basic Salary
-                        <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-                      </TableHead>
-                      <TableHead>Gross Salary</TableHead>
-                      <TableHead>Net Salary</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groupSalaries.map(
-                      (salary: GetSalaryType, index: number) => {
-                        const salaryId =
-                          (salary.salary as any).salaryId ?? index
-                        const isExpanded = expandedSalaryId === salaryId
-
-                        const empComponents = getEmpComponents(
-                          salary.salary.employeeId,
-                          salary.salary.salaryMonth,
-                          salary.salary.salaryYear
-                        )
-
-                        const allowanceTotal = empComponents
-                          .filter((c) => c.componentType === 'Allowance')
-                          .reduce((sum, c) => sum + c.amount, 0)
-
-                        const deductionTotal = empComponents
-                          .filter(
-                            (c) =>
-                              c.componentType === 'Deduction' &&
-                              (c.isAuthorized !== 1 || c.isLoneFee === 1) &&
-                              c.isSkipped !== 1
-                          )
-                          .reduce((sum, c) => sum + c.amount, 0)
-
-                        return (
-                          <React.Fragment key={salaryId}>
-                            <TableRow className="hover:bg-blue-50/50">
-                              <TableCell className="w-10 pr-0">
-                                {empComponents.length > 0 && (
-                                  <button
-                                    onClick={() =>
-                                      setExpandedSalaryId(
-                                        isExpanded ? null : salaryId
-                                      )
-                                    }
-                                    className="p-1 rounded hover:bg-blue-100 transition-colors"
-                                    title="View other salary components"
-                                  >
-                                    <ChevronDown
-                                      className={cn(
-                                        'h-4 w-4 text-blue-600 transition-transform duration-200',
-                                        isExpanded && 'rotate-180'
-                                      )}
-                                    />
-                                  </button>
-                                )}
-                              </TableCell>
-                              <TableCell className="font-medium text-gray-600">
-                                {index + 1}
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {salary.salary.employeeName}
-                              </TableCell>
-                              <TableCell>
-                                {salary.salary.basicSalary.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                {salary.salary.grossSalary.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="font-semibold text-green-700">
-                                {salary.salary.netSalary.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => {
-                                      setDeletingSalaryId(salaryId)
-                                      setIsDeleteDialogOpen(true)
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-
-                            {/* Accordion row for main table */}
-                            {isExpanded && (
-                              <TableRow className="bg-blue-50/40">
-                                <TableCell colSpan={7} className="py-0 px-0">
-                                  <div className="pl-14 pr-6 py-4 border-t border-blue-100">
-                                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">
-                                      Other salary components —{' '}
-                                      {salary.salary.salaryMonth}{' '}
-                                      {salary.salary.salaryYear}
-                                    </p>
-                                    <Table className="border">
-                                      <TableHeader>
-                                        <TableRow className="bg-white">
-                                          <TableHead className="text-xs w-20">
-                                            Sl No.
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            Component
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            Type
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            status
-                                          </TableHead>
-                                          <TableHead className="text-xs text-right">
-                                            Amount
-                                          </TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {empComponents.map((c, idx) => {
-                                          const isSkipped =
-                                            c.componentType === 'Deduction' &&
-                                            c.isAuthorized === 1 &&
-                                            c.isLoneFee !== 1 &&
-                                            c.isSkipped === 1
-                                          return (
-                                            <TableRow
-                                              key={idx}
-                                              className={cn(
-                                                'bg-white',
-                                                isSkipped && 'opacity-50'
-                                              )}
-                                            >
-                                              <TableCell className="text-gray-500 text-sm">
-                                                {idx + 1}
-                                              </TableCell>
-                                              <TableCell className="font-medium text-sm">
-                                                {c.componentName}
-                                              </TableCell>
-                                              <TableCell>
-                                                <span
-                                                  className={cn(
-                                                    'px-2 py-0.5 rounded-full text-xs font-semibold',
-                                                    c.componentType ===
-                                                      'Allowance'
-                                                      ? 'bg-green-100 text-green-700'
-                                                      : 'bg-red-100 text-red-700'
-                                                  )}
-                                                >
-                                                  {c.componentType}
-                                                </span>
-                                              </TableCell>
-                                              <TableCell>
-                                                {(() => {
-                                                  const isSkippedFinal =
-                                                    c.isAuthorized === 1 &&
-                                                    c.isSkipped === 1
-                                                  const isAuthorizedFinal =
-                                                    c.isAuthorized === 1 &&
-                                                    c.isSkipped === 0
-
-                                                  if (isSkippedFinal) {
-                                                    return (
-                                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                        <XCircle className="h-3 w-3" />{' '}
-                                                        Skipped
-                                                      </span>
-                                                    )
-                                                  }
-
-                                                  if (isAuthorizedFinal) {
-                                                    return (
-                                                      <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                                                        <CheckCircle className="h-3 w-3" />{' '}
-                                                        Authorized
-                                                      </span>
-                                                    )
-                                                  }
-
-                                                  return (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                      <XCircle className="h-3 w-3" />{' '}
-                                                      Unauthorized
-                                                    </span>
-                                                  )
-                                                })()}
-                                              </TableCell>
-                                              <TableCell className="text-right font-medium text-sm">
-                                                <span
-                                                  className={cn(
-                                                    c.componentType ===
-                                                      'Allowance'
-                                                      ? 'text-green-600'
-                                                      : 'text-red-600',
-                                                    isSkipped && 'line-through'
-                                                  )}
-                                                >
-                                                  {c.componentType ===
-                                                  'Allowance'
-                                                    ? '+'
-                                                    : '-'}
-                                                  {c.amount.toLocaleString()}
-                                                </span>
-                                              </TableCell>
-                                            </TableRow>
-                                          )
-                                        })}
-                                      </TableBody>
-                                    </Table>
-                                    <div className="flex gap-6 mt-3 pt-2 border-t border-blue-100 text-sm">
-                                      <span className="text-green-700 font-medium">
-                                        Total Allowances: +
-                                        {allowanceTotal.toLocaleString()}
-                                      </span>
-                                      <span className="text-red-600 font-medium">
-                                        Total Deductions: -
-                                        {deductionTotal.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </React.Fragment>
-                        )
-                      }
+          paginatedGroups.map(([key, groupSalaries]) => {
+            const isGroupExpanded = expandedGroupKey === key
+            return (
+              <div
+                key={key}
+                className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
+              >
+                {/* Group Header — click to expand/collapse */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedGroupKey(isGroupExpanded ? null : key)
+                  }
+                  className="w-full bg-blue-200 px-6 py-4 flex items-center gap-3 text-left"
+                >
+                  <Calendar className="h-5 w-5 text-black" />
+                  <h3 className="text-lg font-semibold text-black">
+                    {formatGroupLabel(key)}
+                  </h3>
+                  <span className="ml-auto bg-black/10 px-3 py-1 rounded-full text-sm font-medium text-black">
+                    {groupSalaries.length}{' '}
+                    {groupSalaries.length === 1 ? 'employee' : 'employees'}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      'h-5 w-5 text-black transition-transform duration-200',
+                      isGroupExpanded && 'rotate-180'
                     )}
-                  </TableBody>
-                </Table>
+                  />
+                </button>
+
+                {/* Salary Table */}
+                {isGroupExpanded && (
+                  <div className="bg-white">
+                    <Table>
+                      <TableHeader className="bg-blue-50">
+                        <TableRow>
+                          <TableHead className="w-10" />
+                          <TableHead className="w-20">Sl No.</TableHead>
+                          <TableHead
+                            onClick={() => handleSort('employeeName')}
+                            className="cursor-pointer"
+                          >
+                            Employee Name
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead
+                            onClick={() => handleSort('basicSalary')}
+                            className="cursor-pointer"
+                          >
+                            Basic Salary
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead>Gross Salary</TableHead>
+                          <TableHead>Net Salary</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {groupSalaries.map(
+                          (salary: GetSalaryType, index: number) => {
+                            const salaryId = (salary.salary as any).salaryId
+                            const isDraft = Boolean(
+                              (salary.salary as any).isDraft
+                            )
+                            const isSalaryGiven = Boolean(
+                              (salary.salary as any).isSalaryGiven
+                            )
+                            const isExpanded = expandedSalaryId === salaryId
+
+                            const otherSalary = ((salary as any).otherSalary ??
+                              []) as OtherSalaryComponent[]
+
+                            const allowanceTotal = otherSalary
+                              .filter((c) => c.componentType === 'Allowance')
+                              .reduce((sum, c) => sum + c.amount, 0)
+
+                            const deductionTotal = otherSalary
+                              .filter((c) => c.componentType === 'Deduction')
+                              .reduce((sum, c) => sum + c.amount, 0)
+
+                            return (
+                              <React.Fragment key={salaryId}>
+                                <TableRow
+                                  className="hover:bg-blue-50/50 cursor-pointer"
+                                  onClick={() =>
+                                    setExpandedSalaryId(
+                                      isExpanded ? null : salaryId
+                                    )
+                                  }
+                                >
+                                  <TableCell className="w-10 pr-0">
+                                    {otherSalary.length > 0 && (
+                                      <ChevronDown
+                                        className={cn(
+                                          'h-4 w-4 text-blue-600 transition-transform duration-200',
+                                          isExpanded && 'rotate-180'
+                                        )}
+                                      />
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-gray-600">
+                                    {index + 1}
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {salary.salary.employeeName}
+                                  </TableCell>
+                                  <TableCell>
+                                    {salary.salary.basicSalary.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    {salary.salary.grossSalary.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell className="font-semibold text-green-700">
+                                    {salary.salary.netSalary.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                      {isDraft ? (
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full w-fit">
+                                          <Lock className="h-3 w-3" /> Draft
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full w-fit">
+                                          <CheckCircle className="h-3 w-3" />{' '}
+                                          Permanent
+                                        </span>
+                                      )}
+                                      {isSalaryGiven ? (
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full w-fit">
+                                          <CheckCircle className="h-3 w-3" />{' '}
+                                          Given
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full w-fit">
+                                          <XCircle className="h-3 w-3" /> Not
+                                          Given
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div
+                                      className="flex justify-end gap-2"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {isDraft && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                          title="Mark as permanent"
+                                          disabled={
+                                            makePermanentMutation.isPending
+                                          }
+                                          onClick={() =>
+                                            handleMakePermanent(salaryId)
+                                          }
+                                        >
+                                          <Unlock className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-gray-600 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30"
+                                        title="Edit salary"
+                                        disabled={isDraft}
+                                        onClick={() => handleOpenEdit(salary)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 disabled:opacity-30"
+                                        title="Give salary"
+                                        disabled={
+                                          isSalaryGiven ||
+                                          giveSalaryMutation.isPending
+                                        }
+                                        onClick={() =>
+                                          handleGiveSalary(salaryId)
+                                        }
+                                      >
+                                        <Send className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+
+                                {isExpanded && (
+                                  <TableRow className="bg-blue-50/40">
+                                    <TableCell
+                                      colSpan={8}
+                                      className="py-0 px-0"
+                                    >
+                                      <div className="pl-14 pr-6 py-4 border-t border-blue-100">
+                                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3">
+                                          Other salary components —{' '}
+                                          {salary.salary.salaryMonth}{' '}
+                                          {salary.salary.salaryYear}
+                                        </p>
+                                        <Table className="border">
+                                          <TableHeader>
+                                            <TableRow className="bg-white">
+                                              <TableHead className="text-xs w-20">
+                                                Sl No.
+                                              </TableHead>
+                                              <TableHead className="text-xs">
+                                                Component
+                                              </TableHead>
+                                              <TableHead className="text-xs">
+                                                Type
+                                              </TableHead>
+                                              <TableHead className="text-xs text-right">
+                                                Amount
+                                              </TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {otherSalary.map((c, idx) => (
+                                              <TableRow
+                                                key={c.employeeSalaryDetailsId}
+                                                className="bg-white"
+                                              >
+                                                <TableCell className="text-gray-500 text-sm">
+                                                  {idx + 1}
+                                                </TableCell>
+                                                <TableCell className="font-medium text-sm">
+                                                  {c.componentName}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <span
+                                                    className={cn(
+                                                      'px-2 py-0.5 rounded-full text-xs font-semibold',
+                                                      c.componentType ===
+                                                        'Allowance'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-red-100 text-red-700'
+                                                    )}
+                                                  >
+                                                    {c.componentType}
+                                                  </span>
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium text-sm">
+                                                  <span
+                                                    className={
+                                                      c.componentType ===
+                                                      'Allowance'
+                                                        ? 'text-green-600'
+                                                        : 'text-red-600'
+                                                    }
+                                                  >
+                                                    {c.componentType ===
+                                                    'Allowance'
+                                                      ? '+'
+                                                      : '-'}
+                                                    {c.amount.toLocaleString()}
+                                                  </span>
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                        <div className="flex gap-6 mt-3 pt-2 border-t border-blue-100 text-sm">
+                                          <span className="text-green-700 font-medium">
+                                            Total Allowances: +
+                                            {allowanceTotal.toLocaleString()}
+                                          </span>
+                                          <span className="text-red-600 font-medium">
+                                            Total Deductions: -
+                                            {deductionTotal.toLocaleString()}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
+                            )
+                          }
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -685,10 +891,9 @@ const Salaries = () => {
         isOpen={isPopupOpen}
         onClose={closePopup}
         title="Add Salary"
-        size="sm:max-w-4xl"
+        size="sm:max-w-7xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          {/* Month & Year */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>
@@ -732,15 +937,20 @@ const Salaries = () => {
             </div>
           </div>
 
-          {/* Preview table of all active employees with accordion */}
-          {employees?.data && (
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">
-                Employees (
-                {employees.data.filter((e: any) => e.isActive === 1).length}{' '}
-                active)
-              </Label>
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">
+              Employees ({popupRows.length})
+            </Label>
 
+            {isGeneratingSalary ? (
+              <div className="text-center py-8 text-gray-500 border rounded-lg">
+                Generating salary preview...
+              </div>
+            ) : popupRows.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 border rounded-lg">
+                No employee salary data for this month/year
+              </div>
+            ) : (
               <div className="border rounded-lg overflow-hidden">
                 <Table className="border">
                   <TableHeader className="bg-blue-50">
@@ -755,232 +965,169 @@ const Salaries = () => {
                   </TableHeader>
 
                   <TableBody>
-                    {employees.data
-                      .filter((e: any) => e.isActive === 1)
-                      .map((emp: any, index: number) => {
-                        const basicSalary: number = emp.basicSalary ?? 0
+                    {popupRows.map((row, index) => {
+                      const {
+                        grossSalary,
+                        netSalary,
+                        allowanceTotal,
+                        deductionTotal,
+                      } = computeRowTotals(row)
+                      const isExpanded = expandedPopupEmpId === row.employeeId
 
-                        const { grossSalary, netSalary } = calcSalaries(
-                          emp.employeeId,
-                          form.salaryMonth,
-                          form.salaryYear,
-                          basicSalary
-                        )
+                      return (
+                        <React.Fragment key={row.employeeId}>
+                          <TableRow
+                            className="hover:bg-blue-50/50 cursor-pointer"
+                            onClick={() =>
+                              setExpandedPopupEmpId(
+                                isExpanded ? null : row.employeeId
+                              )
+                            }
+                          >
+                            <TableCell className="w-10 pr-0">
+                              {row.components.length > 0 && (
+                                <ChevronDown
+                                  className={cn(
+                                    'h-4 w-4 text-blue-600 transition-transform duration-200',
+                                    isExpanded && 'rotate-180'
+                                  )}
+                                />
+                              )}
+                            </TableCell>
 
-                        const empComponents = getEmpComponents(
-                          emp.employeeId,
-                          form.salaryMonth,
-                          form.salaryYear
-                        )
+                            <TableCell className="text-gray-500">
+                              {index + 1}
+                            </TableCell>
 
-                        const allowanceTotal = empComponents
-                          .filter((c) => c.componentType === 'Allowance')
-                          .reduce((sum, c) => sum + c.amount, 0)
+                            <TableCell className="font-medium">
+                              {row.employeeName}
+                            </TableCell>
 
-                        const deductionTotal = empComponents
-                          .filter(
-                            (c) =>
-                              c.componentType === 'Deduction' &&
-                              (c.isAuthorized !== 1 ||
-                                c.salaryComponentId === 6)
-                          )
-                          .reduce((sum, c) => sum + c.amount, 0)
+                            <TableCell>
+                              <Input
+                                value={row.basicSalary.toLocaleString()}
+                                disabled
+                                className="w-32 bg-gray-50"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </TableCell>
 
-                        const isExpanded = expandedPopupEmpId === emp.employeeId
+                            <TableCell>
+                              <Input
+                                value={grossSalary.toLocaleString()}
+                                disabled
+                                className="w-32 bg-gray-50"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </TableCell>
 
-                        return (
-                          <React.Fragment key={emp.employeeId}>
-                            {/* Main Row */}
-                            <TableRow className="hover:bg-blue-50/50">
-                              <TableCell className="w-10 pr-0">
-                                {empComponents.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setExpandedPopupEmpId(
-                                        isExpanded ? null : emp.employeeId
-                                      )
-                                    }
-                                    className="p-1 rounded hover:bg-blue-100 transition-colors"
-                                    title="View other salary components"
-                                  >
-                                    <ChevronDown
-                                      className={cn(
-                                        'h-4 w-4 text-blue-600 transition-transform duration-200',
-                                        isExpanded && 'rotate-180'
-                                      )}
-                                    />
-                                  </button>
-                                )}
-                              </TableCell>
+                            <TableCell>
+                              <Input
+                                value={netSalary.toLocaleString()}
+                                disabled
+                                className="w-32 bg-gray-50 font-semibold text-green-700"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </TableCell>
+                          </TableRow>
 
-                              <TableCell className="text-gray-500">
-                                {index + 1}
-                              </TableCell>
+                          {isExpanded && (
+                            <TableRow className="bg-blue-50/40">
+                              <TableCell colSpan={6} className="py-0 px-0">
+                                <div className="pl-12 pr-4 py-3 border-t border-blue-100">
+                                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">
+                                    Other salary components
+                                  </p>
 
-                              <TableCell className="font-medium">
-                                {emp.empFullName}
-                              </TableCell>
+                                  <Table className="border">
+                                    <TableHeader>
+                                      <TableRow className="bg-white">
+                                        <TableHead className="text-xs w-20">
+                                          Sl No.
+                                        </TableHead>
+                                        <TableHead className="text-xs">
+                                          Component
+                                        </TableHead>
+                                        <TableHead className="text-xs">
+                                          Type
+                                        </TableHead>
+                                        <TableHead className="text-xs text-right">
+                                          Amount
+                                        </TableHead>
+                                      </TableRow>
+                                    </TableHeader>
 
-                              <TableCell>
-                                {basicSalary.toLocaleString()}
-                              </TableCell>
+                                    <TableBody>
+                                      {row.components.map((c, idx) => (
+                                        <TableRow
+                                          key={c.salaryComponentId}
+                                          className="bg-white"
+                                        >
+                                          <TableCell className="text-gray-500 text-sm">
+                                            {idx + 1}
+                                          </TableCell>
 
-                              <TableCell>
-                                {grossSalary.toLocaleString()}
-                              </TableCell>
+                                          <TableCell className="font-medium text-sm">
+                                            {c.componentName}
+                                          </TableCell>
 
-                              <TableCell className="font-semibold text-green-700">
-                                {netSalary.toLocaleString()}
+                                          <TableCell>
+                                            <span
+                                              className={cn(
+                                                'px-2 py-0.5 rounded-full text-xs font-semibold',
+                                                c.componentType === 'Allowance'
+                                                  ? 'bg-green-100 text-green-700'
+                                                  : 'bg-red-100 text-red-700'
+                                              )}
+                                            >
+                                              {c.componentType}
+                                            </span>
+                                          </TableCell>
+
+                                          <TableCell className="text-right">
+                                            <Input
+                                              type="number"
+                                              value={c.amount}
+                                              onClick={(e) =>
+                                                e.stopPropagation()
+                                              }
+                                              onChange={(e) =>
+                                                handleComponentAmountChange(
+                                                  row.employeeId,
+                                                  c.salaryComponentId,
+                                                  Number(e.target.value)
+                                                )
+                                              }
+                                              className="w-28 ml-auto text-right"
+                                            />
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+
+                                  <div className="flex gap-6 mt-2 pt-2 border-t border-blue-100 text-sm">
+                                    <span className="text-green-700 font-medium">
+                                      Total Allowances: +
+                                      {allowanceTotal.toLocaleString()}
+                                    </span>
+                                    <span className="text-red-600 font-medium">
+                                      Total Deductions: -
+                                      {deductionTotal.toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
                               </TableCell>
                             </TableRow>
-
-                            {/* Expanded Row */}
-                            {isExpanded && (
-                              <TableRow className="bg-blue-50/40">
-                                <TableCell colSpan={6} className="py-0 px-0">
-                                  <div className="pl-12 pr-4 py-3 border-t border-blue-100">
-                                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">
-                                      Other salary components
-                                    </p>
-
-                                    <Table className="border">
-                                      <TableHeader>
-                                        <TableRow className="bg-white">
-                                          <TableHead className="text-xs w-20">
-                                            Sl No.
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            Component
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            Type
-                                          </TableHead>
-                                          <TableHead className="text-xs">
-                                            Status
-                                          </TableHead>
-                                          <TableHead className="text-xs text-right">
-                                            Amount
-                                          </TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-
-                                      <TableBody>
-                                        {empComponents.map(
-                                          (c: any, idx: number) => {
-                                            const isSkipped =
-                                              c.componentType === 'Deduction' &&
-                                              c.isAuthorized === 1 &&
-                                              c.isLoneFee !== 1 &&
-                                              c.isSkipped === 1
-
-                                            const isSkippedFinal =
-                                              c.isAuthorized === 1 &&
-                                              c.isSkipped === 1
-
-                                            const isAuthorizedFinal =
-                                              c.isAuthorized === 1 &&
-                                              c.isSkipped === 0
-
-                                            return (
-                                              <TableRow
-                                                key={
-                                                  c.id ??
-                                                  `${emp.employeeId}-${idx}`
-                                                }
-                                                className={cn(
-                                                  'bg-white',
-                                                  isSkipped && 'opacity-50'
-                                                )}
-                                              >
-                                                <TableCell className="text-gray-500 text-sm">
-                                                  {idx + 1}
-                                                </TableCell>
-
-                                                <TableCell className="font-medium text-sm">
-                                                  {c.componentName}
-                                                </TableCell>
-
-                                                <TableCell>
-                                                  <span
-                                                    className={cn(
-                                                      'px-2 py-0.5 rounded-full text-xs font-semibold',
-                                                      c.componentType ===
-                                                        'Allowance'
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-red-100 text-red-700'
-                                                    )}
-                                                  >
-                                                    {c.componentType}
-                                                  </span>
-                                                </TableCell>
-
-                                                <TableCell>
-                                                  {isSkippedFinal ? (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                      <XCircle className="h-3 w-3" />{' '}
-                                                      Skipped
-                                                    </span>
-                                                  ) : isAuthorizedFinal ? (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                                                      <CheckCircle className="h-3 w-3" />{' '}
-                                                      Authorized
-                                                    </span>
-                                                  ) : (
-                                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                                      <XCircle className="h-3 w-3" />{' '}
-                                                      Unauthorized
-                                                    </span>
-                                                  )}
-                                                </TableCell>
-
-                                                <TableCell className="text-right font-medium text-sm">
-                                                  <span
-                                                    className={cn(
-                                                      c.componentType ===
-                                                        'Allowance'
-                                                        ? 'text-green-600'
-                                                        : 'text-red-600',
-                                                      isSkipped &&
-                                                        'line-through'
-                                                    )}
-                                                  >
-                                                    {c.componentType ===
-                                                    'Allowance'
-                                                      ? '+'
-                                                      : '-'}
-                                                    {c.amount.toLocaleString()}
-                                                  </span>
-                                                </TableCell>
-                                              </TableRow>
-                                            )
-                                          }
-                                        )}
-                                      </TableBody>
-                                    </Table>
-
-                                    <div className="flex gap-6 mt-2 pt-2 border-t border-blue-100 text-sm">
-                                      <span className="text-green-700 font-medium">
-                                        Total Allowances: +
-                                        {allowanceTotal.toLocaleString()}
-                                      </span>
-                                      <span className="text-red-600 font-medium">
-                                        Total Deductions: -
-                                        {deductionTotal.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </React.Fragment>
-                        )
-                      })}
+                          )}
+                        </React.Fragment>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
@@ -994,7 +1141,7 @@ const Salaries = () => {
             </Button>
             <Button
               type="submit"
-              disabled={addMutation.isPending}
+              disabled={addMutation.isPending || popupRows.length === 0}
               className="bg-blue-500 hover:bg-blue-600 text-black"
             >
               {addMutation.isPending ? 'Saving...' : 'Save Salary'}
@@ -1003,37 +1150,142 @@ const Salaries = () => {
         </form>
       </Popup>
 
-      {/* Delete Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+      {/* Edit Popup */}
+      <Popup
+        isOpen={isEditPopupOpen}
+        onClose={closeEditPopup}
+        title="Edit Salary"
+        size="sm:max-w-3xl"
       >
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Salary</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this salary record? This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deletingSalaryId) {
-                  deleteMutation.mutate({ id: deletingSalaryId })
-                }
-                setIsDeleteDialogOpen(false)
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        {editRow && (
+          <form onSubmit={handleEditSubmit} className="space-y-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Employee</Label>
+                <p className="font-medium">{editRow.employeeName}</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-500">Month / Year</Label>
+                <p className="font-medium">
+                  {editRow.salaryMonth} {editRow.salaryYear}
+                </p>
+              </div>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              <Table className="border">
+                <TableHeader>
+                  <TableRow className="bg-white">
+                    <TableHead className="text-xs w-20">Sl No.</TableHead>
+                    <TableHead className="text-xs">Component</TableHead>
+                    <TableHead className="text-xs">Type</TableHead>
+                    <TableHead className="text-xs text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {editRow.components.map((c, idx) => (
+                    <TableRow
+                      key={c.employeeSalaryDetailsId}
+                      className="bg-white"
+                    >
+                      <TableCell className="text-gray-500 text-sm">
+                        {idx + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {c.componentName}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded-full text-xs font-semibold',
+                            c.componentType === 'Allowance'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          )}
+                        >
+                          {c.componentType}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Input
+                          type="number"
+                          value={c.amount}
+                          onChange={(e) =>
+                            handleEditComponentAmountChange(
+                              c.employeeSalaryDetailsId,
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-28 ml-auto text-right"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {(() => {
+              const { grossSalary, netSalary, allowanceTotal, deductionTotal } =
+                computeRowTotals(editRow)
+              return (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">
+                      Basic Salary
+                    </Label>
+                    <Input
+                      value={editRow.basicSalary.toLocaleString()}
+                      disabled
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">
+                      Gross Salary
+                    </Label>
+                    <Input value={grossSalary.toLocaleString()} disabled />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Net Salary</Label>
+                    <Input
+                      value={netSalary.toLocaleString()}
+                      disabled
+                      className="font-semibold text-green-700"
+                    />
+                  </div>
+                  <div className="col-span-3 flex gap-6 text-sm">
+                    <span className="text-green-700 font-medium">
+                      Total Allowances: +{allowanceTotal.toLocaleString()}
+                    </span>
+                    <span className="text-red-600 font-medium">
+                      Total Deductions: -{deductionTotal.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {editError && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {editError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={closeEditPopup}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="bg-blue-500 hover:bg-blue-600 text-black"
+              >
+                {updateMutation.isPending ? 'Saving...' : 'Update Salary'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Popup>
     </div>
   )
 }

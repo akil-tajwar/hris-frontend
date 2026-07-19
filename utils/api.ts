@@ -1574,7 +1574,7 @@ export async function deleteSalaryStructure(id: number, token: string) {
   })
 }
 
-//employee other salary components
+//employee salary components
 export async function getAllEmployeeSalaryComponents(token: string) {
   return fetchApi<GetEmployeeSalaryComponentType[]>({
     url: 'api/employeeSalaryComponents/getall',
@@ -1629,6 +1629,21 @@ export async function deleteEmployeeSalaryComponent(id: number, token: string) {
 }
 
 //salary
+export async function generateSalary(
+  token: string,
+  salaryMonth: string,
+  salaryYear: number
+) {
+  return fetchApi<GetAttendanceDailyType[]>({
+    url: `api/salary/generate-salary?salaryMonth=${salaryMonth ?? ''}&salaryYear=${salaryYear ?? ''}`,
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function getAllSalaries(token: string) {
   return fetchApi<GetSalaryType[]>({
     url: 'api/salary/getall',
@@ -1731,12 +1746,12 @@ export async function deleteLone(id: number, token: string) {
 }
 
 export async function skipLone(
-  employeeSalaryComponentId: number,
+  employeeSalaryDetailsId: number,
   updatedBy: number,
   token: string
 ) {
   return fetchApi<any>({
-    url: `api/employeeLones/skipLone/${employeeSalaryComponentId}/${updatedBy}`,
+    url: `api/employeeLones/skipLone/${employeeSalaryDetailsId}/${updatedBy}`,
     method: 'POST',
     headers: {
       Authorization: token,

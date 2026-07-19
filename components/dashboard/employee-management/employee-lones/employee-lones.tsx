@@ -124,7 +124,7 @@ const EmployeeLones = () => {
   // Skip lone state
   const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false)
   const [skippingInstallment, setSkippingInstallment] = useState<{
-    employeeSalaryComponentId: number
+    employeeSalaryDetailsId: number
     salaryMonth: string
     salaryYear: number
     componentName: string
@@ -325,8 +325,8 @@ const EmployeeLones = () => {
 
   const handleSkipClick = (installment: any) => {
     setSkippingInstallment({
-      employeeSalaryComponentId:
-        installment.employeeSalaryComponentId,
+      employeeSalaryDetailsId:
+        installment.employeeSalaryDetailsId,
       salaryMonth: installment.salaryMonth,
       salaryYear: installment.salaryYear,
       componentName: installment.componentName,
@@ -337,8 +337,8 @@ const EmployeeLones = () => {
   const handleSkipConfirm = () => {
     if (skippingInstallment) {
       skipMutation.mutate({
-        employeeSalaryComponentId:
-          skippingInstallment.employeeSalaryComponentId,
+        employeeSalaryDetailsId:
+          skippingInstallment.employeeSalaryDetailsId,
         updatedBy: userData?.userId || 0,
       })
     }
@@ -570,7 +570,7 @@ const EmployeeLones = () => {
 
                                   return (
                                     <TableRow
-                                      key={inst.employeeSalaryComponentId}
+                                      key={inst.employeeSalaryDetailsId}
                                       className={`text-sm ${
                                         alreadySkipped ? 'opacity-60' : ''
                                       }`}
