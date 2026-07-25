@@ -12,13 +12,15 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { File, FileSpreadsheet } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Fragment } from 'react'
+import { File, FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { useGetAllEmployees, useGetSalaryReport } from '@/hooks/use-api'
-import { formatNumber } from '@/utils/conversions'
+import { formatDate, formatNumber } from '@/utils/conversions'
 import { GetSalaryType } from '@/utils/type'
 
 const MONTHS = [
@@ -39,26 +41,27 @@ const MONTHS = [
 const currentYear = new Date().getFullYear()
 const YEARS = Array.from({ length: 10 }, (_, i) => currentYear - i)
 
-// Helper: group otherSalary by type for a given employeeId
-const groupOtherSalaryForEmployee = (
-  // otherSalaries: GetSalaryType['otherSalary'],
-  otherSalaries: any['otherSalary'],
-  employeeId: number
-) => {
-  const relevant = otherSalaries.filter((o : any) => o.employeeId === employeeId)
+type SalaryRecord = GetSalaryType[number]
+type OtherSalaryItem = SalaryRecord['otherSalary'][number]
 
-  const allowances = relevant.filter((o : any) => o.componentType === 'Allowance')
-  const deductions = relevant.filter((o : any) => o.componentType === 'Deduction')
+// Helper: split an employee's otherSalary items into allowances/deductions + totals
+const groupOtherSalary = (otherSalaries: OtherSalaryItem[]) => {
+  const allowances = otherSalaries.filter(
+    (o) => o.componentType === 'Allowance'
+  )
+  const deductions = otherSalaries.filter(
+    (o) => o.componentType === 'Deduction'
+  )
 
-  const formatComponents = (items: typeof relevant): string =>
+  const totalAllowance = allowances.reduce((sum, o) => sum + o.amount, 0)
+  const totalDeduction = deductions.reduce((sum, o) => sum + o.amount, 0)
+
+  const formatComponents = (items: OtherSalaryItem[]): string =>
     items.length > 0
       ? items
-          .map((item : any) => `${item.componentName}: ${formatNumber(item.amount)}`)
+          .map((item) => `${item.componentName}: ${formatNumber(item.amount)}`)
           .join(', ')
       : '-'
-
-  const totalAllowance = allowances.reduce((sum : any, o: any) => sum + o.amount, 0)
-  const totalDeduction = deductions.reduce((sum : any, o: any) => sum + o.amount, 0)
 
   return {
     allowanceText: formatComponents(allowances),
@@ -71,26 +74,23 @@ const groupOtherSalaryForEmployee = (
 const SalaryReport = () => {
   const [salaryMonth, setSalaryMonth] = useState('')
   const [salaryYear, setSalaryYear] = useState<number>(0)
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
-  const { data: salaryReports }: any = useGetSalaryReport(
-    salaryMonth,
-    salaryYear
-  )
+  const { data: salaryReports } = useGetSalaryReport(salaryMonth, salaryYear)
   console.log('🚀 ~ SalaryReport ~ salaryReports:', salaryReports)
   const { data: employees } = useGetAllEmployees()
   console.log('🚀 ~ SalaryReport ~ employees:', employees)
 
-  // Enrich salary data with allowance/deduction information
+  // Enrich each employee's record with derived allowance/deduction summaries
   const enrichedSalaryData = useMemo(() => {
-    const salaryList = salaryReports?.data?.salary || []
-    const otherSalaryList = salaryReports?.data?.otherSalary || []
+    const records: GetSalaryType = (salaryReports?.data || []).flat()
 
-    return salaryList.map((salary: any) => {
+    return records.map((record) => {
       const { allowanceText, deductionText, totalAllowance, totalDeduction } =
-        groupOtherSalaryForEmployee(otherSalaryList, salary.employeeId)
+        groupOtherSalary(record.otherSalary)
 
       return {
-        ...salary,
+        ...record,
         allowanceText,
         deductionText,
         totalAllowance,
@@ -99,25 +99,39 @@ const SalaryReport = () => {
     })
   }, [salaryReports])
 
+  const toggleRow = (salaryId: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(salaryId)) {
+        next.delete(salaryId)
+      } else {
+        next.add(salaryId)
+      }
+      return next
+    })
+  }
+
   const exportToExcel = () => {
-    const flatData = enrichedSalaryData.map(
-      (row: (typeof enrichedSalaryData)[0]) => ({
-        'Employee Code': row.empCode,
-        'Employee Name': row.employeeName || '',
-        Department: row.departmentName || '',
-        Designation: row.designationName || '',
-        Month: row.salaryMonth,
-        Year: row.salaryYear,
-        'Date of Joining': row.doj,
-        'Basic Salary': formatNumber(row.basicSalary),
-        'Gross Salary': formatNumber(row.grossSalary),
-        Allowances: row.allowanceText,
-        'Total Allowance': formatNumber(row.totalAllowance),
-        Deductions: row.deductionText,
-        'Total Deduction': formatNumber(row.totalDeduction),
-        'Net Salary': formatNumber(row.netSalary),
-      })
-    )
+    const flatData = enrichedSalaryData.map((row) => ({
+      Employee: [
+        row.salary.empCode,
+        row.salary.employeeName,
+        row.salary.designationName,
+        row.salary.departmentName,
+      ]
+        .filter(Boolean)
+        .join(' - '),
+      'Date of Joining': formatDate(new Date(row.salary.doj)),
+      'Basic Salary': formatNumber(row.salary.basicSalary),
+      'Gross Salary': formatNumber(row.salary.grossSalary),
+      Allowances: row.allowanceText,
+      'Total Allowance': formatNumber(row.totalAllowance),
+      Deductions: row.deductionText,
+      'Total Deduction': formatNumber(row.totalDeduction),
+      'Net Salary': formatNumber(row.salary.netSalary),
+      Status: row.salary.isDraft ? 'Draft' : 'Permanent',
+      'Salary Given': row.salary.isSalaryGiven ? 'Given' : 'Not Given',
+    }))
 
     const worksheet = XLSX.utils.json_to_sheet(flatData)
     const workbook = XLSX.utils.book_new()
@@ -407,93 +421,176 @@ const SalaryReport = () => {
                 <Table>
                   <TableHeader className="bg-blue-100 pdf-table-header">
                     <TableRow>
-                      <TableHead className="font-bold">Employee Code</TableHead>
-                      <TableHead className="font-bold">Employee Name</TableHead>
-                      <TableHead className="font-bold">Department</TableHead>
-                      <TableHead className="font-bold">Designation</TableHead>
-                      <TableHead className="font-bold">Month</TableHead>
-                      <TableHead className="font-bold">Year</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead className="font-bold w-20">SI No.</TableHead>
+                      <TableHead className="font-bold">Employee</TableHead>
                       <TableHead className="font-bold">
                         Date of Joining
                       </TableHead>
                       <TableHead className="font-bold">Basic Salary</TableHead>
                       <TableHead className="font-bold">Gross Salary</TableHead>
-                      <TableHead
-                        className="font-bold text-center"
-                        colSpan={4}
-                      >
-                        Other Salary
-                      </TableHead>
                       <TableHead className="font-bold">Net Salary</TableHead>
-                    </TableRow>
-
-                    <TableRow className="bg-blue-50">
-                      {/* Empty cells for the non-rowspan columns */}
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      <TableHead></TableHead>
-                      {/* Other Salary sub-headers */}
-                      <TableHead className="font-semibold text-green-700">
-                        Allowances
-                      </TableHead>
-                      <TableHead className="font-semibold text-green-700">
-                        Total Allowance
-                      </TableHead>
-                      <TableHead className="font-semibold text-red-700">
-                        Deductions
-                      </TableHead>
-                      <TableHead className="font-semibold text-red-700">
-                        Total Deduction
-                      </TableHead>
-                      {/* Empty for Net Salary */}
-                      <TableHead></TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold">Salary Given</TableHead>
                     </TableRow>
                   </TableHeader>
 
                   <TableBody>
-                    {enrichedSalaryData.map((row: any, index: any) => (
-                      <TableRow key={`${row.employeeId}-${index}`}>
-                        <TableCell>{row.empCode}</TableCell>
-                        <TableCell>{row.employeeName || '-'}</TableCell>
-                        <TableCell>{row.departmentName || '-'}</TableCell>
-                        <TableCell>{row.designationName || '-'}</TableCell>
-                        <TableCell>{row.salaryMonth}</TableCell>
-                        <TableCell>{row.salaryYear}</TableCell>
-                        <TableCell>{row.doj}</TableCell>
-                        <TableCell>{formatNumber(row.basicSalary)}</TableCell>
-                        <TableCell>{formatNumber(row.grossSalary)}</TableCell>
+                    {enrichedSalaryData.map((row, index) => {
+                      const { salary } = row
+                      const isExpanded = expandedRows.has(salary.salaryId)
 
-                        {/* Allowances detail */}
-                        <TableCell className="text-green-700 max-w-[220px] whitespace-pre-wrap text-xs">
-                          {row.allowanceText}
-                        </TableCell>
-                        <TableCell className="text-green-600 font-medium">
-                          {row.totalAllowance > 0
-                            ? formatNumber(row.totalAllowance)
-                            : '-'}
-                        </TableCell>
+                      const employeeDetails = [
+                        salary.empCode,
+                        salary.employeeName,
+                        salary.designationName,
+                        salary.departmentName,
+                      ]
+                        .filter(Boolean)
+                        .join(' - ')
 
-                        {/* Deductions detail */}
-                        <TableCell className="text-red-700 max-w-[220px] whitespace-pre-wrap text-xs">
-                          {row.deductionText}
-                        </TableCell>
-                        <TableCell className="text-red-600 font-medium">
-                          {row.totalDeduction > 0
-                            ? formatNumber(row.totalDeduction)
-                            : '-'}
-                        </TableCell>
+                      return (
+                        <Fragment key={salary.salaryId}>
+                          <TableRow
+                            className="cursor-pointer hover:bg-gray-50"
+                            onClick={() => toggleRow(salary.salaryId)}
+                          >
+                            <TableCell>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </TableCell>
+                            <TableCell className="w-20">{index + 1}</TableCell>
+                            <TableCell>{employeeDetails || '-'}</TableCell>
+                            <TableCell>
+                              {formatDate(new Date(salary.doj))}
+                            </TableCell>
+                            <TableCell>
+                              {formatNumber(salary.basicSalary)}
+                            </TableCell>
+                            <TableCell>
+                              {formatNumber(salary.grossSalary)}
+                            </TableCell>
+                            <TableCell className="text-blue-600 font-semibold">
+                              {formatNumber(salary.netSalary)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  salary.isDraft
+                                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                    : 'bg-green-50 text-green-700 border-green-200'
+                                }
+                              >
+                                {salary.isDraft ? 'Draft' : 'Permanent'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  salary.isSalaryGiven
+                                    ? 'bg-green-50 text-green-700 border-green-200'
+                                    : 'bg-gray-50 text-gray-500 border-gray-200'
+                                }
+                              >
+                                {salary.isSalaryGiven ? 'Given' : 'Not Given'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
 
-                        <TableCell className="text-blue-600 font-semibold">
-                          {formatNumber(row.netSalary)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          {isExpanded && (
+                            <TableRow>
+                              <TableCell colSpan={9} className="bg-gray-50 p-0">
+                                <div className="p-4">
+                                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-3">
+                                    Other Salary Components —{' '}
+                                    {salary.salaryMonth} {salary.salaryYear}
+                                  </p>
+                                  {row.otherSalary.length === 0 ? (
+                                    <p className="text-sm text-gray-500">
+                                      No other salary components for this
+                                      employee.
+                                    </p>
+                                  ) : (
+                                    <>
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead className="w-20">
+                                              SI No.
+                                            </TableHead>
+                                            <TableHead>Component</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead className="text-right">
+                                              Amount
+                                            </TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {row.otherSalary.map((item, i) => (
+                                            <TableRow
+                                              key={item.salaryComponentId}
+                                            >
+                                              <TableCell className="w-20">
+                                                {i + 1}
+                                              </TableCell>
+                                              <TableCell className="font-medium">
+                                                {item.componentName}
+                                              </TableCell>
+                                              <TableCell>
+                                                <Badge
+                                                  variant="outline"
+                                                  className={
+                                                    item.componentType ===
+                                                    'Allowance'
+                                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                                      : 'bg-red-50 text-red-700 border-red-200'
+                                                  }
+                                                >
+                                                  {item.componentType}
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell
+                                                className={`text-right font-medium ${
+                                                  item.componentType ===
+                                                  'Allowance'
+                                                    ? 'text-green-600'
+                                                    : 'text-red-600'
+                                                }`}
+                                              >
+                                                {item.componentType ===
+                                                'Allowance'
+                                                  ? '+'
+                                                  : '-'}
+                                                {formatNumber(item.amount)}
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                      <div className="flex items-center gap-6 pt-3 mt-3 border-t text-sm">
+                                        <span className="text-green-600 font-medium">
+                                          Total Allowances: +
+                                          {formatNumber(row.totalAllowance)}
+                                        </span>
+                                        <span className="text-red-600 font-medium">
+                                          Total Deductions: -
+                                          {formatNumber(row.totalDeduction)}
+                                        </span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +50,7 @@ import {
   Unlock,
   Pencil,
   Send,
+  Printer,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type {
@@ -68,7 +69,9 @@ import {
   useMakeSalaryPermanent,
   useGiveSalary,
 } from '@/hooks/use-api'
+import { useReactToPrint } from 'react-to-print'
 import { cn } from '@/lib/utils'
+import SalaryPayslip from './salary-paysleep'
 
 const MONTHS = [
   'January',
@@ -141,12 +144,6 @@ const computeRowTotals = (row: {
   }
 }
 
-// ---- Existing-record ("otherSalary") shape — derived from the schema
-// directly so it can never drift from what the API actually returns.
-// NOTE: this shape does NOT have `employeeSalaryDetailsId` — only
-// salaryComponentId, componentName, componentType, amount. If your backend
-// really does return employeeSalaryDetailsId, add it to `salarySchema`'s
-// `otherSalary` in type.ts and it'll flow through here automatically.
 type OtherSalaryComponent = SalaryRecord['otherSalary'][number]
 
 // ---- Edit-popup local shapes ----
@@ -175,7 +172,7 @@ const Salaries = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: salaries } = useGetSalaries()
-  console.log("🚀 ~ Salaries ~ salaries:", salaries)
+  console.log('🚀 ~ Salaries ~ salaries:', salaries)
   const { data: employees } = useGetAllEmployees()
 
   const [error, setError] = useState<string | null>(null)
@@ -313,7 +310,7 @@ const Salaries = () => {
 
   const filteredSalaries = useMemo(() => {
     if (!salaries?.data || !Array.isArray(salaries.data)) return []
-    return ((salaries.data as unknown) as SalaryRecord[]).filter((s) =>
+    return (salaries.data as unknown as SalaryRecord[]).filter((s) =>
       s.salary.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [salaries?.data, searchTerm])
@@ -513,6 +510,43 @@ const Salaries = () => {
       }
     },
     [editRow, updateMutation, userData]
+  )
+
+  // ---- Payslip print ----
+  const contentRef = useRef<HTMLDivElement>(null)
+  const reactToPrintFn = useReactToPrint({ contentRef })
+
+  const [selectedSalaryForPrint, setSelectedSalaryForPrint] = useState<{
+    employeeName: string
+    empCode?: string
+    departmentName: string
+    designationName: string
+    salaryMonth: string
+    salaryYear: number
+    basicSalary: number
+    netSalary: number
+    components: OtherSalaryComponent[]
+  } | null>(null)
+
+  const handleDownloadPayslip = useCallback(
+    (salary: SalaryRecord) => {
+      const s = salary.salary
+      setSelectedSalaryForPrint({
+        employeeName: s.employeeName,
+        empCode: (s as any).empCode,
+        departmentName: (s as any).departmentName ?? 'Unassigned',
+        designationName: (s as any).designationName ?? 'Unassigned',
+        salaryMonth: s.salaryMonth,
+        salaryYear: s.salaryYear,
+        basicSalary: s.basicSalary,
+        netSalary: s.netSalary,
+        components: salary.otherSalary ?? [],
+      })
+      setTimeout(() => {
+        reactToPrintFn && reactToPrintFn()
+      }, 100)
+    },
+    [reactToPrintFn]
   )
 
   return (
@@ -751,6 +785,17 @@ const Salaries = () => {
                                         }
                                       >
                                         <Send className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        title="Download payslip"
+                                        onClick={() =>
+                                          handleDownloadPayslip(salary)
+                                        }
+                                      >
+                                        <Printer className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </TableCell>
@@ -1316,12 +1361,31 @@ const Salaries = () => {
         )}
       </Popup>
 
+      {/* Print Reference */}
+      <div style={{ display: 'none' }}>
+        <div ref={contentRef}>
+          {selectedSalaryForPrint && (
+            <SalaryPayslip
+              employeeName={selectedSalaryForPrint.employeeName}
+              empCode={selectedSalaryForPrint.empCode}
+              departmentName={selectedSalaryForPrint.departmentName}
+              designationName={selectedSalaryForPrint.designationName}
+              salaryMonth={selectedSalaryForPrint.salaryMonth}
+              salaryYear={selectedSalaryForPrint.salaryYear}
+              basicSalary={selectedSalaryForPrint.basicSalary}
+              netSalary={selectedSalaryForPrint.netSalary}
+              components={selectedSalaryForPrint.components}
+            />
+          )}
+        </div>
+      </div>
+
       {/* Confirm dialog: make permanent / give salary */}
       <AlertDialog
         open={!!confirmDialog}
         onOpenChange={(open) => !open && closeConfirmDialog()}
       >
-        <AlertDialogContent className='bg-white'>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirmDialog?.type === 'permanent'
@@ -1338,7 +1402,10 @@ const Salaries = () => {
             <AlertDialogCancel onClick={closeConfirmDialog}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAction} className='bg-blue-600 hover:bg-blue-700'>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
