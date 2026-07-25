@@ -141,12 +141,6 @@ const computeRowTotals = (row: {
   }
 }
 
-// ---- Existing-record ("otherSalary") shape — derived from the schema
-// directly so it can never drift from what the API actually returns.
-// NOTE: this shape does NOT have `employeeSalaryDetailsId` — only
-// salaryComponentId, componentName, componentType, amount. If your backend
-// really does return employeeSalaryDetailsId, add it to `salarySchema`'s
-// `otherSalary` in type.ts and it'll flow through here automatically.
 type OtherSalaryComponent = SalaryRecord['otherSalary'][number]
 
 // ---- Edit-popup local shapes ----

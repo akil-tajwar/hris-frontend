@@ -239,6 +239,10 @@ export function DashboardSidebar() {
           href: '/dashboard/report/individual-attendance-report',
         },
         {
+          title: 'Salary Report',
+          href: '/dashboard/report/salary-report',
+        },
+        {
           title: 'Leave Balance Summary Report',
           href: '/dashboard/report/leave-balance-summary-report',
         },
