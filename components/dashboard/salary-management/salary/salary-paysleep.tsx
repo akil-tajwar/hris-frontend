@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { toWords } from 'number-to-words'
 
 type PayslipComponent = {
   salaryComponentId: number
@@ -38,6 +39,24 @@ const SalaryPayslip = React.forwardRef<HTMLDivElement, SalaryPayslipProps>(
   ) => {
     const allowances = components.filter((c) => c.componentType === 'Allowance')
     const deductions = components.filter((c) => c.componentType === 'Deduction')
+
+    const earnings = [
+      { key: 'basic', name: 'Basic Salary', amount: basicSalary },
+      ...allowances.map((c) => ({
+        key: String(c.salaryComponentId),
+        name: c.componentName,
+        amount: c.amount,
+      })),
+    ]
+
+    const totalEarning = earnings.reduce((sum, e) => sum + e.amount, 0)
+    const totalDeduction = deductions.reduce((sum, d) => sum + d.amount, 0)
+
+    const rowCount = Math.max(earnings.length, deductions.length)
+    const rows = Array.from({ length: rowCount }, (_, i) => ({
+      earning: earnings[i],
+      deduction: deductions[i],
+    }))
 
     return (
       <div
@@ -99,7 +118,13 @@ const SalaryPayslip = React.forwardRef<HTMLDivElement, SalaryPayslipProps>(
             <thead>
               <tr className="bg-blue-300">
                 <th className="border border-gray-300 px-4 py-3 text-left text-black">
-                  Component
+                  Earning
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
+                  Amount
+                </th>
+                <th className="border border-gray-300 px-4 py-3 text-left text-black">
+                  Deduction
                 </th>
                 <th className="border border-gray-300 px-4 py-3 text-center text-black w-32">
                   Amount
@@ -107,37 +132,43 @@ const SalaryPayslip = React.forwardRef<HTMLDivElement, SalaryPayslipProps>(
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
-                  Basic Salary
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
-                  {basicSalary.toLocaleString()}
-                </td>
-              </tr>
-              {allowances.map((c) => (
-                <tr key={c.salaryComponentId}>
+              {rows.map((row, idx) => (
+                <tr key={idx}>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
-                    {c.componentName}
+                    {row.earning?.name ?? ''}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
-                    +{c.amount.toLocaleString()}
+                    {row.earning ? row.earning.amount.toLocaleString() : ''}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
+                    {row.deduction?.componentName ?? ''}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
+                    {row.deduction ? row.deduction.amount.toLocaleString() : ''}
                   </td>
                 </tr>
               ))}
-              {deductions.map((c) => (
-                <tr key={c.salaryComponentId}>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800">
-                    {c.componentName}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-800">
-                    -{c.amount.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-              {/* Total Row */}
+              {/* Totals Row */}
               <tr className="bg-blue-50">
                 <td className="border border-gray-300 px-4 py-3 text-sm font-bold text-gray-900">
+                  Total Earning
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                  {totalEarning.toLocaleString()}
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-sm font-bold text-gray-900">
+                  Total Deduction
+                </td>
+                <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">
+                  {totalDeduction.toLocaleString()}
+                </td>
+              </tr>
+              {/* Net Salary Row */}
+              <tr className="bg-blue-100">
+                <td
+                  className="border border-gray-300 px-4 py-3 text-sm font-bold text-gray-900"
+                  colSpan={3}
+                >
                   Net Salary
                 </td>
                 <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900 text-base">
@@ -146,27 +177,17 @@ const SalaryPayslip = React.forwardRef<HTMLDivElement, SalaryPayslipProps>(
               </tr>
             </tbody>
           </table>
-        </div>
-
-        {/* Notes & Comments */}
-        <div className="px-8 pb-8">
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-xs font-semibold text-gray-600 mb-2">Notes</p>
-              <div className="border border-gray-300 h-20"></div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-gray-600 mb-2">
-                HR Remarks
-              </p>
-              <div className="border border-gray-300 h-20"></div>
-            </div>
+          <div className="text-lg pt-6 px-1 flex gap-2">
+            <h4 className="font-medium">Amount in Words:</h4>
+            <p className="text-gray-700 mb-4 capitalize">
+              {toWords(netSalary)} Taka
+            </p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="border-t border-gray-300 px-8 py-6 text-xs text-gray-500">
-          <div className="grid grid-cols-3 gap-8 mt-6">
+          <div className="grid grid-cols-3 gap-8 mt-14">
             <div>
               <p className="border-t border-gray-400 pt-2 text-center">
                 Prepared By
