@@ -297,7 +297,7 @@ const SalaryReport = () => {
       pdf.setPage(i)
       pdf.setFontSize(12)
       pdf.setFont('bold')
-      pdf.text('School Management System', leftTextMargin, 35)
+      pdf.text('HRIS', leftTextMargin, 35)
 
       pdf.setFontSize(10)
       const baseText = `Salary Report — ${salaryMonth} ${salaryYear}  ( Date : `
