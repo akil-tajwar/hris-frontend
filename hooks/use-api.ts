@@ -3428,7 +3428,7 @@ export const useCreateEmployeeLeaveAssignment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateEmployeeLeaveAssignmentType) => {
+    mutationFn: async (data: CreateEmployeeLeaveAssignmentType[]) => {
       const res = await createEmployeeLeaveAssignment(data, token)
       return res
     },

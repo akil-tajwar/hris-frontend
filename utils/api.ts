@@ -1372,10 +1372,10 @@ export async function getAllEmployeeLeaveAssignments(token: string) {
 }
 
 export async function createEmployeeLeaveAssignment(
-  data: CreateEmployeeLeaveAssignmentType,
+  data: CreateEmployeeLeaveAssignmentType[],
   token: string
 ) {
-  return fetchApi<CreateEmployeeLeaveAssignmentType>({
+  return fetchApi<CreateEmployeeLeaveAssignmentType[]>({
     url: 'api/employeeLeaveAssignments/create',
     method: 'POST',
     body: data,
