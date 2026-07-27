@@ -254,6 +254,10 @@ export function DashboardSidebar() {
           title: 'Leave Ledger Report',
           href: '/dashboard/report/leave-ledger-report',
         },
+        {
+          title: 'Leave Encashment Report',
+          href: '/dashboard/report/leave-encashment-report',
+        },
       ],
     },
   ]
