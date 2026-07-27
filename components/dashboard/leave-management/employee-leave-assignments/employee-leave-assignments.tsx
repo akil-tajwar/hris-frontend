@@ -14,14 +14,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { ArrowUpDown, Search, ClipboardList, Edit2, Trash2 } from 'lucide-react'
+  ArrowUpDown,
+  Search,
+  ClipboardList,
+  Edit2,
+  Trash2,
+  Copy,
+  Calendar,
+  ChevronDown,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Popup } from '@/utils/popup'
 import type {
   CreateEmployeeLeaveAssignmentType,
@@ -49,6 +51,20 @@ import {
 import { CustomCombobox } from '@/utils/custom-combobox'
 import CustomSwitch from '@/utils/custom-switch'
 
+// Row shape used only inside the bulk-add table (not persisted as-is)
+type BulkAssignmentRow = {
+  employeeId: number
+  empCode: string
+  employeeName: string
+  departmentName: string
+  designationName: string
+  leavePolicyMasterId: number
+  policyName: string
+  effectiveFrom: Date
+  effectiveTo: Date | null
+  alreadyAssigned: boolean
+}
+
 const EmployeeLeaveAssignments = () => {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
@@ -58,8 +74,6 @@ const EmployeeLeaveAssignments = () => {
   const { data: leavePolicies } = useGetLeavePolicies()
 
   const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [assignmentsPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
     useState<keyof GetEmployeeLeaveAssignmentType>('employeeName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -76,6 +90,10 @@ const EmployeeLeaveAssignments = () => {
     number | null
   >(null)
 
+  // Only one year group open at a time, collapsed by default
+  const [expandedYear, setExpandedYear] = useState<number | null>(null)
+
+  // Single-record form state — used only for edit mode
   const [formData, setFormData] = useState<CreateEmployeeLeaveAssignmentType>({
     employeeId: 0,
     leavePolicyMasterId: 0,
@@ -85,7 +103,10 @@ const EmployeeLeaveAssignments = () => {
     createdBy: userData?.userId || 0,
   })
 
-  // Employee combobox items
+  // Table rows used only for bulk-add mode
+  const [bulkRows, setBulkRows] = useState<BulkAssignmentRow[]>([])
+
+  // Employee combobox items (used in edit mode, disabled)
   const employeeItems = useMemo(() => {
     if (!employees?.data) return []
     return employees.data.map((emp: any) => ({
@@ -94,7 +115,7 @@ const EmployeeLeaveAssignments = () => {
     }))
   }, [employees?.data])
 
-  // Leave policy combobox items
+  // Leave policy combobox items (used in edit mode, disabled)
   const leavePolicyItems = useMemo(() => {
     if (!leavePolicies?.data) return []
     const list = Array.isArray(leavePolicies.data)
@@ -106,9 +127,16 @@ const EmployeeLeaveAssignments = () => {
     }))
   }, [leavePolicies?.data])
 
+  // Formats using LOCAL date parts (not toISOString/UTC) — using UTC here would
+  // shift the displayed date back a day in timezones ahead of UTC (e.g. 12/31/25
+  // instead of 1/1/26 for a local-midnight Jan 1 date).
   const toInputDate = (date: Date | string | null | undefined) => {
     if (!date) return ''
-    return new Date(date).toISOString().split('T')[0]
+    const d = new Date(date)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   const formatDate = (date: Date | string | null | undefined) => {
@@ -132,6 +160,7 @@ const EmployeeLeaveAssignments = () => {
     setEditingAssignmentId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
+    setBulkRows([])
     setError(null)
   }, [userData?.userId])
 
@@ -187,33 +216,148 @@ const EmployeeLeaveAssignments = () => {
     })
   }, [filteredAssignments, sortColumn, sortDirection])
 
-  const paginatedAssignments = useMemo(() => {
-    const startIndex = (currentPage - 1) * assignmentsPerPage
-    return sortedAssignments.slice(startIndex, startIndex + assignmentsPerPage)
-  }, [sortedAssignments, currentPage, assignmentsPerPage])
+  // Group (already filtered + sorted) assignments by the year of effectiveFrom, newest year first
+  const groupedByYear = useMemo(() => {
+    const map = new Map<number, GetEmployeeLeaveAssignmentType[]>()
+    sortedAssignments.forEach((a) => {
+      const year = new Date(a.effectiveFrom).getFullYear()
+      if (!map.has(year)) map.set(year, [])
+      map.get(year)!.push(a)
+    })
+    return Array.from(map.entries()).sort(([yearA], [yearB]) => yearB - yearA)
+  }, [sortedAssignments])
 
-  const totalPages = Math.ceil(sortedAssignments.length / assignmentsPerPage)
+  // Build the bulk-add table rows for a given target year.
+  // If copyFromYear is provided, prefill effective dates from that year's assignment (shifted forward),
+  // falling back to Jan 1 - Dec 31 of the target year for employees with no assignment in copyFromYear.
+  const buildBulkRows = useCallback(
+    (targetYear: number, copyFromYear?: number): BulkAssignmentRow[] => {
+      if (!employees?.data) return []
 
-  const handleSubmit = useCallback(
+      return employees.data.map((emp: any) => {
+        const leavePolicyMasterId = emp.leavePolicyMasterId ?? 0
+        const policyName =
+          leavePolicyItems.find((p) => p.id === leavePolicyMasterId?.toString())
+            ?.name || 'N/A'
+
+        const alreadyAssigned =
+          employeeLeaveAssignments?.data?.some(
+            (a: GetEmployeeLeaveAssignmentType) =>
+              a.employeeId === emp.employeeId &&
+              new Date(a.effectiveFrom).getFullYear() === targetYear
+          ) ?? false
+
+        let effectiveFrom = new Date(targetYear, 0, 1)
+
+        if (copyFromYear) {
+          const prevAssignment = employeeLeaveAssignments?.data?.find(
+            (a: GetEmployeeLeaveAssignmentType) =>
+              a.employeeId === emp.employeeId &&
+              new Date(a.effectiveFrom).getFullYear() === copyFromYear
+          )
+          if (prevAssignment) {
+            const fromDate = new Date(prevAssignment.effectiveFrom)
+            effectiveFrom = new Date(
+              targetYear,
+              fromDate.getMonth(),
+              fromDate.getDate()
+            )
+          }
+        }
+
+        // Effective To always auto-selects to Dec 31 of whatever year
+        // effectiveFrom falls in — not copied from the source year's value.
+        const effectiveTo: Date = new Date(effectiveFrom.getFullYear(), 11, 31)
+
+        return {
+          employeeId: emp.employeeId,
+          empCode: emp.empCode,
+          employeeName: emp.empFullName,
+          departmentName: emp.departmentName,
+          designationName: emp.designationName,
+          leavePolicyMasterId,
+          policyName,
+          effectiveFrom,
+          effectiveTo,
+          alreadyAssigned,
+        }
+      })
+    },
+    [employees?.data, leavePolicyItems, employeeLeaveAssignments?.data]
+  )
+
+  // Opens the Add popup. Pass a year to trigger "copy to next year" behavior.
+  const openAddPopup = useCallback(
+    (copyFromYear?: number) => {
+      const targetYear = copyFromYear
+        ? copyFromYear + 1
+        : new Date().getFullYear()
+      setBulkRows(buildBulkRows(targetYear, copyFromYear))
+      setIsEditMode(false)
+      setEditingAssignmentId(null)
+      setError(null)
+      setIsPopupOpen(true)
+    },
+    [buildBulkRows]
+  )
+
+  const updateBulkRow = (
+    employeeId: number,
+    field: 'effectiveFrom' | 'effectiveTo',
+    value: Date | null
+  ) => {
+    setBulkRows((prev) =>
+      prev.map((row) =>
+        row.employeeId === employeeId ? { ...row, [field]: value } : row
+      )
+    )
+  }
+
+  const handleBulkSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
       setError(null)
 
-      if (!formData.employeeId) {
-        setError('Please select an employee')
+      const rowsToInsert = bulkRows.filter((row) => !row.alreadyAssigned)
+
+      if (rowsToInsert.length === 0) {
+        setError('All employees already have an assignment for this year')
         return
       }
-      if (!formData.leavePolicyMasterId) {
-        setError('Please select a leave policy')
-        return
+
+      try {
+        const payload: CreateEmployeeLeaveAssignmentType[] = rowsToInsert.map(
+          (row) => ({
+            employeeId: row.employeeId,
+            leavePolicyMasterId: row.leavePolicyMasterId,
+            effectiveFrom: row.effectiveFrom,
+            effectiveTo: row.effectiveTo,
+            active: true,
+            createdBy: userData?.userId || 0,
+          })
+        )
+        // NOTE: assumes the create hook/API now accepts an array for bulk insert.
+        addMutation.mutate(payload)
+      } catch (err) {
+        setError('Failed to save employee leave assignments')
+        console.error(err)
       }
+    },
+    [bulkRows, addMutation, userData]
+  )
+
+  const handleEditSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setError(null)
+
       if (!formData.effectiveFrom) {
         setError('Effective from date is required')
         return
       }
 
       try {
-        if (isEditMode && editingAssignmentId) {
+        if (editingAssignmentId) {
           const updateData: GetEmployeeLeaveAssignmentType = {
             ...formData,
             employeeLeaveAssignmentId: editingAssignmentId,
@@ -226,26 +370,13 @@ const EmployeeLeaveAssignments = () => {
             policyName: '',
           }
           updateMutation.mutate({ id: editingAssignmentId, data: updateData })
-        } else {
-          const createData: CreateEmployeeLeaveAssignmentType = {
-            ...formData,
-            createdBy: userData?.userId || 0,
-          }
-          addMutation.mutate(createData)
         }
       } catch (err) {
         setError('Failed to save employee leave assignment')
         console.error(err)
       }
     },
-    [
-      formData,
-      isEditMode,
-      editingAssignmentId,
-      addMutation,
-      updateMutation,
-      userData,
-    ]
+    [formData, editingAssignmentId, updateMutation, userData]
   )
 
   const handleEditClick = (assignment: GetEmployeeLeaveAssignmentType) => {
@@ -259,6 +390,7 @@ const EmployeeLeaveAssignments = () => {
     })
     setEditingAssignmentId(assignment.employeeLeaveAssignmentId || null)
     setIsEditMode(true)
+    setError(null)
     setIsPopupOpen(true)
   }
 
@@ -283,195 +415,189 @@ const EmployeeLeaveAssignments = () => {
           </div>
           <Button
             className="bg-blue-400 hover:bg-blue-500 text-black"
-            onClick={() => setIsPopupOpen(true)}
+            onClick={() => openAddPopup()}
           >
             Add
           </Button>
         </div>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader className="bg-blue-100">
-            <TableRow>
-              <TableHead>Sl No.</TableHead>
-              <TableHead
-                onClick={() => handleSort('employeeName')}
-                className="cursor-pointer"
+      {!employeeLeaveAssignments ||
+      employeeLeaveAssignments.data === undefined ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Loading employee leave assignments...
+        </div>
+      ) : !employeeLeaveAssignments.data ||
+        employeeLeaveAssignments.data.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No employee leave assignments found
+        </div>
+      ) : groupedByYear.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No employee leave assignments match your search
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {groupedByYear.map(([year, assignments]) => {
+            const isGroupExpanded = expandedYear === year
+            return (
+              <div
+                key={year}
+                className="rounded-lg border border-gray-200 overflow-hidden shadow-sm"
               >
-                Employee Details <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('policyName')}
-                className="cursor-pointer"
-              >
-                Leave Policy <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('effectiveFrom')}
-                className="cursor-pointer"
-              >
-                Effective From <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('effectiveTo')}
-                className="cursor-pointer"
-              >
-                Effective To <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {!employeeLeaveAssignments ||
-            employeeLeaveAssignments.data === undefined ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  Loading employee leave assignments...
-                </TableCell>
-              </TableRow>
-            ) : !employeeLeaveAssignments.data ||
-              employeeLeaveAssignments.data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No employee leave assignments found
-                </TableCell>
-              </TableRow>
-            ) : paginatedAssignments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-4">
-                  No employee leave assignments match your search
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedAssignments.map(
-                (assignment: GetEmployeeLeaveAssignmentType, index) => (
-                  <TableRow key={assignment.employeeLeaveAssignmentId ?? index}>
-                    <TableCell>
-                      {(currentPage - 1) * assignmentsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">
-                          {assignment.employeeName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {assignment.empCode}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {assignment.departmentName} ·{' '}
-                          {assignment.designationName}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{assignment.policyName}</TableCell>
-                    <TableCell>
-                      {formatDate(assignment.effectiveFrom)}
-                    </TableCell>
-                    <TableCell>{formatDate(assignment.effectiveTo)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          assignment.active
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {assignment.active ? 'Active' : 'Inactive'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() => handleEditClick(assignment)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            setDeletingAssignmentId(
-                              assignment.employeeLeaveAssignmentId || null
-                            )
-                            setIsDeleteDialogOpen(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              )
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                {/* Group Header — click to expand/collapse */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setExpandedYear(isGroupExpanded ? null : year)}
+                  className="w-full bg-blue-200 px-6 py-4 flex items-center gap-3 text-left cursor-pointer"
+                >
+                  <Calendar className="h-5 w-5 text-black" />
+                  <h3 className="text-lg font-semibold text-black">{year}</h3>
+                  <span className="ml-auto bg-black/10 px-3 py-1 rounded-full text-sm font-medium text-black">
+                    {assignments.length}{' '}
+                    {assignments.length === 1 ? 'employee' : 'employees'}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-black hover:bg-black/10 shrink-0"
+                    title={`Copy to ${year + 1}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openAddPopup(year)
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <ChevronDown
+                    className={cn(
+                      'h-5 w-5 text-black transition-transform duration-200',
+                      isGroupExpanded && 'rotate-180'
+                    )}
+                  />
+                </div>
 
-      {sortedAssignments.length > 0 && (
-        <div className="mt-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  className={
-                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
-                  }
-                />
-              </PaginationItem>
-
-              {[...Array(totalPages)].map((_, index) => {
-                if (
-                  index === 0 ||
-                  index === totalPages - 1 ||
-                  (index >= currentPage - 2 && index <= currentPage + 2)
-                ) {
-                  return (
-                    <PaginationItem key={`page-${index}`}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(index + 1)}
-                        isActive={currentPage === index + 1}
-                      >
-                        {index + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                } else if (
-                  index === currentPage - 3 ||
-                  index === currentPage + 3
-                ) {
-                  return (
-                    <PaginationItem key={`ellipsis-${index}`}>
-                      <PaginationLink>...</PaginationLink>
-                    </PaginationItem>
-                  )
-                }
-                return null
-              })}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  className={
-                    currentPage === totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : ''
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                {/* Assignment Table */}
+                {isGroupExpanded && (
+                  <div className="bg-white">
+                    <Table>
+                      <TableHeader className="bg-blue-100">
+                        <TableRow>
+                          <TableHead>Sl No.</TableHead>
+                          <TableHead
+                            onClick={() => handleSort('employeeName')}
+                            className="cursor-pointer"
+                          >
+                            Employee Details{' '}
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead
+                            onClick={() => handleSort('policyName')}
+                            className="cursor-pointer"
+                          >
+                            Leave Policy{' '}
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead
+                            onClick={() => handleSort('effectiveFrom')}
+                            className="cursor-pointer"
+                          >
+                            Effective From{' '}
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead
+                            onClick={() => handleSort('effectiveTo')}
+                            className="cursor-pointer"
+                          >
+                            Effective To{' '}
+                            <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {assignments.map(
+                          (
+                            assignment: GetEmployeeLeaveAssignmentType,
+                            index: number
+                          ) => (
+                            <TableRow
+                              key={
+                                assignment.employeeLeaveAssignmentId ?? index
+                              }
+                            >
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-medium">
+                                    {assignment.employeeName}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {assignment.empCode}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {assignment.departmentName} ·{' '}
+                                    {assignment.designationName}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>{assignment.policyName}</TableCell>
+                              <TableCell>
+                                {formatDate(assignment.effectiveFrom)}
+                              </TableCell>
+                              <TableCell>
+                                {formatDate(assignment.effectiveTo)}
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    assignment.active
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}
+                                >
+                                  {assignment.active ? 'Active' : 'Inactive'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => handleEditClick(assignment)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700"
+                                    onClick={() => {
+                                      setDeletingAssignmentId(
+                                        assignment.employeeLeaveAssignmentId ||
+                                          null
+                                      )
+                                      setIsDeleteDialogOpen(true)
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -481,142 +607,217 @@ const EmployeeLeaveAssignments = () => {
         title={
           isEditMode
             ? 'Edit Employee Leave Assignment'
-            : 'Add Employee Leave Assignment'
+            : 'Add Employee Leave Assignments'
         }
-        size="sm:max-w-md"
+        size={isEditMode ? 'sm:max-w-md' : 'sm:max-w-3xl'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-4">
-            {/* Employee combobox */}
-            <div className="space-y-2">
-              <Label htmlFor="employee">
-                Employee <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={employeeItems}
-                value={
-                  formData.employeeId
-                    ? {
-                        id: formData.employeeId.toString(),
-                        name:
-                          employeeItems.find(
-                            (e) => e.id === formData.employeeId.toString()
-                          )?.name || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    employeeId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select employee (Code - Name - Department - Designation)"
-              />
+        {isEditMode ? (
+          <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
+            <div className="grid gap-4">
+              {/* Employee combobox - disabled in edit mode */}
+              <div className="space-y-2">
+                <Label htmlFor="employee">Employee</Label>
+                <div className="pointer-events-none opacity-60">
+                  <CustomCombobox
+                    items={employeeItems}
+                    value={
+                      formData.employeeId
+                        ? {
+                            id: formData.employeeId.toString(),
+                            name:
+                              employeeItems.find(
+                                (e) => e.id === formData.employeeId.toString()
+                              )?.name || '',
+                          }
+                        : null
+                    }
+                    onChange={() => {}}
+                    disabled
+                    placeholder="Select employee (Code - Name - Department - Designation)"
+                  />
+                </div>
+              </div>
+
+              {/* Leave Policy combobox - disabled in edit mode */}
+              <div className="space-y-2">
+                <Label htmlFor="leavePolicyMasterId">Leave Policy</Label>
+                <div className="pointer-events-none opacity-60">
+                  <CustomCombobox
+                    items={leavePolicyItems}
+                    value={
+                      formData.leavePolicyMasterId
+                        ? {
+                            id: formData.leavePolicyMasterId.toString(),
+                            name:
+                              leavePolicyItems.find(
+                                (p) =>
+                                  p.id ===
+                                  formData.leavePolicyMasterId.toString()
+                              )?.name || '',
+                          }
+                        : null
+                    }
+                    onChange={() => {}}
+                    disabled
+                    placeholder="Select leave policy"
+                  />
+                </div>
+              </div>
+
+              {/* Effective From */}
+              <div className="space-y-2">
+                <Label htmlFor="effectiveFrom">
+                  Effective From <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="effectiveFrom"
+                  name="effectiveFrom"
+                  type="date"
+                  value={toInputDate(formData.effectiveFrom)}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      effectiveFrom: e.target.value
+                        ? new Date(e.target.value)
+                        : new Date(),
+                    }))
+                  }
+                  required
+                />
+              </div>
+
+              {/* Effective To */}
+              <div className="space-y-2">
+                <Label htmlFor="effectiveTo">Effective To</Label>
+                <Input
+                  id="effectiveTo"
+                  name="effectiveTo"
+                  type="date"
+                  value={toInputDate(formData.effectiveTo)}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      effectiveTo: e.target.value
+                        ? new Date(e.target.value)
+                        : null,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Active */}
+              <div className="space-y-2">
+                <CustomSwitch
+                  label="Active"
+                  checked={formData.active}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, active: value }))
+                  }
+                />
+              </div>
             </div>
 
-            {/* Leave Policy combobox */}
-            <div className="space-y-2">
-              <Label htmlFor="leavePolicyMasterId">
-                Leave Policy <span className="text-red-500">*</span>
-              </Label>
-              <CustomCombobox
-                items={leavePolicyItems}
-                value={
-                  formData.leavePolicyMasterId
-                    ? {
-                        id: formData.leavePolicyMasterId.toString(),
-                        name:
-                          leavePolicyItems.find(
-                            (p) =>
-                              p.id === formData.leavePolicyMasterId.toString()
-                          )?.name || '',
-                      }
-                    : null
-                }
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    leavePolicyMasterId: value ? Number(value.id) : 0,
-                  }))
-                }
-                placeholder="Select leave policy"
-              />
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={closePopup}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleBulkSubmit} className="space-y-4 py-4">
+            <div className="max-h-[60vh] overflow-y-auto rounded-md border">
+              <Table>
+                <TableHeader className="bg-blue-100 sticky top-0 z-10">
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Leave Policy</TableHead>
+                    <TableHead>Effective From</TableHead>
+                    <TableHead>Effective To</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bulkRows.map((row) => (
+                    <TableRow
+                      key={row.employeeId}
+                      className={row.alreadyAssigned ? 'bg-slate-100' : ''}
+                    >
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-medium text-sm">
+                            {row.employeeName}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {row.empCode} · {row.departmentName} ·{' '}
+                            {row.designationName}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {row.policyName}
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          className="w-40"
+                          disabled={row.alreadyAssigned}
+                          value={toInputDate(row.effectiveFrom)}
+                          onChange={(e) =>
+                            updateBulkRow(
+                              row.employeeId,
+                              'effectiveFrom',
+                              e.target.value
+                                ? new Date(e.target.value)
+                                : row.effectiveFrom
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          className="w-40"
+                          disabled={row.alreadyAssigned}
+                          value={toInputDate(row.effectiveTo)}
+                          onChange={(e) =>
+                            updateBulkRow(
+                              row.employeeId,
+                              'effectiveTo',
+                              e.target.value ? new Date(e.target.value) : null
+                            )
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
 
-            {/* Effective From */}
-            <div className="space-y-2">
-              <Label htmlFor="effectiveFrom">
-                Effective From <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="effectiveFrom"
-                name="effectiveFrom"
-                type="date"
-                value={toInputDate(formData.effectiveFrom)}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    effectiveFrom: e.target.value
-                      ? new Date(e.target.value)
-                      : new Date(),
-                  }))
-                }
-                required
-              />
-            </div>
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
 
-            {/* Effective To */}
-            <div className="space-y-2">
-              <Label htmlFor="effectiveTo">Effective To</Label>
-              <Input
-                id="effectiveTo"
-                name="effectiveTo"
-                type="date"
-                value={toInputDate(formData.effectiveTo)}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    effectiveTo: e.target.value
-                      ? new Date(e.target.value)
-                      : null,
-                  }))
-                }
-              />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={closePopup}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={addMutation.isPending}>
+                {addMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
             </div>
-
-            {/* Active */}
-            <div className="space-y-2">
-              <CustomSwitch
-                label="Active"
-                checked={formData.active}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, active: value }))
-                }
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closePopup}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={addMutation.isPending || updateMutation.isPending}
-            >
-              {addMutation.isPending || updateMutation.isPending
-                ? 'Saving...'
-                : 'Save'}
-            </Button>
-          </div>
-        </form>
+          </form>
+        )}
       </Popup>
 
       <AlertDialog

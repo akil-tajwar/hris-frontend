@@ -190,6 +190,8 @@ import {
   getIndividualAttendanceSummaryReport,
   generateSalary,
   makeSalaryPermanent,
+  createEmployeeLeaveEncashment,
+  getAllEmployeeLeaveEncashments,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -256,6 +258,7 @@ import {
   UploadAttendanceType,
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
+  CreateEmployeeLeaveEncashment,
 } from '@/utils/type'
 
 //roles
@@ -3428,7 +3431,7 @@ export const useCreateEmployeeLeaveAssignment = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateEmployeeLeaveAssignmentType) => {
+    mutationFn: async (data: CreateEmployeeLeaveAssignmentType[]) => {
       const res = await createEmployeeLeaveAssignment(data, token)
       return res
     },
@@ -3573,6 +3576,82 @@ export const useDeleteEmployeeLeaveAssignment = ({
   })
 
   return mutation
+}
+
+//employee leave encashments
+export const useGetEmployeeLeaveEncashments = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLeaveEncashments'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+
+      return getAllEmployeeLeaveEncashments(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useCreateEmployeeLeaveEncashment = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateEmployeeLeaveEncashment[]) => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+
+      return createEmployeeLeaveEncashment(data, token)
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create employee leave encashment',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Employee leave encashment created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeLeaveEncashments'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Error creating employee leave encashment:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
 }
 
 //employee leave apply
@@ -5400,7 +5479,10 @@ export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
   })
 }
 
-export const useGetIndividualAttendanceSummaryReport = (fromDate: string, toDate: string) => {
+export const useGetIndividualAttendanceSummaryReport = (
+  fromDate: string,
+  toDate: string
+) => {
   const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
@@ -6632,13 +6714,7 @@ export const useApproveManualAttendanceByRepAuth = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      updatedBy,
-    }: {
-      id: number
-      updatedBy: number
-    }) => {
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
       if (!token) throw new Error('Token not found')
       return approveManualAttendanceByRepAuth(id, updatedBy, token)
     },
@@ -6659,13 +6735,7 @@ export const useApproveManualAttendanceByHr = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      updatedBy,
-    }: {
-      id: number
-      updatedBy: number
-    }) => {
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
       if (!token) throw new Error('Token not found')
       return approveManualAttendanceByHr(id, updatedBy, token)
     },
@@ -6686,13 +6756,7 @@ export const useRejectManualAttendance = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      id,
-      updatedBy,
-    }: {
-      id: number
-      updatedBy: number
-    }) => {
+    mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
       if (!token) throw new Error('Token not found')
       return rejectManualAttendance(id, updatedBy, token)
     },

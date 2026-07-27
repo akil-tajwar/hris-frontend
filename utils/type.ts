@@ -557,6 +557,7 @@ export const employeeLeaveBalanceSummarySchema = z.array(
 
     leaves: z.array(
       z.object({
+        leaveTypeId: z.number(),
         leaveTypeName: z.string(),
         usedDays: z.number(),
         remainingDays: z.number(),
@@ -564,9 +565,8 @@ export const employeeLeaveBalanceSummarySchema = z.array(
     ),
   })
 )
-
 export type GetEmployeeLeaveBalanceSummaryReport = z.infer<
-  typeof employeeLeaveSummarySchema
+  typeof employeeLeaveBalanceSummarySchema
 >
 
 export const employeeLeaveLedgerSchema = z.array(
@@ -825,6 +825,29 @@ export type GetEmployeeLeaveAssignmentType = z.infer<
   designationName: string
   departmentName: string
   policyName: string
+}
+
+export const employeeLeaveEncashmentSchema = z.object({
+  employeeLeaveEncashmentId: z.number().optional(),
+  employeeId: z.number(),
+  leaveTypeId: z.number(),
+  year: z.number(),
+  encashedDays: z.number(),
+  amount: z.number(),
+  processedDate: z.coerce.date(),
+  tenantId: z.number().optional(),
+  createdBy: z.number(),
+  createdAt: z.coerce.date().optional(),
+  updatedBy: z.number().optional(),
+  updatedAt: z.coerce.date().optional(),
+})
+export type CreateEmployeeLeaveEncashment = z.infer<typeof employeeLeaveEncashmentSchema>
+export type GetEmployeeLeaveEncashment = z.infer<typeof employeeLeaveEncashmentSchema> & {
+  empCode: string
+  empFullName: string
+  empDepartment: string
+  empDesignation: string
+  leaveTypeName: string
 }
 
 export const employeeLeaveApplySchema = z.object({
