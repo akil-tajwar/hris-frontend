@@ -182,6 +182,10 @@ export function DashboardSidebar() {
           href: '/dashboard/leave-management/employee-leave-assignments',
         },
         {
+          title: 'Employee Leave Encashments',
+          href: '/dashboard/leave-management/employee-leave-encashments',
+        },
+        {
           title: 'Leave Apply',
           href: '/dashboard/leave-management/leave-apply',
         },

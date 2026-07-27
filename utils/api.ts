@@ -100,6 +100,8 @@ import {
   GetAttendanceDailyApplyType,
   GetIndividualAttendanceSummaryReportType,
   GenerateSalaryType,
+  GetEmployeeLeaveEncashment,
+  CreateEmployeeLeaveEncashment,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -1406,6 +1408,33 @@ export async function deleteEmployeeLeaveAssignment(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/employeeLeaveAssignments/delete/${id}`,
     method: 'DELETE',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//employee leave encashment
+export async function getAllEmployeeLeaveEncashments(token: string) {
+  return fetchApi<GetEmployeeLeaveEncashment[]>({
+    url: 'api/employeeLeaveEncashments/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createEmployeeLeaveEncashment(
+  data: CreateEmployeeLeaveEncashment[],
+  token: string
+) {
+  return fetchApi<CreateEmployeeLeaveEncashment[]>({
+    url: 'api/employeeLeaveEncashments/create',
+    method: 'POST',
+    body: data,
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
