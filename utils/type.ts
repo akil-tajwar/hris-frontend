@@ -557,7 +557,7 @@ export const employeeLeaveBalanceSummarySchema = z.array(
 
     leaves: z.array(
       z.object({
-        leavetypeId: z.number(),
+        leaveTypeId: z.number(),
         leaveTypeName: z.string(),
         usedDays: z.number(),
         remainingDays: z.number(),
@@ -565,9 +565,8 @@ export const employeeLeaveBalanceSummarySchema = z.array(
     ),
   })
 )
-
 export type GetEmployeeLeaveBalanceSummaryReport = z.infer<
-  typeof employeeLeaveSummarySchema
+  typeof employeeLeaveBalanceSummarySchema
 >
 
 export const employeeLeaveLedgerSchema = z.array(

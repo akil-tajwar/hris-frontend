@@ -68,9 +68,17 @@ const EmployeeLeaveEncashments = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: employeeLeaveEncashments } = useGetEmployeeLeaveEncashments()
+  console.log(
+    '🚀 ~ EmployeeLeaveEncashments ~ employeeLeaveEncashments:',
+    employeeLeaveEncashments
+  )
   const { data: employees } = useGetAllEmployees()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: leaveBalanceSummary } = useGetLeaveBalanceSummaryReport()
+  console.log(
+    '🚀 ~ EmployeeLeaveEncashments ~ leaveBalanceSummary:',
+    leaveBalanceSummary
+  )
 
   const [error, setError] = useState<string | null>(null)
   const [sortColumn, setSortColumn] =
@@ -85,7 +93,7 @@ const EmployeeLeaveEncashments = () => {
 
   // Table rows used for bulk-add mode
   const [bulkRows, setBulkRows] = useState<BulkEncashmentRow[]>([])
-  // Which employee accordion panels are open in the Add popup (collapsed by default)
+  // Which employee accordion panels are open in the Add popup (open by default)
   const [expandedEmployeeIds, setExpandedEmployeeIds] = useState<Set<number>>(
     new Set()
   )
@@ -93,29 +101,27 @@ const EmployeeLeaveEncashments = () => {
   // which employee/leaveType combos count as "already encashed"
   const [bulkProcessedDate, setBulkProcessedDate] = useState<Date>(new Date())
 
-  // Only leave types where encashment is allowed, deduped by NAME.
-  // Balances are matched to leave types by leaveTypeName (the balance summary
-  // API has no leaveTypeId), so if the leave-types table has more than one
-  // row sharing a name (e.g. one per company/division), each of those rows
-  // would otherwise map to the same balance entry and render as duplicate
-  // rows for the same employee. Deduping by leaveTypeId alone doesn't catch
-  // this since those rows have distinct IDs — name is the actual join key.
-  const encashableLeaveTypes = useMemo(() => {
-    if (!leaveTypes?.data) return []
+  // Set of leave type names for which encashment is allowed. Used only to
+  // FILTER which of an employee's own balance entries to show — the
+  // leaveTypeId itself is taken from that employee's balance entry (see
+  // buildBulkRows below), never from this list. The leave-types table can
+  // have more than one row sharing a name (e.g. one per company/division)
+  // with different IDs, so this list must never be the source of leaveTypeId
+  // — doing so risks sending the wrong leaveTypeId for employees assigned to
+  // a different underlying leave-type row than the one this list happened to
+  // pick.
+  const encashableLeaveTypeNames = useMemo(() => {
+    if (!leaveTypes?.data) return new Set<string>()
     const list = Array.isArray(leaveTypes.data)
       ? leaveTypes.data
       : [leaveTypes.data]
-    const encashable = list.filter(
-      (lt: GetLeaveTypeType) => lt.encashmentAllowed
-    )
-    const seen = new Map<string, GetLeaveTypeType>()
-    encashable.forEach((lt: GetLeaveTypeType) => {
-      const key = lt.name?.trim().toLowerCase()
-      if (key && !seen.has(key)) {
-        seen.set(key, lt)
+    const names = new Set<string>()
+    list.forEach((lt: GetLeaveTypeType) => {
+      if (lt.encashmentAllowed && lt.name) {
+        names.add(lt.name.trim().toLowerCase())
       }
     })
-    return Array.from(seen.values())
+    return names
   }, [leaveTypes?.data])
 
   // Formats using LOCAL date parts (not toISOString/UTC) — see leave assignment demo for why
@@ -200,10 +206,9 @@ const EmployeeLeaveEncashments = () => {
     return Array.from(map.entries()).sort(([yearA], [yearB]) => yearB - yearA)
   }, [sortedEncashments])
 
-  // Build the bulk-add rows: one row per employee x encashable-leave-type combo
   const buildBulkRows = useCallback(
     (processedDate: Date): BulkEncashmentRow[] => {
-      if (!employees?.data || encashableLeaveTypes.length === 0) return []
+      if (!employees?.data || encashableLeaveTypeNames.size === 0) return []
 
       const year = processedDate.getFullYear()
       const rows: BulkEncashmentRow[] = []
@@ -212,18 +217,19 @@ const EmployeeLeaveEncashments = () => {
         const summary = leaveBalanceSummary?.data?.find(
           (s: any) => s.employeeId === emp.employeeId
         )
+        if (!(summary as any)?.leaves || !Array.isArray((summary as any).leaves)) return
 
-        encashableLeaveTypes.forEach((lt: GetLeaveTypeType) => {
-          const leaveBalance = summary?.leaves?.find(
-            (l: any) => l.leaveTypeName === lt.name
-          )
-          const remainingDays = leaveBalance?.remainingDays ?? 0
+        (summary as any).leaves.forEach((leave: any) => {
+          const key = leave.leaveTypeName?.trim().toLowerCase()
+          if (!key || !encashableLeaveTypeNames.has(key)) return
+
+          const remainingDays = leave.remainingDays ?? 0
 
           const alreadyEncashed =
             employeeLeaveEncashments?.data?.some(
               (e: GetEmployeeLeaveEncashment) =>
                 e.employeeId === emp.employeeId &&
-                e.leaveTypeId === lt.leaveTypeId &&
+                e.leaveTypeId === leave.leaveTypeId &&
                 e.year === year
             ) ?? false
 
@@ -239,8 +245,8 @@ const EmployeeLeaveEncashments = () => {
             departmentName: emp.departmentName,
             designationName: emp.designationName,
             basicSalary,
-            leaveTypeId: lt.leaveTypeId as number,
-            leaveTypeName: lt.name,
+            leaveTypeId: leave.leaveTypeId,
+            leaveTypeName: leave.leaveTypeName,
             remainingDays,
             encashedDays,
             amount,
@@ -253,7 +259,7 @@ const EmployeeLeaveEncashments = () => {
     },
     [
       employees?.data,
-      encashableLeaveTypes,
+      encashableLeaveTypeNames,
       leaveBalanceSummary?.data,
       employeeLeaveEncashments?.data,
     ]
@@ -294,8 +300,10 @@ const EmployeeLeaveEncashments = () => {
   const openAddPopup = useCallback(() => {
     const today = new Date()
     setBulkProcessedDate(today)
-    setBulkRows(buildBulkRows(today))
-    setExpandedEmployeeIds(new Set())
+    const rows = buildBulkRows(today)
+    setBulkRows(rows)
+    // Open by default so users see all leave types without an extra click
+    setExpandedEmployeeIds(new Set(rows.map((row) => row.employeeId)))
     setError(null)
     setIsPopupOpen(true)
   }, [buildBulkRows])
@@ -337,7 +345,7 @@ const EmployeeLeaveEncashments = () => {
           const amount = Math.round((row.basicSalary / 30) * value * 100) / 100
           return { ...row, encashedDays: value, amount }
         }
-        return { ...row, amount: value }
+        return { ...row, amount: Math.round(value * 100) / 100 }
       })
     )
   }
