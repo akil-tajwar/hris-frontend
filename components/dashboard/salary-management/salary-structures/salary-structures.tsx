@@ -168,8 +168,8 @@ const SalaryStructure = () => {
         amount: 0,
         percentage: null,
         formulaExpression: null,
-        calculationOrder: formData.salaryStructureDetails.length + 1,
-        mandatory: false,
+        calculationOrder: 1,
+        mandatory: true,
         createdBy: userData?.userId || 0,
         createdAt: new Date(),
         updatedBy: null,
@@ -177,7 +177,13 @@ const SalaryStructure = () => {
       }
     setFormData((prev) => ({
       ...prev,
-      salaryStructureDetails: [...prev.salaryStructureDetails, newDetail],
+      salaryStructureDetails: [
+        newDetail,
+        ...prev.salaryStructureDetails.map((d) => ({
+          ...d,
+          calculationOrder: d.calculationOrder + 1,
+        })),
+      ],
     }))
   }
 
@@ -367,7 +373,9 @@ const SalaryStructure = () => {
 
   const handleEditClick = (item: any) => {
     setIsEditMode(true)
-    setEditingStructureId(item.salaryStructureMaster?.salaryStructureMasterId || null)
+    setEditingStructureId(
+      item.salaryStructureMaster?.salaryStructureMasterId || null
+    )
     setFormData({
       salaryStructureMaster: {
         ...item.salaryStructureMaster,
@@ -567,8 +575,8 @@ const SalaryStructure = () => {
                             className="text-red-600 hover:text-red-700"
                             onClick={() => {
                               setDeletingStructureId(
-                                item.salaryStructureMaster?.salaryStructureMasterId ||
-                                  null
+                                item.salaryStructureMaster
+                                  ?.salaryStructureMasterId || null
                               )
                               setIsDeleteDialogOpen(true)
                             }}
