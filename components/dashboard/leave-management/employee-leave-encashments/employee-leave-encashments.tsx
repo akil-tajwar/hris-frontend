@@ -68,10 +68,6 @@ const EmployeeLeaveEncashments = () => {
   const [userData] = useAtom(userDataAtom)
 
   const { data: employeeLeaveEncashments } = useGetEmployeeLeaveEncashments()
-  console.log(
-    '🚀 ~ EmployeeLeaveEncashments ~ employeeLeaveEncashments:',
-    employeeLeaveEncashments
-  )
   const { data: employees } = useGetAllEmployees()
   const { data: leaveTypes } = useGetLeaveTypes()
   const { data: leaveBalanceSummary } = useGetLeaveBalanceSummaryReport()
@@ -101,15 +97,6 @@ const EmployeeLeaveEncashments = () => {
   // which employee/leaveType combos count as "already encashed"
   const [bulkProcessedDate, setBulkProcessedDate] = useState<Date>(new Date())
 
-  // Set of leave type names for which encashment is allowed. Used only to
-  // FILTER which of an employee's own balance entries to show — the
-  // leaveTypeId itself is taken from that employee's balance entry (see
-  // buildBulkRows below), never from this list. The leave-types table can
-  // have more than one row sharing a name (e.g. one per company/division)
-  // with different IDs, so this list must never be the source of leaveTypeId
-  // — doing so risks sending the wrong leaveTypeId for employees assigned to
-  // a different underlying leave-type row than the one this list happened to
-  // pick.
   const encashableLeaveTypeNames = useMemo(() => {
     if (!leaveTypes?.data) return new Set<string>()
     const list = Array.isArray(leaveTypes.data)
@@ -217,9 +204,12 @@ const EmployeeLeaveEncashments = () => {
         const summary = leaveBalanceSummary?.data?.find(
           (s: any) => s.employeeId === emp.employeeId
         )
-        if (!(summary as any)?.leaves || !Array.isArray((summary as any).leaves)) return
-
-        (summary as any).leaves.forEach((leave: any) => {
+        if (
+          !(summary as any)?.leaves ||
+          !Array.isArray((summary as any).leaves)
+        )
+          return
+        ;(summary as any).leaves.forEach((leave: any) => {
           const key = leave.leaveTypeName?.trim().toLowerCase()
           if (!key || !encashableLeaveTypeNames.has(key)) return
 
@@ -235,8 +225,7 @@ const EmployeeLeaveEncashments = () => {
 
           const basicSalary = emp.basicSalary ?? 0
           const encashedDays = remainingDays
-          const amount =
-            Math.round((basicSalary / 30) * encashedDays * 100) / 100
+          const amount = Math.round((basicSalary / 30) * encashedDays)
 
           rows.push({
             employeeId: emp.employeeId,
@@ -589,104 +578,80 @@ const EmployeeLeaveEncashments = () => {
             />
           </div>
 
-          <div className="max-h-[55vh] overflow-y-auto rounded-md border divide-y">
-            {bulkRowsByEmployee.map((emp) => {
-              const isExpanded = expandedEmployeeIds.has(emp.employeeId)
-              return (
-                <div key={emp.employeeId}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggleEmployeeExpanded(emp.employeeId)}
-                    className="w-full bg-blue-50 px-4 py-3 flex items-center gap-3 text-left cursor-pointer"
+          <div className="max-h-[55vh] overflow-y-auto rounded-md border">
+            <Table>
+              <TableHeader className="bg-blue-100">
+                <TableRow>
+                  <TableHead>Employee</TableHead>
+                  <TableHead>Leave Type</TableHead>
+                  <TableHead>Encashed Days</TableHead>
+                  <TableHead>Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {bulkRows.map((row) => (
+                  <TableRow
+                    key={`${row.employeeId}-${row.leaveTypeId}`}
+                    className={row.alreadyEncashed ? 'bg-slate-100' : ''}
                   >
-                    <div className="flex flex-col gap-0.5 flex-1">
-                      <span className="font-medium text-sm">
-                        {emp.employeeName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {emp.empCode} · {emp.departmentName} ·{' '}
-                        {emp.designationName}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={cn(
-                        'h-4 w-4 text-black transition-transform duration-200 shrink-0',
-                        isExpanded && 'rotate-180'
+                    <TableCell className="text-sm">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">{row.employeeName}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {row.empCode} · {row.departmentName} ·{' '}
+                          {row.designationName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {row.leaveTypeName}
+                      {row.alreadyEncashed && (
+                        <span className="block text-xs text-muted-foreground">
+                          Already encashed this year
+                        </span>
                       )}
-                    />
-                  </div>
-
-                  {isExpanded && (
-                    <Table>
-                      <TableHeader className="bg-blue-100">
-                        <TableRow>
-                          <TableHead>Leave Type</TableHead>
-                          <TableHead>Encashed Days</TableHead>
-                          <TableHead>Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {emp.rows.map((row) => (
-                          <TableRow
-                            key={`${row.employeeId}-${row.leaveTypeId}`}
-                            className={
-                              row.alreadyEncashed ? 'bg-slate-100' : ''
-                            }
-                          >
-                            <TableCell className="text-sm">
-                              {row.leaveTypeName}
-                              {row.alreadyEncashed && (
-                                <span className="block text-xs text-muted-foreground">
-                                  Already encashed this year
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={row.remainingDays}
-                                step="0.5"
-                                className="w-24"
-                                disabled={row.alreadyEncashed}
-                                value={row.encashedDays}
-                                onChange={(e) =>
-                                  updateBulkRow(
-                                    row.employeeId,
-                                    row.leaveTypeId,
-                                    'encashedDays',
-                                    e.target.value ? Number(e.target.value) : 0
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                className="w-28"
-                                disabled={row.alreadyEncashed}
-                                value={row.amount}
-                                onChange={(e) =>
-                                  updateBulkRow(
-                                    row.employeeId,
-                                    row.leaveTypeId,
-                                    'amount',
-                                    e.target.value ? Number(e.target.value) : 0
-                                  )
-                                }
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              )
-            })}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={row.remainingDays}
+                        step="0.5"
+                        className="w-24"
+                        disabled={row.alreadyEncashed}
+                        value={row.encashedDays}
+                        onChange={(e) =>
+                          updateBulkRow(
+                            row.employeeId,
+                            row.leaveTypeId,
+                            'encashedDays',
+                            e.target.value ? Number(e.target.value) : 0
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="w-28"
+                        disabled={row.alreadyEncashed}
+                        value={row.amount}
+                        onChange={(e) =>
+                          updateBulkRow(
+                            row.employeeId,
+                            row.leaveTypeId,
+                            'amount',
+                            e.target.value ? Number(e.target.value) : 0
+                          )
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           {error && (
