@@ -1786,12 +1786,12 @@ export async function deleteLone(id: number, token: string) {
 }
 
 export async function skipLone(
-  employeeSalaryDetailsId: number,
+  employeeLoneInstallmentId: number,
   updatedBy: number,
   token: string
 ) {
   return fetchApi<any>({
-    url: `api/employeeLones/skipLone/${employeeSalaryDetailsId}/${updatedBy}`,
+    url: `api/employeeLones/skipLone/${employeeLoneInstallmentId}/${updatedBy}`,
     method: 'POST',
     headers: {
       Authorization: token,

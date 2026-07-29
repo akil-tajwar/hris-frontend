@@ -1177,12 +1177,44 @@ export const employeeLonesSchema = z.object({
   updatedAt: z.date().optional(),
 })
 export type CreateEmployeeLoneType = z.infer<typeof employeeLonesSchema>
-export type GetEmployeeLoneType = z.infer<typeof employeeLonesSchema> & {
-  employeeName: string
-  empCode: string
-  designationName: string
-  departmentName: string
-}
+
+export const getEmployeeLoneSchema = z.object({
+  employeeLoneId: z.number(),
+  employeeLoneName: z.string(),
+  loneDate: z.string(),
+  employeeId: z.number(),
+  amount: z.number(),
+  perMonth: z.number(),
+  description: z.string().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().nullable().optional(),
+  empFullName: z.string(),
+  empCode: z.string(),
+  designationName: z.string(),
+  departmentName: z.string(),
+  installments: z.array(z.object({
+    employeeLoneInstallmentId: z.number(),
+    employeeLoneId: z.number(),
+    employeeId: z.number(),
+    amount: z.number(),
+    loneInstallmentMonth: z.string(),
+    loneInstallmentYear: z.number(),
+    isSkipped: z.boolean(),
+    isPaid: z.boolean(),
+    createdBy: z.number(),
+    createdAt: z.date().nullable(),
+    updatedBy: z.number().nullable(),
+    updatedAt: z.date().nullable(),
+  })),
+  totalPaid: z.number(),
+  remainingBalance: z.number(),
+  totalInstallments: z.number(),
+})
+export type GetEmployeeLoneType = z.infer<typeof getEmployeeLoneSchema>
+export const getEmployeeLonesSchema = z.array(getEmployeeLoneSchema)
+export type GetEmployeeLonesType = z.infer<typeof getEmployeeLonesSchema>
 
 export const employeeLeaveSchema = z.object({
   employeeLeaveId: z.number().optional(),

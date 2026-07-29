@@ -22,15 +22,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import {
   ArrowUpDown,
   Search,
   Banknote,
-  Edit2,
   Trash2,
   SkipForward,
   ChevronDown,
@@ -45,7 +39,6 @@ import {
   useAddLone,
   useDeleteLone,
   useGetAllEmployees,
-  useGetEmployeeSalaryComponents,
   useGetLones,
   useSkipLone,
   useUpdateLone,
@@ -61,10 +54,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import { CustomCombobox } from '@/utils/custom-combobox'
 
-// Helper: check if a lone installment (salaryYear/salaryMonth) is current or future
+// Helper: check if a lone installment (loneInstallmentYear/loneInstallmentMonth) is current or future
 const isCurrentOrFuture = (
-  salaryYear: number,
-  salaryMonth: string
+  loneInstallmentYear: number,
+  loneInstallmentMonth: string
 ): boolean => {
   const now = new Date()
   const currentYear = now.getFullYear()
@@ -84,10 +77,12 @@ const isCurrentOrFuture = (
     November: 11,
     December: 12,
   }
-  const instMonth = monthMap[salaryMonth] ?? parseInt(salaryMonth, 10)
+  const instMonth =
+    monthMap[loneInstallmentMonth] ?? parseInt(loneInstallmentMonth, 10)
 
-  if (salaryYear > currentYear) return true
-  if (salaryYear === currentYear && instMonth >= currentMonth) return true
+  if (loneInstallmentYear > currentYear) return true
+  if (loneInstallmentYear === currentYear && instMonth >= currentMonth)
+    return true
   return false
 }
 
@@ -99,18 +94,13 @@ const EmployeeLones = () => {
 
   const { data: lones } = useGetLones()
   const { data: employees } = useGetAllEmployees()
-  const { data: employeeSalaryComponents } =
-    useGetEmployeeSalaryComponents()
-  console.log(
-    '🚀 ~ EmployeeLones ~ employeeSalaryComponents:',
-    employeeSalaryComponents
-  )
+  console.log('🚀 ~ EmployeeLones ~ employees:', employees)
 
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [lonesPerPage] = useState(10)
   const [sortColumn, setSortColumn] =
-    useState<keyof GetEmployeeLoneType>('employeeName')
+    useState<keyof GetEmployeeLoneType>('empFullName')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -124,10 +114,9 @@ const EmployeeLones = () => {
   // Skip lone state
   const [isSkipDialogOpen, setIsSkipDialogOpen] = useState(false)
   const [skippingInstallment, setSkippingInstallment] = useState<{
-    employeeSalaryDetailsId: number
-    salaryMonth: string
-    salaryYear: number
-    componentName: string
+    employeeLoneInstallmentId: number
+    loneInstallmentMonth: string
+    loneInstallmentYear: number
   } | null>(null)
 
   // Track which lone accordion rows are expanded
@@ -150,20 +139,6 @@ const EmployeeLones = () => {
       name: `${emp.empCode} - ${emp.empFullName} - ${emp.departmentName} - ${emp.designationName}`,
     }))
   }, [employees?.data])
-
-  // Group employeeSalaryComponents by employeeLoneId
-  // Only filter by employeeLoneId != null — isLoneFee may not be reliably set
-  const loneInstallmentsMap = useMemo(() => {
-    if (!employeeSalaryComponents?.data) return {}
-    const map: Record<number, any[]> = {}
-    for (const comp of employeeSalaryComponents.data) {
-      if (comp.employeeLoneId != null) {
-        if (!map[comp.employeeLoneId]) map[comp.employeeLoneId] = []
-        map[comp.employeeLoneId].push(comp)
-      }
-    }
-    return map
-  }, [employeeSalaryComponents?.data])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -195,9 +170,6 @@ const EmployeeLones = () => {
     setIsPopupOpen(false)
     setError(null)
     resetForm()
-    queryClient.invalidateQueries({
-      queryKey: ['employeeSalaryComponents'],
-    })
     queryClient.invalidateQueries({ queryKey: ['lones'] })
   }, [resetForm, queryClient])
 
@@ -228,7 +200,7 @@ const EmployeeLones = () => {
     if (!lones?.data) return []
     return lones.data.filter(
       (lone: GetEmployeeLoneType) =>
-        lone.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lone.empFullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lone.empCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lone.employeeLoneName
           ?.toLowerCase()
@@ -265,7 +237,7 @@ const EmployeeLones = () => {
           loneDate: formData.loneDate,
           employeeId: formData.employeeId,
           amount: formData.amount,
-          perMonth: formData.perMonth,
+          perMonth: Number(formData.perMonth),
           description: formData.description,
           createdBy: formData.createdBy,
         }
@@ -296,21 +268,6 @@ const EmployeeLones = () => {
     }
   }, [addMutation.error, updateMutation.error])
 
-  const handleEditClick = (lone: any) => {
-    setFormData({
-      employeeLoneName: lone.employeeLoneName,
-      loneDate: lone.loneDate,
-      employeeId: lone.employeeId,
-      amount: lone.amount,
-      perMonth: lone.perMonth,
-      description: lone.description || '',
-      createdBy: userData?.userId || 0,
-    })
-    setEditingLoneId(lone.employeeLoneId)
-    setIsEditMode(true)
-    setIsPopupOpen(true)
-  }
-
   const toggleAccordion = (loneId: number) => {
     setExpandedLoneIds((prev) => {
       const next = new Set(prev)
@@ -325,11 +282,9 @@ const EmployeeLones = () => {
 
   const handleSkipClick = (installment: any) => {
     setSkippingInstallment({
-      employeeSalaryDetailsId:
-        installment.employeeSalaryDetailsId,
-      salaryMonth: installment.salaryMonth,
-      salaryYear: installment.salaryYear,
-      componentName: installment.componentName,
+      employeeLoneInstallmentId: installment.employeeLoneInstallmentId,
+      loneInstallmentMonth: installment.loneInstallmentMonth,
+      loneInstallmentYear: installment.loneInstallmentYear,
     })
     setIsSkipDialogOpen(true)
   }
@@ -337,8 +292,8 @@ const EmployeeLones = () => {
   const handleSkipConfirm = () => {
     if (skippingInstallment) {
       skipMutation.mutate({
-        employeeSalaryDetailsId:
-          skippingInstallment.employeeSalaryDetailsId,
+        employeeLoneInstallmentId:
+          skippingInstallment.employeeLoneInstallmentId,
         updatedBy: userData?.userId || 0,
       })
     }
@@ -379,7 +334,7 @@ const EmployeeLones = () => {
               <TableHead className="w-8" />
               <TableHead>Sl No.</TableHead>
               <TableHead
-                onClick={() => handleSort('employeeName')}
+                onClick={() => handleSort('empFullName')}
                 className="cursor-pointer"
               >
                 Employee Details <ArrowUpDown className="ml-2 h-4 w-4 inline" />
@@ -408,44 +363,49 @@ const EmployeeLones = () => {
               >
                 Per Month <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Paid / Remaining</TableHead>
               <TableHead
                 onClick={() => handleSort('description')}
                 className="cursor-pointer"
               >
                 Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!lones || lones.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   Loading lones...
                 </TableCell>
               </TableRow>
             ) : !lones.data || lones.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No lones found
                 </TableCell>
               </TableRow>
             ) : paginatedLones.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={10} className="text-center py-4">
                   No lones match your search
                 </TableCell>
               </TableRow>
             ) : (
               paginatedLones.map((lone, index) => {
                 const loneId = lone.employeeLoneId ?? -1
-                const loneInstallments = loneInstallmentsMap[loneId] ?? []
+                const loneInstallments = lone.installments ?? []
                 const isExpanded = expandedLoneIds.has(loneId)
 
                 return (
                   <React.Fragment key={loneId}>
                     {/* Main lone row */}
-                    <TableRow>
+                    <TableRow
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() =>
+                        loneInstallments.length > 0 && toggleAccordion(loneId)
+                      }
+                    >
                       <TableCell className="w-8">
                         <Button
                           variant="ghost"
@@ -482,7 +442,7 @@ const EmployeeLones = () => {
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
                           <span className="font-medium">
-                            {lone.employeeName}
+                            {lone.empFullName}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {lone.empCode}
@@ -497,32 +457,27 @@ const EmployeeLones = () => {
                       <TableCell>{lone.loneDate}</TableCell>
                       <TableCell>{lone.amount}</TableCell>
                       <TableCell>{lone.perMonth}</TableCell>
-                      <TableCell>{lone.description}</TableCell>
-
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => {
-                              setDeletingLoneId(lone.employeeLoneId ?? null)
-                              setIsDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5 text-xs">
+                          <span className="text-blue-700 font-medium">
+                            Paid: {lone.totalPaid}
+                          </span>
+                          <span className="text-muted-foreground">
+                            Remaining: {lone.remainingBalance}
+                          </span>
                         </div>
                       </TableCell>
+                      <TableCell>{lone.description}</TableCell>
                     </TableRow>
 
                     {/* Accordion: installments sub-table */}
                     {isExpanded && loneInstallments.length > 0 && (
                       <TableRow className="bg-blue-50/60">
-                        <TableCell colSpan={9} className="p-0">
+                        <TableCell colSpan={10} className="p-0">
                           <div className="px-8 py-3">
                             <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">
-                              Installments for {lone.employeeLoneName}
+                              Installments for {lone.employeeLoneName} (
+                              {lone.totalInstallments} total)
                             </p>
 
                             <Table>
@@ -532,22 +487,13 @@ const EmployeeLones = () => {
                                     Sl No.
                                   </TableHead>
                                   <TableHead className="py-2 text-xs">
-                                    Component
+                                    Installment Month
                                   </TableHead>
                                   <TableHead className="py-2 text-xs">
-                                    Salary Month
-                                  </TableHead>
-                                  <TableHead className="py-2 text-xs">
-                                    Salary Year
+                                    Installment Year
                                   </TableHead>
                                   <TableHead className="py-2 text-xs">
                                     Amount
-                                  </TableHead>
-                                  <TableHead className="py-2 text-xs">
-                                    Type
-                                  </TableHead>
-                                  <TableHead className="py-2 text-xs">
-                                    Authorized
                                   </TableHead>
                                   <TableHead className="py-2 text-xs">
                                     Status
@@ -564,13 +510,13 @@ const EmployeeLones = () => {
                                   const canSkip =
                                     !alreadySkipped &&
                                     isCurrentOrFuture(
-                                      inst.salaryYear,
-                                      inst.salaryMonth
+                                      inst.loneInstallmentYear,
+                                      inst.loneInstallmentMonth
                                     )
 
                                   return (
                                     <TableRow
-                                      key={inst.employeeSalaryDetailsId}
+                                      key={inst.employeeLoneInstallmentId}
                                       className={`text-sm ${
                                         alreadySkipped ? 'opacity-60' : ''
                                       }`}
@@ -580,15 +526,11 @@ const EmployeeLones = () => {
                                       </TableCell>
 
                                       <TableCell className="py-2 text-xs">
-                                        {inst.componentName}
+                                        {inst.loneInstallmentMonth}
                                       </TableCell>
 
                                       <TableCell className="py-2 text-xs">
-                                        {inst.salaryMonth}
-                                      </TableCell>
-
-                                      <TableCell className="py-2 text-xs">
-                                        {inst.salaryYear}
+                                        {inst.loneInstallmentYear}
                                       </TableCell>
 
                                       <TableCell className="py-2 text-xs">
@@ -598,38 +540,18 @@ const EmployeeLones = () => {
                                       <TableCell className="py-2 text-xs">
                                         <span
                                           className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                            inst.componentType === 'Deduction'
-                                              ? 'bg-red-100 text-red-700'
-                                              : 'bg-green-100 text-green-700'
-                                          }`}
-                                        >
-                                          {inst.componentType}
-                                        </span>
-                                      </TableCell>
-
-                                      <TableCell className="py-2 text-xs">
-                                        <span
-                                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                            inst.isAuthorized
-                                              ? 'bg-blue-100 text-blue-700'
-                                              : 'bg-gray-100 text-gray-500'
-                                          }`}
-                                        >
-                                          {inst.isAuthorized ? 'Yes' : 'No'}
-                                        </span>
-                                      </TableCell>
-
-                                      <TableCell className="py-2 text-xs">
-                                        <span
-                                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                             alreadySkipped
                                               ? 'bg-orange-100 text-orange-700'
-                                              : 'bg-emerald-100 text-emerald-700'
+                                              : inst.isPaid
+                                                ? 'bg-emerald-100 text-emerald-700'
+                                                : 'bg-yellow-100 text-gray-600'
                                           }`}
                                         >
                                           {alreadySkipped
                                             ? 'Skipped'
-                                            : 'Active'}
+                                            : inst.isPaid
+                                              ? 'Paid'
+                                              : 'Pending'}
                                         </span>
                                       </TableCell>
 
@@ -732,7 +654,7 @@ const EmployeeLones = () => {
         isOpen={isPopupOpen}
         onClose={closePopup}
         title={isEditMode ? 'Edit Lone' : 'Add Lone'}
-        size="max-w-lg"
+        size="max-w-2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-4">
@@ -892,12 +814,10 @@ const EmployeeLones = () => {
             <AlertDialogDescription>
               Are you sure you want to skip the{' '}
               <strong>
-                {skippingInstallment?.salaryMonth}{' '}
-                {skippingInstallment?.salaryYear}
+                {skippingInstallment?.loneInstallmentMonth}{' '}
+                {skippingInstallment?.loneInstallmentYear}
               </strong>{' '}
-              installment for{' '}
-              <strong>{skippingInstallment?.componentName}</strong>? This will
-              defer the installment to the next month.
+              installment? This will defer the installment to the next month.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">

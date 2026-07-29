@@ -12,6 +12,7 @@ import {
   LucideAirVent,
   Settings,
   UserCog,
+  WalletCards,
 } from 'lucide-react'
 
 import {
@@ -210,6 +211,18 @@ export function DashboardSidebar() {
           href: '/dashboard/salary-management/salary-structures',
         },
         { title: 'Salary', href: '/dashboard/salary-management/salary' },
+      ],
+    },
+    {
+      title: 'Lone Management',
+      icon: WalletCards,
+      href: '/dashboard/lone-management',
+      roles: [1, 2, 3, 4],
+      subItems: [
+        {
+          title: 'Employee Lones',
+          href: '/dashboard/lone-management/employee-lones',
+        },
       ],
     },
     {

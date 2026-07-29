@@ -5104,13 +5104,13 @@ export const useSkipLone = ({
 
   const mutation = useMutation({
     mutationFn: async ({
-      employeeSalaryDetailsId,
+      employeeLoneInstallmentId,
       updatedBy,
     }: {
-      employeeSalaryDetailsId: number
+      employeeLoneInstallmentId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(employeeSalaryDetailsId, updatedBy, token)
+      const res = await skipLone(employeeLoneInstallmentId, updatedBy, token)
       return res
     },
     onSuccess: (res) => {
