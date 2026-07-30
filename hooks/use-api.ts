@@ -192,6 +192,7 @@ import {
   makeSalaryPermanent,
   createEmployeeLeaveEncashment,
   getAllEmployeeLeaveEncashments,
+  makeEmployeeLoneFullPaid,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5180,6 +5181,40 @@ export const useUpdateLone = ({
       toast({
         title: 'Success!',
         description: 'lone edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['lones'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing lone:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useMakeEmployeeLoneFullPaid = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id }: { id: number }) => {
+      return makeEmployeeLoneFullPaid(id, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'lone is fully paid successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['lones'] })
 

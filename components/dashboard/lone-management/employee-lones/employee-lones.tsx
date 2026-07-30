@@ -42,6 +42,7 @@ import {
   useGetLones,
   useSkipLone,
   useUpdateLone,
+  useMakeEmployeeLoneFullPaid,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -119,6 +120,10 @@ const EmployeeLones = () => {
     loneInstallmentYear: number
   } | null>(null)
 
+  // Full-paid lone state
+  const [isFullPaidDialogOpen, setIsFullPaidDialogOpen] = useState(false)
+  const [payingLoneId, setPayingLoneId] = useState<number | null>(null)
+
   // Track which lone accordion rows are expanded
   const [expandedLoneIds, setExpandedLoneIds] = useState<Set<number>>(new Set())
 
@@ -185,6 +190,10 @@ const EmployeeLones = () => {
   const skipMutation = useSkipLone({
     onClose: () => setIsSkipDialogOpen(false),
     reset: () => setSkippingInstallment(null),
+  })
+  const fullPaidMutation = useMakeEmployeeLoneFullPaid({
+    onClose: () => setIsFullPaidDialogOpen(false),
+    reset: () => setPayingLoneId(null),
   })
 
   const handleSort = (column: keyof GetEmployeeLoneType) => {
@@ -299,6 +308,17 @@ const EmployeeLones = () => {
     }
   }
 
+  const handleFullPaidClick = (loneId: number) => {
+    setPayingLoneId(loneId)
+    setIsFullPaidDialogOpen(true)
+  }
+
+  const handleFullPaidConfirm = () => {
+    if (payingLoneId) {
+      fullPaidMutation.mutate({ id: payingLoneId })
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -370,24 +390,26 @@ const EmployeeLones = () => {
               >
                 Description <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!lones || lones.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={12} className="text-center py-4">
                   Loading lones...
                 </TableCell>
               </TableRow>
             ) : !lones.data || lones.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={12} className="text-center py-4">
                   No lones found
                 </TableCell>
               </TableRow>
             ) : paginatedLones.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-4">
+                <TableCell colSpan={12} className="text-center py-4">
                   No lones match your search
                 </TableCell>
               </TableRow>
@@ -396,6 +418,7 @@ const EmployeeLones = () => {
                 const loneId = lone.employeeLoneId ?? -1
                 const loneInstallments = lone.installments ?? []
                 const isExpanded = expandedLoneIds.has(loneId)
+                const isFullyPaid = Number(lone.remainingBalance) <= 0
 
                 return (
                   <React.Fragment key={loneId}>
@@ -468,12 +491,43 @@ const EmployeeLones = () => {
                         </div>
                       </TableCell>
                       <TableCell>{lone.description}</TableCell>
+
+                      <TableCell>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            isFullyPaid
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-yellow-100 text-gray-600'
+                          }`}
+                        >
+                          {isFullyPaid ? 'Paid' : 'Pending'}
+                        </span>
+                      </TableCell>
+
+                      <TableCell
+                        className="text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={`h-7 px-2 text-xs ${
+                            isFullyPaid
+                              ? 'text-gray-400'
+                              : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                          }`}
+                          disabled={isFullyPaid}
+                          onClick={() => handleFullPaidClick(loneId)}
+                        >
+                          Pay Full
+                        </Button>
+                      </TableCell>
                     </TableRow>
 
                     {/* Accordion: installments sub-table */}
                     {isExpanded && loneInstallments.length > 0 && (
                       <TableRow className="bg-blue-50/60">
-                        <TableCell colSpan={10} className="p-0">
+                        <TableCell colSpan={12} className="p-0">
                           <div className="px-8 py-3">
                             <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">
                               Installments for {lone.employeeLoneName} (
@@ -509,6 +563,7 @@ const EmployeeLones = () => {
                                   const alreadySkipped = !!inst.isSkipped
                                   const canSkip =
                                     !alreadySkipped &&
+                                    !inst.isPaid &&
                                     isCurrentOrFuture(
                                       inst.loneInstallmentYear,
                                       inst.loneInstallmentMonth
@@ -517,9 +572,7 @@ const EmployeeLones = () => {
                                   return (
                                     <TableRow
                                       key={inst.employeeLoneInstallmentId}
-                                      className={`text-sm ${
-                                        alreadySkipped ? 'opacity-60' : ''
-                                      }`}
+                                      className={`text-sm`}
                                     >
                                       <TableCell className="py-2 text-xs">
                                         {instIdx + 1}
@@ -544,7 +597,7 @@ const EmployeeLones = () => {
                                               ? 'bg-orange-100 text-orange-700'
                                               : inst.isPaid
                                                 ? 'bg-emerald-100 text-emerald-700'
-                                                : 'bg-yellow-100 text-gray-600'
+                                                : 'bg-yellow-100 text-gray-500'
                                           }`}
                                         >
                                           {alreadySkipped
@@ -564,7 +617,12 @@ const EmployeeLones = () => {
                                               ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                               : 'text-gray-500 cursor-not-allowed'
                                           }`}
-                                          disabled={!canSkip || alreadySkipped}
+                                          disabled={!canSkip}
+                                          title={
+                                            inst.isPaid
+                                              ? 'Paid installments cannot be skipped'
+                                              : undefined
+                                          }
                                           onClick={() =>
                                             canSkip && handleSkipClick(inst)
                                           }
@@ -835,6 +893,39 @@ const EmployeeLones = () => {
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {skipMutation.isPending ? 'Skipping...' : 'Skip Installment'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Pay Full Alert Dialog */}
+      <AlertDialog
+        open={isFullPaidDialogOpen}
+        onOpenChange={setIsFullPaidDialogOpen}
+      >
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pay Full Lone</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark this lone as fully paid? This will
+              settle all remaining installments and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <AlertDialogCancel
+              onClick={() => {
+                setIsFullPaidDialogOpen(false)
+                setPayingLoneId(null)
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleFullPaidConfirm}
+              disabled={fullPaidMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {fullPaidMutation.isPending ? 'Processing...' : 'Pay Full'}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
