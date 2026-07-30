@@ -256,6 +256,10 @@ export function DashboardSidebar() {
           href: '/dashboard/report/individual-attendance-report',
         },
         {
+          title: 'Lone Report',
+          href: '/dashboard/report/lone-report',
+        },
+        {
           title: 'Salary Report',
           href: '/dashboard/report/salary-report',
         },
