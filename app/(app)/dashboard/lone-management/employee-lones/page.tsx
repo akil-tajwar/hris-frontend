@@ -1,4 +1,4 @@
-import EmployeeLones from '@/components/dashboard/employee-management/employee-lones/employee-lones';
+import EmployeeLones from '@/components/dashboard/lone-management/employee-lones/employee-lones';
 import React from 'react';
 
 const EmployeeLonesPage = () => {

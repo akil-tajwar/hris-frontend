@@ -1774,6 +1774,20 @@ export async function editLone(
   })
 }
 
+export async function makeEmployeeLoneFullPaid(
+  id: number,
+  token: string
+) {
+  return fetchApi<{id: number}>({
+    url: `api/employeeLones/make-full-paid/${id}`,
+    method: 'PATCH',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 export async function deleteLone(id: number, token: string) {
   return fetchApi<{ id: number }>({
     url: `api/employeeLones/delete/${id}`,
@@ -1786,12 +1800,12 @@ export async function deleteLone(id: number, token: string) {
 }
 
 export async function skipLone(
-  employeeSalaryDetailsId: number,
+  employeeLoneInstallmentId: number,
   updatedBy: number,
   token: string
 ) {
   return fetchApi<any>({
-    url: `api/employeeLones/skipLone/${employeeSalaryDetailsId}/${updatedBy}`,
+    url: `api/employeeLones/skipLone/${employeeLoneInstallmentId}/${updatedBy}`,
     method: 'POST',
     headers: {
       Authorization: token,

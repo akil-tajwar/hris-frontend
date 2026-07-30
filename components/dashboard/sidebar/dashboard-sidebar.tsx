@@ -12,6 +12,7 @@ import {
   LucideAirVent,
   Settings,
   UserCog,
+  WalletCards,
 } from 'lucide-react'
 
 import {
@@ -213,6 +214,18 @@ export function DashboardSidebar() {
       ],
     },
     {
+      title: 'Lone Management',
+      icon: WalletCards,
+      href: '/dashboard/lone-management',
+      roles: [1, 2, 3, 4],
+      subItems: [
+        {
+          title: 'Employee Lones',
+          href: '/dashboard/lone-management/employee-lones',
+        },
+      ],
+    },
+    {
       title: 'Reports',
       icon: FileChartColumn,
       href: '/dashboard/report',
@@ -241,6 +254,10 @@ export function DashboardSidebar() {
         {
           title: 'Individual Attendance Report',
           href: '/dashboard/report/individual-attendance-report',
+        },
+        {
+          title: 'Lone Report',
+          href: '/dashboard/report/lone-report',
         },
         {
           title: 'Salary Report',
