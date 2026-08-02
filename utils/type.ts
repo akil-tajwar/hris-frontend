@@ -1239,6 +1239,7 @@ export type GetEmployeeLeaveType = z.infer<typeof employeeLeaveSchema> & {
   leaveTypeName: string
 }
 
+//dashboard
 export const employeeLeaveSummarySchema = z.array(
   z.object({
     employeeDetails: z.object({
@@ -1292,6 +1293,37 @@ export const employeeAttendanceSummarySchema = z.array(
 export type GetEmployeeAttendanceSummaryType = z.infer<
   typeof employeeAttendanceSummarySchema
 >
+
+export const employeeLoneSummarySchema = z.array(
+  z.object({
+    employeeId: z.number(),
+    empCode: z.string(),
+    empFullName: z.string(),
+    designationName: z.string(),
+    departmentName: z.string(),
+    totalLoanAmount: z.number(),
+    totalPaid: z.number(),
+    totalRemaining: z.number(),
+    totalInstallments: z.number(),
+    paidInstallments: z.number(),
+    pendingInstallments: z.number(),
+    skippedInstallments: z.number(),
+  })
+)
+export type GetEmployeeLoneSummaryType = z.infer<
+  typeof employeeLoneSummarySchema
+>
+
+export const employeeSalaryStatusSchema = z.object({
+  id: z.number(),
+  currentMonth: z.string(),
+  currentYear: z.number(),
+  totalPaidAmount: z.number(),
+  totalUnpaidAmount: z.number(),
+  grossPayroll: z.number(),
+  netPayroll: z.number(),
+})
+export type GetEmployeeSalaryStatusType = z.infer<typeof employeeSalaryStatusSchema>
 
 //attendance policy
 export type GetAttendancePolicyType = {

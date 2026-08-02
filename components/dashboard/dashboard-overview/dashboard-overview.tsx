@@ -7,8 +7,10 @@ import {
   User,
   CalendarOff,
   UserX,
+  TrendingUp,
+  Bell,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
@@ -23,9 +25,22 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
+import {
   useGetAllEmployees,
   useGetEmployeeLeaveSummary,
   useGetEmployeeAttendanceSummary,
+  useGetEmployeeLoneSummary,
+  useGetEmployeeSalaryStatus,
+  useGetNotice,
 } from '@/hooks/use-api'
 
 const DashboardOverview = () => {
@@ -37,7 +52,7 @@ const DashboardOverview = () => {
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
-    type: 'leaves' | 'absent' | null
+    type: 'leaves' | 'absent' | 'loans' | null
     title: string
   }>({
     isOpen: false,
@@ -48,6 +63,9 @@ const DashboardOverview = () => {
   const { data: employees } = useGetAllEmployees()
   const { data: leaveSummary } = useGetEmployeeLeaveSummary()
   const { data: attendanceSummary } = useGetEmployeeAttendanceSummary()
+  const { data: loneSummary } = useGetEmployeeLoneSummary()
+  const { data: salaryStatus } = useGetEmployeeSalaryStatus()
+  const { data: notice } = useGetNotice()
 
   useEffect(() => {
     const checkUserData = () => {
@@ -64,10 +82,11 @@ const DashboardOverview = () => {
     checkUserData()
   }, [userData, token, router])
 
-  const openModal = (type: 'leaves' | 'absent') => {
+  const openModal = (type: 'leaves' | 'absent' | 'loans') => {
     const titles = {
       leaves: 'Employee Leave Summary',
       absent: 'Employee Attendance Summary',
+      loans: 'Employee Loan Summary',
     }
     setModalState({ isOpen: true, type, title: titles[type] })
   }
@@ -89,6 +108,21 @@ const DashboardOverview = () => {
       (sum: number, emp: any) => sum + (emp.employeeDetails?.totalAbsent ?? 0),
       0
     ) ?? 0
+
+  const totalLoanRemaining =
+    loneSummary?.data?.reduce(
+      (sum: number, emp: any) => sum + (emp.totalRemaining ?? 0),
+      0
+    ) ?? 0
+
+  const salaryChartData = salaryStatus?.data
+    ? [
+        { name: 'Gross Payroll', amount: salaryStatus.data.grossPayroll },
+        { name: 'Net Payroll', amount: salaryStatus.data.netPayroll },
+        { name: 'Paid', amount: salaryStatus.data.totalPaidAmount },
+        { name: 'Unpaid', amount: salaryStatus.data.totalUnpaidAmount },
+      ]
+    : []
 
   const metrics = [
     {
@@ -112,6 +146,14 @@ const DashboardOverview = () => {
       icon: UserX,
       color: 'bg-red-500',
       onClick: () => openModal('absent'),
+      clickable: true,
+    },
+    {
+      title: 'Total Loan Remaining',
+      value: totalLoanRemaining,
+      icon: CreditCard,
+      color: 'bg-orange-500',
+      onClick: () => openModal('loans'),
       clickable: true,
     },
   ]
@@ -239,6 +281,65 @@ const DashboardOverview = () => {
           </div>
         )
 
+      case 'loans':
+        return (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Emp Code</TableHead>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Designation</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead className="text-right">Total Loan</TableHead>
+                  <TableHead className="text-right">Paid</TableHead>
+                  <TableHead className="text-right">Remaining</TableHead>
+                  <TableHead className="text-right">Installments</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loneSummary?.data && loneSummary.data.length > 0 ? (
+                  loneSummary.data.map((emp: any, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {emp.empCode}
+                      </TableCell>
+                      <TableCell>{emp.empFullName}</TableCell>
+                      <TableCell>{emp.designationName}</TableCell>
+                      <TableCell>{emp.departmentName}</TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {emp.totalLoanAmount.toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600">
+                        {emp.totalPaid.toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="text-right text-red-600">
+                        {emp.totalRemaining.toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-gray-600">
+                        {emp.paidInstallments}/{emp.totalInstallments}
+                        {emp.pendingInstallments > 0 &&
+                          ` (${emp.pendingInstallments} pending)`}
+                        {emp.skippedInstallments > 0 &&
+                          ` (${emp.skippedInstallments} skipped)`}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-6 text-gray-500"
+                    >
+                      No loan data available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )
+
       default:
         return null
     }
@@ -267,7 +368,7 @@ const DashboardOverview = () => {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {metrics.map((metric, index) => (
           <Card
             key={index}
@@ -300,6 +401,135 @@ const DashboardOverview = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Salary Overview Graph + Notice Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="hover:shadow-lg transition-shadow duration-200 lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              Salary Overview
+              {salaryStatus?.data?.currentMonth &&
+                ` (${salaryStatus.data.currentMonth} ${salaryStatus.data.currentYear})`}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full h-80">
+              {salaryChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={salaryChartData}
+                    margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="0"
+                      stroke="#e5e7eb"
+                      vertical={false}
+                    />
+
+                    <XAxis
+                      dataKey="name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                    />
+
+                    <YAxis
+                      tick={{ fontSize: 12, fill: '#6b7280' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+
+                    <Tooltip
+                      formatter={(value: number) =>
+                        value.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })
+                      }
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      }}
+                      cursor={{ fill: '#f3f4f6' }}
+                    />
+
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+
+                    <Bar
+                      dataKey="amount"
+                      fill="#059669"
+                      name="Amount"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No salary data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notice Section */}
+        <Card className="hover:shadow-lg transition-shadow duration-200 lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-blue-600" />
+              Notices
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80 overflow-y-auto space-y-3 pr-1">
+              {notice?.data && notice.data.length > 0 ? (
+                notice.data.map((item: any) => (
+                  <div
+                    key={item.noticeId}
+                    className="border-b border-gray-100 last:border-0 pb-3 last:pb-0"
+                  >
+                    <p className="text-sm font-semibold text-gray-900">
+                      {item.title}
+                    </p>
+                    {item.description && (
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                        {item.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-xs text-gray-400">
+                        {new Date(item.noticeDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </span>
+                      {item.pdfUrl && (
+                        <a
+                          href={item.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          View PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                  No notices available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Popup Modal */}

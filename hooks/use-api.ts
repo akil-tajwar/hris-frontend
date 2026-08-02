@@ -197,6 +197,8 @@ import {
   createNotice,
   editNotice,
   deleteNotice,
+  getEmployeeLoneSummary,
+  getEmployeeSalaryStatus,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5603,6 +5605,40 @@ export const useGetEmployeeAttendanceSummary = () => {
         throw new Error('Token not found')
       }
       return getEmployeeAttendanceSummary(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeLoneSummary = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeLoneSummary'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getEmployeeLoneSummary(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeSalaryStatus = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['employeeSalaryStatus'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getEmployeeSalaryStatus(token)
     },
     enabled: !!token,
     select: (data) => data,

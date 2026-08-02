@@ -104,6 +104,8 @@ import {
   CreateEmployeeLeaveEncashment,
   GetNoticeType,
   CreateNoticeType,
+  GetEmployeeLoneSummaryType,
+  GetEmployeeSalaryStatusType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -2113,6 +2115,28 @@ export async function getEmployeeLeaveSummary(token: string) {
 export async function getEmployeeAttendanceSummary(token: string) {
   return fetchApi<GetEmployeeAttendanceSummaryType[]>({
     url: 'api/dashboard/attendance-summary',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getEmployeeLoneSummary(token: string) {
+  return fetchApi<GetEmployeeLoneSummaryType[]>({
+    url: 'api/dashboard/lone-summary',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getEmployeeSalaryStatus(token: string) {
+  return fetchApi<GetEmployeeSalaryStatusType[]>({
+    url: 'api/dashboard/salary-status',
     method: 'GET',
     headers: {
       Authorization: token,
