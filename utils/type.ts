@@ -1643,3 +1643,18 @@ export type GetAttendanceDailyApplyType = {
   updatedBy: number | null
   updatedAt: string | null
 }
+
+export const NoticeSchema = z.object({
+  noticeId: z.number().optional(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  pdfUrl: z.string().nullable().optional(),
+  noticeDate: z.date(),
+  tenantId: z.number(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+});
+export type CreateNoticeType = z.infer<typeof NoticeSchema>;
+export type GetNoticeType = z.infer<typeof NoticeSchema>;

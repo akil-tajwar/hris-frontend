@@ -193,6 +193,10 @@ import {
   createEmployeeLeaveEncashment,
   getAllEmployeeLeaveEncashments,
   makeEmployeeLoneFullPaid,
+  getAllNotice,
+  createNotice,
+  editNotice,
+  deleteNotice,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -6804,4 +6808,152 @@ export const useRejectManualAttendance = () => {
       })
     },
   })
+}
+
+//notice
+export const useGetNotice = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['notice'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllNotice(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useAddNotice = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      console.log('🚀 ~ useAddNotice ~ formData:', formData)
+      const res = await createNotice(formData, token)
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Notice created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['notice'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding Notice:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateNotice = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
+      return editNotice(id, formData, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Notice updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['notice'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error editing Notice:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteNotice = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteNotice(id, token)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete Notice')
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Notice is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['notice'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
 }

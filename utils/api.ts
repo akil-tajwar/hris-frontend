@@ -102,6 +102,8 @@ import {
   GenerateSalaryType,
   GetEmployeeLeaveEncashment,
   CreateEmployeeLeaveEncashment,
+  GetNoticeType,
+  CreateNoticeType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
@@ -2685,6 +2687,55 @@ export async function rejectManualAttendance(
     url: `api/attendanceDailyApply/reject/${id}`,
     method: 'PATCH',
     body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//notice
+export async function getAllNotice(token: string) {
+  return fetchApi<GetNoticeType[]>({
+    url: 'api/notice/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createNotice(formData: FormData, token: string) {
+  return fetchApiWithFile<CreateNoticeType>({
+    url: 'api/notice/create',
+    method: 'POST',
+    body: formData,
+    headers: {
+      Authorization: token,
+    },
+  })
+}
+
+export async function editNotice(
+  id: number,
+  formData: FormData,
+  token: string
+) {
+  return fetchApiWithFile<GetNoticeType>({
+    url: `api/notice/edit/${id}`,
+    method: 'PATCH',
+    body: formData,
+    headers: {
+      Authorization: `${token}`,
+    },
+  })
+}
+
+export async function deleteNotice(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/notice/delete/${id}`,
+    method: 'DELETE',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
