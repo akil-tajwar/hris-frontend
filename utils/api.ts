@@ -121,7 +121,7 @@ export async function getAllRoles(token: string) {
 
 // Get all Permission Api
 export async function getAllPermissions(token: string) {
-  return fetchApi<{permissionId: number, permissionName: string}[]>({
+  return fetchApi<{id: number, name: string}[]>({
     url: 'api/roles/get-all-permissions',
     method: 'GET',
     headers: {

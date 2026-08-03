@@ -42,9 +42,9 @@ export default function CustomSwitch({
           <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
         </label>
 
-        <span className="text-sm text-muted-foreground">
+        {/* <span className="text-sm text-muted-foreground">
           {checked ? activeText : inactiveText}
-        </span>
+        </span> */}
       </div>
     </div>
   )
