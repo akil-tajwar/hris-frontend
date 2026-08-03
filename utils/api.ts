@@ -109,14 +109,43 @@ import {
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
-  return fetchApi<{ roleId: number; roleName: string }[]>({
-    url: 'api/roles/getall',
+  return fetchApi<{ roleId: number; roleName: string, permissions: number[] }[]>({
+    url: 'api/roles/get-all-roles',
     method: 'GET',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
     },
   })
+}
+
+// Get all Permission Api
+export async function getAllPermissions(token: string) {
+  return fetchApi<{permissionId: number, permissionName: string}[]>({
+    url: 'api/roles/get-all-permissions',
+    method: 'GET',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//update role permissions api
+export async function updateRolePermissions(
+  roleId: number,
+  permissions: number[],
+  token: string
+) {
+  return fetchApi({
+    url: `api/roles/update-role-permissions/${roleId}`,
+    method: 'PUT',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: { permissions }
+  });
 }
 
 export async function signIn(credentials: SignInRequest) {

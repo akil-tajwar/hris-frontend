@@ -74,6 +74,7 @@ export function DashboardSidebar() {
         { title: 'Pending Tasks', href: '/dashboard/setup/pending-tasks' },
         { title: 'Checklists', href: '/dashboard/setup/checklists' },
         { title: 'Notices', href: '/dashboard/setup/notice' },
+        { title: 'Permissions', href: '/dashboard/setup/permission' },
       ],
     },
     {

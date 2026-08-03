@@ -199,6 +199,8 @@ import {
   deleteNotice,
   getEmployeeLoneSummary,
   getEmployeeSalaryStatus,
+  getAllPermissions,
+  updateRolePermissions,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -284,6 +286,57 @@ export const useGetRoles = () => {
     enabled: !!token,
     select: (data) => data,
   })
+}
+
+export const useGetPermissions = () => {
+  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
+
+  return useQuery({
+    queryKey: ['permissions'],
+    queryFn: () => {
+      if (!token) {
+        throw new Error('Token not found')
+      }
+      return getAllPermissions(token)
+    },
+    enabled: !!token,
+    select: (data) => data,
+  })
+}
+
+export const useUpdatePermission = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+
+  const [token] = useAtom(tokenAtom)
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: number[] }) => {
+      return updateRolePermissions(id, data, token)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Permission edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['permissions'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing permission:', error)
+    },
+  })
+
+  return mutation
 }
 
 //customers
