@@ -102,17 +102,50 @@ import {
   GenerateSalaryType,
   GetEmployeeLeaveEncashment,
   CreateEmployeeLeaveEncashment,
+  GetNoticeType,
+  CreateNoticeType,
+  GetEmployeeLoneSummaryType,
+  GetEmployeeSalaryStatusType,
 } from '@/utils/type'
 
 export async function getAllRoles(token: string) {
-  return fetchApi<{ roleId: number; roleName: string }[]>({
-    url: 'api/roles/getall',
+  return fetchApi<{ roleId: number; roleName: string, permissions: number[] }[]>({
+    url: 'api/roles/get-all-roles',
     method: 'GET',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',
     },
   })
+}
+
+// Get all Permission Api
+export async function getAllPermissions(token: string) {
+  return fetchApi<{permissionId: number, permissionName: string}[]>({
+    url: 'api/roles/get-all-permissions',
+    method: 'GET',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//update role permissions api
+export async function updateRolePermissions(
+  roleId: number,
+  permissions: number[],
+  token: string
+) {
+  return fetchApi({
+    url: `api/roles/update-role-permissions/${roleId}`,
+    method: 'PUT',
+    headers: {
+      Authorization: `${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: { permissions }
+  });
 }
 
 export async function signIn(credentials: SignInRequest) {
@@ -2119,6 +2152,28 @@ export async function getEmployeeAttendanceSummary(token: string) {
   })
 }
 
+export async function getEmployeeLoneSummary(token: string) {
+  return fetchApi<GetEmployeeLoneSummaryType[]>({
+    url: 'api/dashboard/lone-summary',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function getEmployeeSalaryStatus(token: string) {
+  return fetchApi<GetEmployeeSalaryStatusType[]>({
+    url: 'api/dashboard/salary-status',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 // attendance policy
 export async function getAllAttendancePolicies(token: string) {
   return fetchApi<GetAttendancePolicyType[]>({
@@ -2685,6 +2740,55 @@ export async function rejectManualAttendance(
     url: `api/attendanceDailyApply/reject/${id}`,
     method: 'PATCH',
     body: { updatedBy },
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+//notice
+export async function getAllNotice(token: string) {
+  return fetchApi<GetNoticeType[]>({
+    url: 'api/notice/getall',
+    method: 'GET',
+    headers: {
+      Authorization: token,
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
+export async function createNotice(formData: FormData, token: string) {
+  return fetchApiWithFile<CreateNoticeType>({
+    url: 'api/notice/create',
+    method: 'POST',
+    body: formData,
+    headers: {
+      Authorization: token,
+    },
+  })
+}
+
+export async function editNotice(
+  id: number,
+  formData: FormData,
+  token: string
+) {
+  return fetchApiWithFile<GetNoticeType>({
+    url: `api/notice/edit/${id}`,
+    method: 'PATCH',
+    body: formData,
+    headers: {
+      Authorization: `${token}`,
+    },
+  })
+}
+
+export async function deleteNotice(id: number, token: string) {
+  return fetchApi<{ id: number }>({
+    url: `api/notice/delete/${id}`,
+    method: 'DELETE',
     headers: {
       Authorization: token,
       'Content-Type': 'application/json',

@@ -409,8 +409,10 @@ const Employees = () => {
                       <TableCell>
                         {(currentPage - 1) * employeesPerPage + index + 1}
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {emp.empCode}
+                      <TableCell className="font-semibold text-blue-600 hover:text-blue-700">
+                        <Link href={`/dashboard/employee-management/employees/${emp.employeeId}`}>
+                          {emp.empCode}
+                        </Link>
                       </TableCell>
                       <TableCell>{emp.empFullName}</TableCell>
                       <TableCell>{emp.workEmail}</TableCell>
