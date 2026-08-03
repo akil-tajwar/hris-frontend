@@ -26,8 +26,8 @@ import {
 } from '@/components/ui/table'
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -115,13 +115,18 @@ const DashboardOverview = () => {
       0
     ) ?? 0
 
+  // salaryStatus.data is assumed to be an array of monthly records:
+  // { month, year?, grossPayroll, netPayroll, totalPaidAmount, totalUnpaidAmount }
+  // Adjust the field names below if your API response differs.
   const salaryChartData = salaryStatus?.data
-    ? [
-        { name: 'Gross Payroll', amount: salaryStatus.data.grossPayroll },
-        { name: 'Net Payroll', amount: salaryStatus.data.netPayroll },
-        { name: 'Paid', amount: salaryStatus.data.totalPaidAmount },
-        { name: 'Unpaid', amount: salaryStatus.data.totalUnpaidAmount },
-      ]
+    ? salaryStatus.data.map((month: any) => ({
+        month: month.monthName ?? month.month,
+        year: month.year,
+        grossPayroll: month.grossPayroll,
+        netPayroll: month.netPayroll,
+        totalPaidAmount: month.totalPaidAmount,
+        totalUnpaidAmount: month.totalUnpaidAmount,
+      }))
     : []
 
   const metrics = [
@@ -409,16 +414,14 @@ const DashboardOverview = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-600" />
-              Salary Overview
-              {salaryStatus?.data?.currentMonth &&
-                ` (${salaryStatus.data.currentMonth} ${salaryStatus.data.currentYear})`}
+              Salary Overview (Net Payroll)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="w-full h-80">
               {salaryChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
+                  <LineChart
                     data={salaryChartData}
                     margin={{ top: 5, right: 30, left: 0, bottom: 50 }}
                   >
@@ -429,7 +432,7 @@ const DashboardOverview = () => {
                     />
 
                     <XAxis
-                      dataKey="name"
+                      dataKey="month"
                       angle={-45}
                       textAnchor="end"
                       height={80}
@@ -443,30 +446,72 @@ const DashboardOverview = () => {
                     />
 
                     <Tooltip
-                      formatter={(value: number) =>
-                        value.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })
-                      }
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const d = payload[0].payload
+                        return (
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+                            <p className="font-semibold text-gray-700 mb-2">
+                              {d.month}
+                              {d.year ? ` ${d.year}` : ''}
+                            </p>
+                            <div className="flex justify-between gap-6 text-gray-600">
+                              <span>Gross Payroll</span>
+                              <span>
+                                {d.grossPayroll?.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-6 text-gray-600">
+                              <span>Paid</span>
+                              <span>
+                                {d.totalPaidAmount?.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-6 text-gray-600">
+                              <span>Unpaid</span>
+                              <span>
+                                {d.totalUnpaidAmount?.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-6 font-bold text-green-700 border-t border-gray-200 mt-2 pt-2">
+                              <span>Net Payroll</span>
+                              <span>
+                                {d.netPayroll?.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        )
                       }}
-                      cursor={{ fill: '#f3f4f6' }}
+                      cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
                     />
 
-                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-
-                    <Bar
-                      dataKey="amount"
-                      fill="#059669"
-                      name="Amount"
-                      radius={[4, 4, 0, 0]}
+                    <Legend
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="line"
                     />
-                  </BarChart>
+
+                    <Line
+                      type="monotone"
+                      dataKey="netPayroll"
+                      stroke="#059669"
+                      name="Net Payroll"
+                      strokeWidth={2.5}
+                      dot={{ fill: '#059669', r: 4, strokeWidth: 0 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
@@ -486,29 +531,17 @@ const DashboardOverview = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80 overflow-y-auto space-y-3 pr-1">
+            <div className="h-80 overflow-y-auto space-y-3">
               {notice?.data && notice.data.length > 0 ? (
                 notice.data.map((item: any) => (
                   <div
                     key={item.noticeId}
-                    className="border-b border-gray-100 last:border-0 pb-3 last:pb-0"
+                    className="border border-gray-200 bg-slate-100 rounded-md p-3"
                   >
-                    <p className="text-sm font-semibold text-gray-900">
-                      {item.title}
-                    </p>
-                    {item.description && (
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                        {item.description}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {item.title}
                       </p>
-                    )}
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-400">
-                        {new Date(item.noticeDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
                       {item.pdfUrl && (
                         <a
                           href={item.pdfUrl}
@@ -520,6 +553,18 @@ const DashboardOverview = () => {
                         </a>
                       )}
                     </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(item.noticeDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    {item.description && (
+                      <p className="text-xs text-gray-600 mt-3">
+                        {item.description}
+                      </p>
+                    )}
                   </div>
                 ))
               ) : (
