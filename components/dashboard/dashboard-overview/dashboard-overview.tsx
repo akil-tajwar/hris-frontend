@@ -9,12 +9,14 @@ import {
   UserX,
   TrendingUp,
   Bell,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Popup } from '@/utils/popup'
 import {
   Table,
@@ -60,6 +62,10 @@ const DashboardOverview = () => {
     title: '',
   })
 
+  const [expandedLeaveRows, setExpandedLeaveRows] = useState<Set<number>>(
+    new Set()
+  )
+
   const { data: employees } = useGetAllEmployees()
   const { data: leaveSummary } = useGetEmployeeLeaveSummary()
   const { data: attendanceSummary } = useGetEmployeeAttendanceSummary()
@@ -93,6 +99,19 @@ const DashboardOverview = () => {
 
   const closeModal = () => {
     setModalState({ isOpen: false, type: null, title: '' })
+    setExpandedLeaveRows(new Set())
+  }
+
+  const toggleLeaveRow = (index: number) => {
+    setExpandedLeaveRows((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
   }
 
   // Compute totals
@@ -171,6 +190,7 @@ const DashboardOverview = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-8"></TableHead>
                   <TableHead>Emp Code</TableHead>
                   <TableHead>Full Name</TableHead>
                   <TableHead>Designation</TableHead>
@@ -178,43 +198,68 @@ const DashboardOverview = () => {
                   <TableHead className="text-right">
                     Total Leaves Taken
                   </TableHead>
-                  <TableHead>Leave Breakdown</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {leaveSummary?.data && leaveSummary.data.length > 0 ? (
-                  leaveSummary.data.map((emp: any, index: number) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">
-                        {emp.employeeDetails.empCode}
-                      </TableCell>
-                      <TableCell>{emp.employeeDetails.empFullName}</TableCell>
-                      <TableCell>
-                        {emp.employeeDetails.designationName}
-                      </TableCell>
-                      <TableCell>
-                        {emp.employeeDetails.departmentName}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {emp.employeeDetails.totalLeavesTaken}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 text-xs text-gray-600">
-                          {emp.leaveDetails.map((leave: any, i: number) => (
-                            <div key={i} className="flex gap-2">
-                              <span className="font-medium">
-                                {leave.leaveTypeName}:
-                              </span>
-                              <span>
-                                {leave.takenLeaves}/{leave.totalLeaves} (
-                                {leave.remainingLeaves} remaining)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  leaveSummary.data.map((emp: any, index: number) => {
+                    const isExpanded = expandedLeaveRows.has(index)
+                    return (
+                      <Fragment key={index}>
+                        <TableRow
+                          onClick={() => toggleLeaveRow(index)}
+                          className="cursor-pointer hover:bg-gray-50"
+                        >
+                          <TableCell>
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {emp.employeeDetails.empCode}
+                          </TableCell>
+                          <TableCell>
+                            {emp.employeeDetails.empFullName}
+                          </TableCell>
+                          <TableCell>
+                            {emp.employeeDetails.designationName}
+                          </TableCell>
+                          <TableCell>
+                            {emp.employeeDetails.departmentName}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {emp.employeeDetails.totalLeavesTaken}
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && (
+                          <TableRow className="bg-gray-50 hover:bg-gray-50">
+                            <TableCell colSpan={6} className="p-0">
+                              <div className="px-6 py-3 space-y-2">
+                                {emp.leaveDetails.map(
+                                  (leave: any, i: number) => (
+                                    <div
+                                      key={i}
+                                      className="flex justify-between gap-4 ml-10 text-sm text-gray-600 border-b pb-2 last:border-b-0"
+                                    >
+                                      <span className="font-medium text-gray-700">
+                                        {leave.leaveTypeName}
+                                      </span>
+                                      <span>
+                                        {leave.takenLeaves}/{leave.totalLeaves}{' '}
+                                        ({leave.remainingLeaves} remaining)
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    )
+                  })
                 ) : (
                   <TableRow>
                     <TableCell
@@ -456,15 +501,6 @@ const DashboardOverview = () => {
                               {d.year ? ` ${d.year}` : ''}
                             </p>
                             <div className="flex justify-between gap-6 text-gray-600">
-                              <span>Gross Payroll</span>
-                              <span>
-                                {d.grossPayroll?.toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex justify-between gap-6 text-gray-600">
                               <span>Paid</span>
                               <span>
                                 {d.totalPaidAmount?.toLocaleString('en-US', {
@@ -482,7 +518,16 @@ const DashboardOverview = () => {
                                 })}
                               </span>
                             </div>
-                            <div className="flex justify-between gap-6 font-bold text-green-700 border-t border-gray-200 mt-2 pt-2">
+                            <div className="flex justify-between gap-6 font-bold text-blue-700 border-t border-gray-200 mt-2 pt-2">
+                              <span>Gross Payroll</span>
+                              <span>
+                                {d.grossPayroll?.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-6 font-bold text-green-700 pt-1">
                               <span>Net Payroll</span>
                               <span>
                                 {d.netPayroll?.toLocaleString('en-US', {
