@@ -189,7 +189,7 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 border-b">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-[60px]">
           {/* LOGO */}
           <div className="flex-shrink-0 flex items-center">
             <div className="flex items-center">
@@ -198,14 +198,14 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center ml-4 gap-2">
+          <div className="flex items-center ml-4 gap-1">
             {/* NOTIFICATION */}
             <div className="relative" ref={notificationRef}>
               <button
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 className="relative w-10 h-10"
               >
-                <Bell className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
+                <Bell className="h-8 w-8 text-gray-600 border border-gray-600 p-1 rounded-full" />
 
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
@@ -263,7 +263,7 @@ export default function Navbar() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="w-10 h-10"
               >
-                <User2 className="h-9 w-9 text-gray-600 border border-gray-600 p-1 rounded-full" />
+                <User2 className="h-8 w-8 text-gray-600 border border-gray-600 p-1 rounded-full" />
               </button>
 
               {isProfileOpen && (

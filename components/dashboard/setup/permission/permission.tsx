@@ -8,14 +8,19 @@ import {
 
 import { useQueryClient } from '@tanstack/react-query'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Fingerprint, Save, Search, X } from 'lucide-react'
+import { Fingerprint, Search, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import CustomSwitch from '@/utils/custom-switch'
 import { Card } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +42,18 @@ function useDebouncedValue<T>(value: T, delay = 200): T {
   return debounced
 }
 
+// Permission names follow `action_module` (e.g. create_asset, view_asset,
+// assign_leave_type). The module is everything after the first underscore.
+function moduleOf(name: string): string {
+  const idx = name.indexOf('_')
+  if (idx === -1) return 'general'
+  return name.slice(idx + 1)
+}
+
+function formatModuleName(mod: string): string {
+  return mod.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 const Permissions = () => {
   const queryClient = useQueryClient()
 
@@ -48,7 +65,6 @@ const Permissions = () => {
   const [roleFilter, setRoleFilter] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearch = useDebouncedValue(searchTerm, 200)
-  const [activeCategory, setActiveCategory] = useState<string>('all')
   const [hasChanges, setHasChanges] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [draftPermissions, setDraftPermissions] = useState<number[] | null>(
@@ -91,6 +107,13 @@ const Permissions = () => {
     }))
   }, [permissions])
 
+  // Auto-select the first role once roles have loaded.
+  useEffect(() => {
+    if (selectedRoleId === null && mappedRoles.length > 0) {
+      setSelectedRoleId(mappedRoles[0].roleId)
+    }
+  }, [mappedRoles, selectedRoleId])
+
   const baseSelectedRole = useMemo(
     () => mappedRoles.find((r) => r.roleId === selectedRoleId) ?? null,
     [mappedRoles, selectedRoleId]
@@ -125,32 +148,45 @@ const Permissions = () => {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges])
 
-  const hasPermission = (permissionId: number) => {
-    if (!selectedRole) return false
-    return selectedRole.permission.includes(permissionId)
-  }
+  const hasPermission = useCallback(
+    (permissionId: number) => {
+      if (!selectedRole) return false
+      return selectedRole.permission.includes(permissionId)
+    },
+    [selectedRole]
+  )
 
-  const setPermission = (permissionId: number, grant: boolean) => {
-    if (!selectedRole || !editMode) return
-    setDraftPermissions((prev) => {
-      const current = prev ?? selectedRole.permission
-      return grant
-        ? Array.from(new Set([...current, permissionId]))
-        : current.filter((id) => id !== permissionId)
-    })
-    setHasChanges(true)
-  }
+  // Toggling any switch grants/revokes that permission AND enters edit
+  // mode automatically — no separate "Edit permissions" button anymore.
+  const handleToggle = useCallback(
+    (permissionId: number, grant: boolean) => {
+      if (!baseSelectedRole) return
+      setDraftPermissions((prev) => {
+        const current = prev ?? baseSelectedRole.permission
+        return grant
+          ? Array.from(new Set([...current, permissionId]))
+          : current.filter((id) => id !== permissionId)
+      })
+      setEditMode(true)
+      setHasChanges(true)
+    },
+    [baseSelectedRole]
+  )
 
-  const setVisible = (ids: number[], grant: boolean) => {
-    if (!selectedRole || !editMode) return
-    setDraftPermissions((prev) => {
-      const current = prev ?? selectedRole.permission
-      return grant
-        ? Array.from(new Set([...current, ...ids]))
-        : current.filter((id) => !ids.includes(id))
-    })
-    setHasChanges(true)
-  }
+  const handleSetVisible = useCallback(
+    (ids: number[], grant: boolean) => {
+      if (!baseSelectedRole) return
+      setDraftPermissions((prev) => {
+        const current = prev ?? baseSelectedRole.permission
+        return grant
+          ? Array.from(new Set([...current, ...ids]))
+          : current.filter((id) => !ids.includes(id))
+      })
+      setEditMode(true)
+      setHasChanges(true)
+    },
+    [baseSelectedRole]
+  )
 
   const handleSave = useCallback(() => {
     if (
@@ -214,7 +250,6 @@ const Permissions = () => {
     setEditMode(false)
     setDraftPermissions(null)
     setSearchTerm('')
-    setActiveCategory('all')
   }
 
   const confirmDiscardAndSwitch = () => {
@@ -224,7 +259,6 @@ const Permissions = () => {
       setEditMode(false)
       setDraftPermissions(null)
       setSearchTerm('')
-      setActiveCategory('all')
     }
     setPendingRoleId(null)
   }
@@ -235,51 +269,30 @@ const Permissions = () => {
     return mappedRoles.filter((r) => r.roleName.toLowerCase().includes(term))
   }, [mappedRoles, roleFilter])
 
-  // Only permissions with dot-notation names ("module.action") get a
-  // category; anything else is just left ungrouped under "All" — no
-  // catch-all "general" bucket.
-  const categoryOf = (name: string): string | null => {
-    const parts = name.split('.')
-    return parts.length > 1 ? parts[0] : null
-  }
-
-  // The pool of permissions to browse: the whole catalog while editing,
-  // otherwise only what the role currently has.
-  const browsablePermissions = useMemo(() => {
-    if (editMode) return mappedPermissions
-    if (!selectedRole) return []
-    return mappedPermissions.filter((p) =>
-      selectedRole.permission.includes(p.permissionId)
-    )
-  }, [editMode, mappedPermissions, selectedRole])
-
-  const tabs = useMemo(() => {
-    const byCategory = new Map<string, { total: number; assigned: number }>()
-    browsablePermissions.forEach((p) => {
-      const cat = categoryOf(p.permissionName)
-      if (!cat) return
-      const entry = byCategory.get(cat) ?? { total: 0, assigned: 0 }
-      entry.total += 1
-      if (hasPermission(p.permissionId)) entry.assigned += 1
-      byCategory.set(cat, entry)
-    })
-    return Array.from(byCategory.entries()).sort((a, b) =>
-      a[0].localeCompare(b[0])
-    )
-  }, [browsablePermissions, selectedRole])
-
   const visiblePermissions = useMemo(() => {
     const term = debouncedSearch.toLowerCase()
-    return browsablePermissions.filter((p) => {
-      const matchesCategory =
-        activeCategory === 'all' ||
-        categoryOf(p.permissionName) === activeCategory
-      const matchesSearch =
+    if (!term) return mappedPermissions
+    return mappedPermissions.filter(
+      (p) =>
         p.permissionName.toLowerCase().includes(term) ||
         p.permissionId.toString().includes(term)
-      return matchesCategory && matchesSearch
+    )
+  }, [mappedPermissions, debouncedSearch])
+
+  // Group the (search-filtered) permission catalog by module for the
+  // accordion, sorted alphabetically by module name.
+  const moduleGroups = useMemo(() => {
+    const byModule = new Map<string, PermissionItem[]>()
+    visiblePermissions.forEach((p) => {
+      const mod = moduleOf(p.permissionName)
+      const list = byModule.get(mod) ?? []
+      list.push(p)
+      byModule.set(mod, list)
     })
-  }, [browsablePermissions, activeCategory, debouncedSearch])
+    return Array.from(byModule.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0])
+    )
+  }, [visiblePermissions])
 
   const allVisibleGranted =
     visiblePermissions.length > 0 &&
@@ -330,16 +343,13 @@ const Permissions = () => {
         </DialogContent>
       </Dialog>
 
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="py-8">
         <header className="mb-5 flex items-center gap-2.5">
           <Fingerprint className="h-6 w-6 text-blue-600" />
           <div>
-            <h1 className="text-[19px] font-semibold leading-tight text-slate-900">
+            <h1 className="text-lg font-semibold leading-tight text-slate-900">
               Permissions
             </h1>
-            <p className="text-[13px] text-slate-500">
-              Pick a role, then grant or revoke what it can reach.
-            </p>
           </div>
         </header>
 
@@ -419,7 +429,7 @@ const Permissions = () => {
                     )}
                   </div>
 
-                  {editMode ? (
+                  {hasChanges && (
                     <div className="flex items-center gap-2">
                       <span className="hidden text-[11px] text-slate-400 sm:inline">
                         ⌘S save · Esc cancel
@@ -433,27 +443,14 @@ const Permissions = () => {
                       </Button>
                       <Button
                         onClick={handleSave}
-                        disabled={
-                          updatePermissionMutation.isPending || !hasChanges
-                        }
+                        disabled={updatePermissionMutation.isPending}
                         className="gap-1.5 bg-blue-600 hover:bg-blue-700"
                       >
-                        <Save className="h-3.5 w-3.5" />
                         {updatePermissionMutation.isPending
                           ? 'Saving…'
                           : 'Save changes'}
                       </Button>
                     </div>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        setDraftPermissions(selectedRole.permission)
-                        setEditMode(true)
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Edit permissions
-                    </Button>
                   )}
                 </div>
 
@@ -475,39 +472,14 @@ const Permissions = () => {
                     </button>
                   )}
                 </div>
-
-                {tabs.length > 0 && (
-                  <Tabs
-                    value={activeCategory}
-                    onValueChange={setActiveCategory}
-                  >
-                    <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
-                      <TabsTrigger
-                        value="all"
-                        className="rounded-full border data-[state=active]:border-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                      >
-                        All · {browsablePermissions.length}
-                      </TabsTrigger>
-                      {tabs.map(([cat, counts]) => (
-                        <TabsTrigger
-                          key={cat}
-                          value={cat}
-                          className="rounded-full border capitalize data-[state=active]:border-blue-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                        >
-                          {cat} · {counts.assigned}/{counts.total}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </Tabs>
-                )}
               </div>
 
               <div className="p-4">
-                {editMode && visiblePermissions.length > 0 && (
+                {visiblePermissions.length > 0 && (
                   <div className="mb-3 flex justify-end">
                     <button
                       onClick={() =>
-                        setVisible(
+                        handleSetVisible(
                           visiblePermissions.map((p) => p.permissionId),
                           !allVisibleGranted
                         )
@@ -519,35 +491,66 @@ const Permissions = () => {
                   </div>
                 )}
 
-                {visiblePermissions.length === 0 ? (
+                {moduleGroups.length === 0 ? (
                   <div className="py-16 text-center">
                     <p className="text-[13.5px] text-slate-500">
                       {searchTerm
                         ? `No permissions match “${searchTerm}”`
-                        : 'Nothing granted here yet.'}
+                        : 'No permissions available.'}
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y">
-                    {visiblePermissions.map((perm) => {
-                      const isActive = hasPermission(perm.permissionId)
+                  <Accordion
+                    key={selectedRole.roleId}
+                    type="multiple"
+                    defaultValue={[]}
+                    className="w-full space-y-2 rounded-lg bg-white"
+                  >
+                    {moduleGroups.map(([mod, perms]) => {
+                      const assignedCount = perms.filter((p) =>
+                        hasPermission(p.permissionId)
+                      ).length
                       return (
-                        <div key={perm.permissionId} className="py-2.5">
-                          <CustomSwitch
-                            label={
-                              perm.permissionName ||
-                              `Permission #${perm.permissionId}`
-                            }
-                            checked={isActive}
-                            onChange={(value) => {
-                              if (!editMode) return
-                              setPermission(perm.permissionId, !!value)
-                            }}
-                          />
-                        </div>
+                        <AccordionItem
+                          key={mod}
+                          value={mod}
+                          className="rounded-lg border-none"
+                        >
+                          <AccordionTrigger className="text-[13.5px] font-medium text-slate-900 px-4 bg-blue-50 hover:no-underline">
+                            <span className="flex items-center gap-2">
+                              {formatModuleName(mod)}
+                              <span className="text-[11.5px] font-normal tabular-nums text-slate-400">
+                                {assignedCount}/{perms.length}
+                              </span>
+                            </span>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="divide-y">
+                              {perms.map((perm) => {
+                                const isActive = hasPermission(
+                                  perm.permissionId
+                                )
+                                return (
+                                  <div
+                                    key={perm.permissionId}
+                                    className="py-2.5 px-4 ml-10 flex justify-between items-center"
+                                  >
+                                    <p>{perm.permissionName}</p>
+                                    <CustomSwitch
+                                      checked={isActive}
+                                      onChange={(value) =>
+                                        handleToggle(perm.permissionId, !!value)
+                                      }
+                                    />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
                       )
                     })}
-                  </div>
+                  </Accordion>
                 )}
               </div>
             </>
