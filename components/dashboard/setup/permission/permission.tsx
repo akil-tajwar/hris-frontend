@@ -29,6 +29,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom } from 'jotai'
 
 type Role = { roleId: number; roleName: string; permission: number[] }
 type PermissionItem = { permissionId: number; permissionName: string }
@@ -55,11 +57,14 @@ function formatModuleName(mod: string): string {
 }
 
 const Permissions = () => {
+  useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
   const queryClient = useQueryClient()
 
   const { data: roles, isLoading: rolesLoading } = useGetRoles()
   const { data: permissions, isLoading: permissionsLoading } =
     useGetPermissions()
+  console.log('🚀 ~ Permissions ~ permissions:', permissions)
 
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
   const [roleFilter, setRoleFilter] = useState('')
@@ -86,12 +91,12 @@ const Permissions = () => {
         permission: Array.isArray(permArray)
           ? permArray
               .map((p: any) => Number(p))
-              .filter((n: number) => !Number.isNaN(n))
+              .filter((n: number) => !Number.isNaN(n) && n !== 0)
           : typeof permArray === 'string'
             ? permArray
                 .split(',')
                 .map((p: string) => parseInt(p.trim(), 10))
-                .filter((n: number) => !Number.isNaN(n))
+                .filter((n: number) => !Number.isNaN(n) && n !== 0)
             : [],
       }
     })
@@ -130,6 +135,8 @@ const Permissions = () => {
     return baseSelectedRole
   }, [baseSelectedRole, editMode, draftPermissions])
 
+  const isAdminRoleLocked = selectedRole?.roleId === 1 && userData?.roleId !== 1
+
   const updatePermissionMutation = useUpdatePermission({
     onClose: () => setEditMode(false),
     reset: () => {
@@ -161,16 +168,25 @@ const Permissions = () => {
   const handleToggle = useCallback(
     (permissionId: number, grant: boolean) => {
       if (!baseSelectedRole) return
+      if (baseSelectedRole.roleId === 1 && userData?.roleId !== 1) return
+      // Ensure we're not adding 0
+      if (permissionId === 0) {
+        console.warn('Attempted to toggle permission with ID 0, skipping...')
+        return
+      }
+
       setDraftPermissions((prev) => {
         const current = prev ?? baseSelectedRole.permission
         return grant
-          ? Array.from(new Set([...current, permissionId]))
-          : current.filter((id) => id !== permissionId)
+          ? Array.from(new Set([...current, permissionId])).filter(
+              (id) => id !== 0
+            )
+          : current.filter((id) => id !== permissionId && id !== 0)
       })
       setEditMode(true)
       setHasChanges(true)
     },
-    [baseSelectedRole]
+    [baseSelectedRole, userData?.roleId]
   )
 
   const handleSetVisible = useCallback(
@@ -179,7 +195,7 @@ const Permissions = () => {
       setDraftPermissions((prev) => {
         const current = prev ?? baseSelectedRole.permission
         return grant
-          ? Array.from(new Set([...current, ...ids]))
+          ? Array.from(new Set([...current, ...ids])).filter((id) => id !== 0)
           : current.filter((id) => !ids.includes(id))
       })
       setEditMode(true)
@@ -475,7 +491,7 @@ const Permissions = () => {
               </div>
 
               <div className="p-4">
-                {visiblePermissions.length > 0 && (
+                {!isAdminRoleLocked && (
                   <div className="mb-3 flex justify-end">
                     <button
                       onClick={() =>
@@ -538,6 +554,7 @@ const Permissions = () => {
                                     <p>{perm.permissionName}</p>
                                     <CustomSwitch
                                       checked={isActive}
+                                      disabled={isAdminRoleLocked}
                                       onChange={(value) =>
                                         handleToggle(perm.permissionId, !!value)
                                       }
