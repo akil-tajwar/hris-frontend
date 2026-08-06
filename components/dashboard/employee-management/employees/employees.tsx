@@ -53,6 +53,8 @@ import Link from 'next/link'
 import AssignAssetPopup from './assign-asset-popup'
 import ProbationPromotionPopup from './probation-promotion-popup'
 import PromoteEmployeePopup from './promote-employee-popup'
+import BulkProbationPromotionPopup from './bulk-probation-pormotion-popup'
+import BulkEmployeePromotePopup from './bulk-employee-pormotion-popup'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 
@@ -163,6 +165,8 @@ const Employees = () => {
     employeeId: number
     employeeName: string
   } | null>(null)
+  const [bulkProbationPopupOpen, setBulkProbationPopupOpen] = useState(false)
+  const [bulkPromotePopupOpen, setBulkPromotePopupOpen] = useState(false)
 
   const [promotePopupOpen, setPromotePopupOpen] = useState(false)
   const [promoteTarget, setPromoteTarget] = useState<{
@@ -278,14 +282,28 @@ const Employees = () => {
           </div>
           <h2 className="text-lg font-semibold">Employees</h2>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search employees..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-64"
-          />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setBulkProbationPopupOpen(true)}
+          >
+            Bulk Confirm Probation
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setBulkPromotePopupOpen(true)}
+          >
+            Bulk Promote
+          </Button>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
         </div>
       </div>
 
@@ -410,7 +428,9 @@ const Employees = () => {
                         {(currentPage - 1) * employeesPerPage + index + 1}
                       </TableCell>
                       <TableCell className="font-semibold text-blue-600 hover:text-blue-700">
-                        <Link href={`/dashboard/employee-management/employees/${emp.employeeId}`}>
+                        <Link
+                          href={`/dashboard/employee-management/employees/${emp.employeeId}`}
+                        >
                           {emp.empCode}
                         </Link>
                       </TableCell>
@@ -652,6 +672,16 @@ const Employees = () => {
           employeeName={promoteTarget.employeeName}
         />
       )}
+
+      <BulkProbationPromotionPopup
+        isOpen={bulkProbationPopupOpen}
+        onClose={() => setBulkProbationPopupOpen(false)}
+      />
+
+      <BulkEmployeePromotePopup
+        isOpen={bulkPromotePopupOpen}
+        onClose={() => setBulkPromotePopupOpen(false)}
+      />
 
       <AlertDialog
         open={isDeleteDialogOpen}

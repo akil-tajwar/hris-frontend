@@ -112,11 +112,8 @@ const EditEmployee = () => {
   const { data: departments } = useGetDepartments()
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
-  const { data: shiftDayAndWeekDays } = useGetShiftDayAndWeekDays()
   const { data: companies } = useGetCompanies()
-  const { data: workStations } = useGetWorkStations()
   const { data: divisions } = useGetDivisions()
-  const { data: costCenters } = useGetCostCenters()
   const { data: employees } = useGetAllEmployees()
 
   const [error, setError] = useState<string | null>(null)
@@ -345,13 +342,17 @@ const EditEmployee = () => {
     const form = new FormData()
     form.append(
       'employeeDetails',
-      JSON.stringify({
-        ...formData,
-        photoUrl: existingPhotoUrl,
-        cvUrl: existingCvUrl,
-        certificateUrl: existingCertificateUrl,
-        updatedBy: userData?.userId || 0,
-      })
+      JSON.stringify([
+        {
+          ...formData,
+          employeeId: Number(employeeId),
+          photoUrl: existingPhotoUrl,
+          cvUrl: existingCvUrl,
+          certificateUrl: existingCertificateUrl,
+          tenantId: userData?.tenantId || 0,
+          updatedBy: userData?.userId || 0,
+        },
+      ])
     )
 
     if (employeePhotoFile) form.append('photoUrl', employeePhotoFile)
@@ -360,7 +361,6 @@ const EditEmployee = () => {
 
     try {
       await updateMutation.mutateAsync({
-        id: Number(employeeId),
         data: form as any,
       })
       toast({

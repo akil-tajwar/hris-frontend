@@ -13,12 +13,17 @@ import {
   useGetEmploymentTypes,
   useGetLeavePolicies,
   useGetSalaryStructures,
+  useGetAllEmployees,
 } from '@/hooks/use-api'
 import { useAtom } from 'jotai'
 import { userDataAtom } from '@/utils/user'
 import { toast } from '@/hooks/use-toast'
 import { formatDateForInput } from '@/utils/conversions'
-import type { GetLeavePolicyType, GetSalaryStructureType } from '@/utils/type'
+import type {
+  GetLeavePolicyType,
+  GetSalaryStructureType,
+  GetEmployeeType,
+} from '@/utils/type'
 
 type ProbationPromotionPopupProps = {
   isOpen: boolean
@@ -33,6 +38,7 @@ type PromotionFormData = {
   leavePolicyMasterId: number
   salaryStructureMasterId: number
   basicSalary: number
+  performedBy: number
   leavePolicyName: string
   salaryStructureName: string
   employmentTypeName: string
@@ -44,6 +50,7 @@ const DEFAULT_FORM: PromotionFormData = {
   leavePolicyMasterId: 0,
   salaryStructureMasterId: 0,
   basicSalary: 0,
+  performedBy: 0,
   leavePolicyName: '',
   salaryStructureName: '',
   employmentTypeName: '',
@@ -63,6 +70,7 @@ const ProbationPromotionPopup = ({
   const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: leavePolicies } = useGetLeavePolicies()
   const { data: salaryStructures } = useGetSalaryStructures()
+  const { data: employees } = useGetAllEmployees()
 
   useEffect(() => {
     if (!isOpen || !employee?.data) return
@@ -74,12 +82,13 @@ const ProbationPromotionPopup = ({
       leavePolicyMasterId: emp.leavePolicyMasterId ?? 0,
       salaryStructureMasterId: emp.salaryStructureMasterId ?? 0,
       basicSalary: emp.basicSalary ?? 0,
+      performedBy: userData?.userId ?? 0,
       leavePolicyName: emp.leavePolicyName ?? '',
       salaryStructureName: emp.salaryStructureName ?? '',
       employmentTypeName: emp.employmentTypeName ?? '',
     })
     setError(null)
-  }, [isOpen, employee])
+  }, [isOpen, employee, userData])
 
   const handleClose = useCallback(() => {
     setError(null)
@@ -104,69 +113,74 @@ const ProbationPromotionPopup = ({
       return setError('Please select salary structure')
     if (!formData.basicSalary)
       return setError('Please enter valid basic salary')
+    if (!formData.performedBy) return setError('Please select performed by')
     if (!employee?.data) return setError('Employee data not loaded yet')
 
     const emp = employee.data as any
     const form = new FormData()
     form.append(
       'employeeDetails',
-      JSON.stringify({
-        empFullName: emp.empFullName,
-        empShortName: emp.empShortName ?? null,
-        dob: formatDateForInput(emp.dob) ?? '',
-        gender: emp.gender,
-        nationality: emp.nationality ?? null,
-        nationalIdNo: emp.nationalIdNo ?? null,
-        maritalStatus: emp.maritalStatus ?? null,
-        religion: emp.religion ?? null,
-        bloodGroup: emp.bloodGroup ?? null,
-        photoUrl: emp.photoUrl ?? null,
-        cvUrl: emp.cvUrl ?? null,
-        certificateUrl: emp.certificateUrl ?? null,
-        workEmail: emp.workEmail ?? null,
-        privateEmail: emp.privateEmail ?? null,
-        homePhone: emp.homePhone ?? null,
-        personalPhone: emp.personalPhone ?? null,
-        officialPhone: emp.officialPhone ?? '',
-        presentAddress: emp.presentAddress ?? '',
-        permanentAddress: emp.permanentAddress ?? null,
-        country: emp.country ?? null,
-        city: emp.city ?? null,
-        zipCode: emp.zipCode ?? null,
-        emergencyContactName: emp.emergencyContactName ?? null,
-        emergencyContactPhone: emp.emergencyContactPhone ?? null,
-        emergencyContactRelation: emp.emergencyContactRelation ?? null,
-        qualification: emp.qualification ?? 'Graduate',
-        instituteName: emp.instituteName ?? null,
-        subjectName: emp.subjectName ?? null,
-        startDate: formatDateForInput(emp.startDate) ?? null,
-        endDate: formatDateForInput(emp.endDate) ?? null,
-        result: emp.result ?? null,
-        dependentsName: emp.dependentsName ?? null,
-        dependentRelation: emp.dependentRelation ?? null,
-        empCode: emp.empCode ?? '',
-        doj:
-          formatDateForInput(emp.doj) ?? new Date().toISOString().split('T')[0],
-        isActive: emp.isActive ?? true,
-        departmentId: emp.departmentId ?? 0,
-        designationId: emp.designationId ?? 0,
-        shiftId: emp.shiftId ?? 0,
-        companyId: emp.companyId ?? 0,
-        workStationId: emp.workStationId ?? 0,
-        divisionId: emp.divisionId ?? 0,
-        costCenterId: emp.costCenterId ?? 0,
-        reportingAuthorityId: emp.reportingAuthorityId ?? null,
-        doc: formData.doc,
-        employmentTypeId: formData.employmentTypeId,
-        leavePolicyMasterId: formData.leavePolicyMasterId,
-        salaryStructureMasterId: formData.salaryStructureMasterId,
-        basicSalary: formData.basicSalary,
-        updatedBy: userData?.userId || 0,
-      })
+      JSON.stringify([
+        {
+          empFullName: emp.empFullName,
+          empShortName: emp.empShortName ?? null,
+          dob: formatDateForInput(emp.dob) ?? '',
+          gender: emp.gender,
+          nationality: emp.nationality ?? null,
+          nationalIdNo: emp.nationalIdNo ?? null,
+          maritalStatus: emp.maritalStatus ?? null,
+          religion: emp.religion ?? null,
+          bloodGroup: emp.bloodGroup ?? null,
+          photoUrl: emp.photoUrl ?? null,
+          cvUrl: emp.cvUrl ?? null,
+          certificateUrl: emp.certificateUrl ?? null,
+          workEmail: emp.workEmail ?? null,
+          privateEmail: emp.privateEmail ?? null,
+          homePhone: emp.homePhone ?? null,
+          personalPhone: emp.personalPhone ?? null,
+          officialPhone: emp.officialPhone ?? '',
+          presentAddress: emp.presentAddress ?? '',
+          permanentAddress: emp.permanentAddress ?? null,
+          country: emp.country ?? null,
+          city: emp.city ?? null,
+          zipCode: emp.zipCode ?? null,
+          emergencyContactName: emp.emergencyContactName ?? null,
+          emergencyContactPhone: emp.emergencyContactPhone ?? null,
+          emergencyContactRelation: emp.emergencyContactRelation ?? null,
+          qualification: emp.qualification ?? 'Graduate',
+          instituteName: emp.instituteName ?? null,
+          subjectName: emp.subjectName ?? null,
+          startDate: formatDateForInput(emp.startDate) ?? null,
+          endDate: formatDateForInput(emp.endDate) ?? null,
+          result: emp.result ?? null,
+          dependentsName: emp.dependentsName ?? null,
+          dependentRelation: emp.dependentRelation ?? null,
+          empCode: emp.empCode ?? '',
+          doj:
+            formatDateForInput(emp.doj) ??
+            new Date().toISOString().split('T')[0],
+          isActive: emp.isActive ?? true,
+          departmentId: emp.departmentId ?? 0,
+          designationId: emp.designationId ?? 0,
+          shiftId: emp.shiftId ?? 0,
+          companyId: emp.companyId ?? 0,
+          workStationId: emp.workStationId ?? 0,
+          divisionId: emp.divisionId ?? 0,
+          costCenterId: emp.costCenterId ?? 0,
+          reportingAuthorityId: emp.reportingAuthorityId ?? null,
+          doc: formData.doc,
+          employmentTypeId: formData.employmentTypeId,
+          leavePolicyMasterId: formData.leavePolicyMasterId,
+          salaryStructureMasterId: formData.salaryStructureMasterId,
+          basicSalary: formData.basicSalary,
+          createdBy: formData.performedBy,
+          updatedBy: userData?.userId || 0,
+        },
+      ])
     )
 
     try {
-      await updateMutation.mutateAsync({ id: employeeId, data: form as any })
+      await updateMutation.mutateAsync({ data: form as any })
       toast({
         title: 'Success!',
         description: `${employeeName} has been confirmed successfully.`,
@@ -204,6 +218,14 @@ const ProbationPromotionPopup = ({
         s.salaryStructureMaster.salaryStructureMasterId ===
         formData.salaryStructureMasterId
     )?.salaryStructureMaster.structureName || formData.salaryStructureName,
+    ''
+  )
+
+  const selectedPerformedBy = toComboboxItem(
+    formData.performedBy,
+    employees?.data?.find(
+      (e: GetEmployeeType) => e.employeeId === formData.performedBy
+    )?.empFullName || '',
     ''
   )
 
@@ -317,6 +339,28 @@ const ProbationPromotionPopup = ({
             }
             placeholder="Enter basic salary"
             required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>
+            Performed By <span className="text-red-500">*</span>
+          </Label>
+          <CustomCombobox
+            items={
+              employees?.data?.map((e: GetEmployeeType) => ({
+                id: e.employeeId!.toString(),
+                name: e.empFullName || 'Unnamed employee',
+              })) ?? []
+            }
+            value={selectedPerformedBy}
+            onChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                performedBy: value ? Number(value.id) : 0,
+              }))
+            }
+            placeholder="Select performed by"
           />
         </div>
 
