@@ -121,7 +121,7 @@ export async function getAllRoles(token: string) {
 
 // Get all Permission Api
 export async function getAllPermissions(token: string) {
-  return fetchApi<{permissionId: number, permissionName: string}[]>({
+  return fetchApi<{id: number, name: string}[]>({
     url: 'api/roles/get-all-permissions',
     method: 'GET',
     headers: {
@@ -1195,12 +1195,11 @@ export async function createEmployee(formData: FormData, token: string) {
 }
 
 export async function editEmployee(
-  id: number,
   formData: FormData,
   token: string
 ) {
   return fetchApiWithFile<GetEmployeeType>({
-    url: `api/employees/edit/${id}`,
+    url: `api/employees/edit`,
     method: 'PATCH',
     body: formData,
     headers: {

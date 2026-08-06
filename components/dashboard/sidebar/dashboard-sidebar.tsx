@@ -303,7 +303,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar className="text-white">
-      <SidebarHeader className="border-b mt-16 bg-slate-800">
+      <SidebarHeader className="border-b bg-slate-800">
         <div className="p-2">
           <h1 className="text-xl font-bold">My Dashboard</h1>
         </div>
@@ -317,7 +317,7 @@ export function DashboardSidebar() {
                   {!item.subItems || item.subItems.length === 0 ? (
                     <SidebarMenuButton
                       asChild
-                      className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white !hover:bg-blue-500' : ''}`}
+                      className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white hover:bg-blue-500' : ''}`}
                     >
                       <Link href={item.href}>
                         <item.icon className="mr-2 w-4" />
@@ -331,7 +331,11 @@ export function DashboardSidebar() {
                     >
                       <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton
-                          className={`hover:bg-slate-700 hover:text-white ${isItemActive(item) ? 'bg-blue-500 text-white hover:bg-blue-500' : ''}`}
+                          className={`hover:bg-slate-700 hover:text-white ${
+                            isItemActive(item)
+                              ? 'bg-blue-500 text-white hover:bg-blue-500'
+                              : ''
+                          } data-[state=open]:hover:bg-blue-500 data-[state=open]:hover:text-white`}
                         >
                           <item.icon className="mr-2 w-4" />
                           <span>{item.title}</span>

@@ -2706,8 +2706,8 @@ export const useUpdateEmployeeWithFees = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormData }) => {
-      return editEmployee(id, data, token)
+    mutationFn: ({ data }: { data: FormData }) => {
+      return editEmployee(data, token)
     },
     onSuccess: () => {
       toast({
