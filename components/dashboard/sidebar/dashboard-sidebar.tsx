@@ -34,13 +34,12 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
 import { useAtom } from 'jotai'
 
 export function DashboardSidebar() {
   useInitializeUser()
   const [userData] = useAtom(userDataAtom)
-  const [token] = useAtom(tokenAtom)
   const pathname = usePathname()
 
   const isAdminOrHR = userData?.roleId === 1 || userData?.roleId === 2

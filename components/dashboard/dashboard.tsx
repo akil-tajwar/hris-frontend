@@ -1,6 +1,6 @@
 "use client"
 
-import { tokenAtom, useInitializeUser, userDataAtom } from "@/utils/user"
+import { useInitializeUser, userDataAtom } from "@/utils/user"
 import { useAtom } from "jotai"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -8,7 +8,6 @@ import { useEffect, useState } from "react"
 export default function Dashboard() {
   useInitializeUser()
     const [userData] = useAtom(userDataAtom)
-    const [token] = useAtom(tokenAtom)
   
     const router = useRouter()
   
@@ -25,7 +24,7 @@ export default function Dashboard() {
       }
   
       checkUserData()
-    }, [userData, token, router])
+    }, [userData, router])
   const [activeComponent, setActiveComponent] = useState(1)
 
   const Component1 = () => (

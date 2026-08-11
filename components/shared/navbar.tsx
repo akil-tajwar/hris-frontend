@@ -1,14 +1,16 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Bell, PlusCircle, User2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Bell, User2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, List } from 'lucide-react'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom } from 'jotai'
 import {
-  useGetAllEmployees,
+  isUserLoadingAtom,
+  useInitializeUser,
+  userDataAtom,
+} from '@/utils/user'
+import { useAtom, useAtomValue } from 'jotai'
+import {
   useGetNotificationsByUserId,
   useMarksAsRead,
 } from '@/hooks/use-api'
@@ -17,7 +19,7 @@ export default function Navbar() {
   useInitializeUser()
 
   const [userData] = useAtom(userDataAtom)
-  const [token] = useAtom(tokenAtom)
+  const isUserLoading = useAtomValue(isUserLoadingAtom)
 
   const { data: notificationsResponse, refetch } = useGetNotificationsByUserId(
     userData?.userId || 0
@@ -143,17 +145,10 @@ export default function Navbar() {
   }, [userData?.userId, refetch])
 
   useEffect(() => {
-    const checkUserData = () => {
-      const storedUserData = localStorage.getItem('currentUser')
-      const storedToken = localStorage.getItem('authToken')
-
-      if (!storedUserData || !storedToken) {
-        router.push('/')
-      }
-    }
-
-    checkUserData()
-  }, [userData, token, router])
+  if (!isUserLoading && !userData) {
+    router.push('/')
+  }
+}, [isUserLoading, userData, router])
 
   // Handle click outside for both dropdowns
   useEffect(() => {

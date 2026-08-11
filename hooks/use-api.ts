@@ -1,5 +1,5 @@
-import { tokenAtom, useInitializeUser } from '@/utils/user'
-import { useAtom } from 'jotai'
+import { useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom, useAtomValue } from 'jotai'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from './use-toast'
 import {
@@ -201,6 +201,7 @@ import {
   getEmployeeSalaryStatus,
   getAllPermissions,
   updateRolePermissions,
+  getCurrentUser,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -272,35 +273,38 @@ import {
 
 //roles
 export const useGetRoles = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['roles'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllRoles(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllRoles(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+//current user
+export const useGetCurrentUser = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => getCurrentUser(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetPermissions = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['permissions'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllPermissions(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllPermissions(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -313,13 +317,11 @@ export const useUpdatePermission = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: number[] }) => {
-      return updateRolePermissions(id, data, token)
+      return updateRolePermissions(id, data)
     },
     onSuccess: () => {
       toast({
@@ -341,18 +343,13 @@ export const useUpdatePermission = ({
 
 //customers
 export const useGetCustomers = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['customers'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllCustomers(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllCustomers(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -365,12 +362,11 @@ export const useAddCustomer = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateCustomerType) => {
-      const res = await createCustomer(data, token)
+      const res = await createCustomer(data)
       return res
     },
     onSuccess: (res) => {
@@ -413,13 +409,11 @@ export const useUpdateCustomer = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateCustomerType }) => {
-      return editCustomer(id, data, token)
+      return editCustomer(id, data)
     },
     onSuccess: () => {
       toast({
@@ -447,13 +441,11 @@ export const useDeleteCustomer = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteCustomer(id, token)
+      const res = await deleteCustomer(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -495,18 +487,13 @@ export const useDeleteCustomer = ({
 
 //business units
 export const useGetBusinessUnits = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['business-units'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllBusinessUnits(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllBusinessUnits(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -519,12 +506,11 @@ export const useAddBusinessUnit = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateBusinessUnitType) => {
-      const res = await createBusinessUnit(data, token)
+      const res = await createBusinessUnit(data)
       return res
     },
     onSuccess: (res) => {
@@ -567,13 +553,11 @@ export const useUpdateBusinessUnit = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetBusinessUnitType }) => {
-      return editBusinessUnit(id, data, token)
+      return editBusinessUnit(id, data)
     },
     onSuccess: () => {
       toast({
@@ -601,13 +585,11 @@ export const useDeleteBusinessUnit = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteBusinessUnit(id, token)
+      const res = await deleteBusinessUnit(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -649,18 +631,13 @@ export const useDeleteBusinessUnit = ({
 
 //tenants
 export const useGetTenants = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['tenants'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllTenants(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllTenants(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -673,12 +650,11 @@ export const useAddTenant = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateTenantType) => {
-      const res = await createTenant(data, token)
+      const res = await createTenant(data)
       return res
     },
     onSuccess: (res) => {
@@ -721,13 +697,11 @@ export const useUpdateTenant = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetTenantType }) => {
-      return editTenant(id, data, token)
+      return editTenant(id, data)
     },
     onSuccess: () => {
       toast({
@@ -755,13 +729,11 @@ export const useDeleteTenant = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteTenant(id, token)
+      const res = await deleteTenant(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -803,18 +775,13 @@ export const useDeleteTenant = ({
 
 //departments
 export const useGetDepartments = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['departments'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllDepartments(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllDepartments(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -827,12 +794,11 @@ export const useAddDepartment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateDepartmentType) => {
-      const res = await createDepartment(data, token)
+      const res = await createDepartment(data)
       return res
     },
     onSuccess: (res) => {
@@ -875,13 +841,11 @@ export const useUpdateDepartment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetDepartmentType }) => {
-      return editDepartment(id, data, token)
+      return editDepartment(id, data)
     },
     onSuccess: () => {
       toast({
@@ -909,13 +873,11 @@ export const useDeleteDepartment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteDepartment(id, token)
+      const res = await deleteDepartment(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -957,18 +919,13 @@ export const useDeleteDepartment = ({
 
 // Companies Hooks
 export const useGetCompanies = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['companies'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllCompanies(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllCompanies(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -981,13 +938,11 @@ export const useAddCompany = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log('🚀 ~ useAddCompany ~ formData:', formData)
-      const res = await createCompany(formData, token)
+      const res = await createCompany(formData)
       return res
     },
     onSuccess: () => {
@@ -1020,12 +975,11 @@ export const useUpdateCompany = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
-      return editCompany(id, formData, token)
+      return editCompany(id, formData)
     },
     onSuccess: () => {
       toast({
@@ -1057,18 +1011,15 @@ export const useDeleteCompany = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteCompany(id, token)
+      const res = await deleteCompany(id)
 
       console.log('DELETE RESPONSE:', res)
 
       const apiError = res?.error || (res?.data === null && res?.error?.message)
-
       const successFlag = (res?.error?.details as any)?.success
 
       if (apiError || successFlag === false) {
@@ -1077,21 +1028,17 @@ export const useDeleteCompany = ({
 
       return res
     },
-
     onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Company is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['companies'] })
-
       reset()
       onClose()
     },
-
     onError: (error: any) => {
       console.error('Delete error:', error)
-
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -1105,18 +1052,13 @@ export const useDeleteCompany = ({
 
 // Work Stations Hooks
 export const useGetWorkStations = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['workstations'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllWorkStations(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllWorkStations(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1129,12 +1071,11 @@ export const useAddWorkStation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateWorkStationType) => {
-      const res = await createWorkStation(data, token)
+      const res = await createWorkStation(data)
       return res
     },
     onSuccess: (res) => {
@@ -1177,13 +1118,11 @@ export const useUpdateWorkStation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateWorkStationType }) => {
-      return editWorkStation(id, data, token)
+      return editWorkStation(id, data)
     },
     onSuccess: () => {
       toast({
@@ -1211,13 +1150,11 @@ export const useDeleteWorkStation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteWorkStation(id, token)
+      const res = await deleteWorkStation(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -1259,18 +1196,13 @@ export const useDeleteWorkStation = ({
 
 // Divisions Hooks
 export const useGetDivisions = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['divisions'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllDivisions(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllDivisions(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1283,12 +1215,11 @@ export const useAddDivision = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateDivisionType) => {
-      const res = await createDivision(data, token)
+      const res = await createDivision(data)
       return res
     },
     onSuccess: (res) => {
@@ -1331,13 +1262,11 @@ export const useUpdateDivision = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetDivisionType }) => {
-      return editDivision(id, data, token)
+      return editDivision(id, data)
     },
     onSuccess: () => {
       toast({
@@ -1365,13 +1294,11 @@ export const useDeleteDivision = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteDivision(id, token)
+      const res = await deleteDivision(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -1413,18 +1340,13 @@ export const useDeleteDivision = ({
 
 // Cost Centers Hooks
 export const useGetCostCenters = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['costcenters'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllCostCenters(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllCostCenters(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1437,12 +1359,11 @@ export const useAddCostCenter = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateCostCenterType) => {
-      const res = await createCostCenter(data, token)
+      const res = await createCostCenter(data)
       return res
     },
     onSuccess: (res) => {
@@ -1485,13 +1406,11 @@ export const useUpdateCostCenter = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateCostCenterType }) => {
-      return editCostCenter(id, data, token)
+      return editCostCenter(id, data)
     },
     onSuccess: () => {
       toast({
@@ -1519,13 +1438,11 @@ export const useDeleteCostCenter = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteCostCenter(id, token)
+      const res = await deleteCostCenter(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -1567,18 +1484,13 @@ export const useDeleteCostCenter = ({
 
 //designation
 export const useGetDesignations = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['designations'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllDesignations(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllDesignations(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1591,12 +1503,11 @@ export const useAddDesignation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateDesignationType) => {
-      const res = await createDesignation(data, token)
+      const res = await createDesignation(data)
       return res
     },
     onSuccess: (res) => {
@@ -1639,13 +1550,11 @@ export const useUpdateDesignation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateDesignationType }) => {
-      return editDesignation(id, data, token)
+      return editDesignation(id, data)
     },
     onSuccess: () => {
       toast({
@@ -1673,13 +1582,11 @@ export const useDeleteDesignation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteDesignation(id, token)
+      const res = await deleteDesignation(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -1721,18 +1628,13 @@ export const useDeleteDesignation = ({
 
 //employee type
 export const useGetEmploymentTypes = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employmentTypes'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmploymentTypes(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmploymentTypes(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1745,12 +1647,11 @@ export const useAddEmploymentType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmploymentTypeType) => {
-      const res = await createEmploymentType(data, token)
+      const res = await createEmploymentType(data)
       return res
     },
     onSuccess: (res) => {
@@ -1793,8 +1694,6 @@ export const useUpdateEmploymentType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -1805,7 +1704,7 @@ export const useUpdateEmploymentType = ({
       id: number
       data: CreateEmploymentTypeType
     }) => {
-      return editEmploymentType(id, data, token)
+      return editEmploymentType(id, data)
     },
     onSuccess: () => {
       toast({
@@ -1833,13 +1732,11 @@ export const useDeleteEmploymentType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmploymentType(id, token)
+      const res = await deleteEmploymentType(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -1881,36 +1778,26 @@ export const useDeleteEmploymentType = ({
 
 //weekDay
 export const useGetWeekDays = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['weekDays'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllWeekDays(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllWeekDays(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 //shift weekDays
 export const useGetShiftDayAndWeekDays = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['shift'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllShiftDayAndWeekDays(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllShiftDayAndWeekDays(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -1923,12 +1810,11 @@ export const useAddShiftDayAndWeekDays = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateShiftType) => {
-      const res = await createShiftDayAndWeekDays(data, token)
+      const res = await createShiftDayAndWeekDays(data)
       return res
     },
     onSuccess: (res) => {
@@ -1971,13 +1857,11 @@ export const useUpdateShiftDayAndWeekDays = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetShiftsType }) => {
-      return editShiftDayAndWeekDays(id, data, token)
+      return editShiftDayAndWeekDays(id, data)
     },
     onSuccess: () => {
       toast({
@@ -2005,13 +1889,11 @@ export const useDeleteShiftDayAndWeekDays = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteShiftDayAndWeekDays(id, token)
+      const res = await deleteShiftDayAndWeekDays(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -2053,31 +1935,25 @@ export const useDeleteShiftDayAndWeekDays = ({
 
 // employee-preboarding
 export const useGetAllEmployeePreboardings = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeePreboardings'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllEmployeePreboardings(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeePreboardings(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeePreboardingById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeePreboardings', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getEmployeePreboardingById(token, id)
-    },
-    enabled: !!token && id > 0,
+    queryFn: () => getEmployeePreboardingById(id),
+    enabled: !!userData && id > 0,
     select: (data) => data,
   })
 }
@@ -2090,14 +1966,11 @@ export const useCreateEmployeePreboarding = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: CreateEmployeePreboardingType) => {
-      if (!token) throw new Error('Token not found')
-      return createEmployeePreboarding(data, token)
+      return createEmployeePreboarding(data)
     },
 
     onSuccess: () => {
@@ -2129,8 +2002,6 @@ export const useEditEmployeePreboarding = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -2141,8 +2012,7 @@ export const useEditEmployeePreboarding = ({
       id: number
       data: GetEmployeePreboardingType
     }) => {
-      if (!token) throw new Error('Token not found')
-      return editEmployeePreboarding(id, data, token)
+      return editEmployeePreboarding(id, data)
     },
 
     onSuccess: () => {
@@ -2174,14 +2044,11 @@ export const useDeleteEmployeePreboarding = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      if (!token) throw new Error('Token not found')
-      return deleteEmployeePreboarding(id, token)
+      return deleteEmployeePreboarding(id)
     },
 
     onSuccess: () => {
@@ -2213,8 +2080,6 @@ export const useCompleteEmployeePreboardingChecklist = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -2225,13 +2090,10 @@ export const useCompleteEmployeePreboardingChecklist = ({
       employeePreboardingChecklistId: number
       completionDate: string | Date
     }) => {
-      return completeEmployeePreboardingChecklist(
-        {
-          employeePreboardingChecklistId,
-          completionDate,
-        },
-        token
-      )
+      return completeEmployeePreboardingChecklist({
+        employeePreboardingChecklistId,
+        completionDate,
+      })
     },
 
     onSuccess: () => {
@@ -2259,18 +2121,13 @@ export const useCompleteEmployeePreboardingChecklist = ({
 
 //checklists
 export const useGetChecklists = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['checklists'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllChecklists(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllChecklists(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -2283,12 +2140,11 @@ export const useAddChecklists = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateChecklistType) => {
-      const res = await createChecklist(data, token)
+      const res = await createChecklist(data)
       return res
     },
     onSuccess: (res) => {
@@ -2334,13 +2190,11 @@ export const useUpdateChecklists = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetChecklistType }) => {
-      return editChecklist(id, data, token)
+      return editChecklist(id, data)
     },
     onSuccess: () => {
       toast({
@@ -2376,12 +2230,11 @@ export const useDeleteChecklists = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteChecklist(id, token)
+      const res = await deleteChecklist(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -2422,31 +2275,25 @@ export const useDeleteChecklists = ({
 }
 
 export const useGetPreboardingEmployeeChecklistsById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['preboardingChecklist', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getPreboardingEmployeeChecklistsById(token, id)
-    },
-    enabled: !!token && id > 0,
+    queryFn: () => getPreboardingEmployeeChecklistsById(id),
+    enabled: !!userData && id > 0,
     select: (data) => data,
   })
 }
 
 export const useGetPreboardingEmployeeChecklistsByUserId = (userId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['preboardingChecklist', userId],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getPreboardingEmployeeChecklistsByUserId(token, userId)
-    },
-    enabled: !!token && userId > 0,
+    queryFn: () => getPreboardingEmployeeChecklistsByUserId(userId),
+    enabled: !!userData && userId > 0,
     select: (data) => data,
   })
 }
@@ -2459,12 +2306,11 @@ export const useAddPreboardingEmployeeChecklists = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeePreboardingChecklistType) => {
-      const res = await createPreboardingEmployeeChecklist(data, token)
+      const res = await createPreboardingEmployeeChecklist(data)
       return res
     },
     onSuccess: (res) => {
@@ -2510,8 +2356,6 @@ export const useUpdatePreboardingEmployeeChecklists = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -2522,7 +2366,7 @@ export const useUpdatePreboardingEmployeeChecklists = ({
       id: number
       data: GetEmployeePreboardingChecklistType
     }) => {
-      return editEmployeePreboardingChecklist(id, data, token)
+      return editEmployeePreboardingChecklist(id, data)
     },
     onSuccess: () => {
       toast({
@@ -2552,16 +2396,13 @@ export const useUpdatePreboardingEmployeeChecklists = ({
 
 //notifications
 export const useGetNotificationsByUserId = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['notifications', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getNotificationsById(token, id)
-    },
-    enabled: !!token && id > 0,
+    queryFn: () => getNotificationsById(id),
+    enabled: !!userData && id > 0,
     select: (data) => data,
   })
 }
@@ -2574,13 +2415,11 @@ export const useMarksAsRead = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ data }: { data: number[] }) => {
-      return markAsRead(data, token)
+      return markAsRead(data)
     },
 
     onSuccess: () => {
@@ -2615,12 +2454,11 @@ export const useAddEmployee = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const res = await createEmployee(formData, token)
+      const res = await createEmployee(formData)
       return res
     },
     onSuccess: () => {
@@ -2647,48 +2485,37 @@ export const useAddEmployee = ({
 }
 
 export const useGetAllEmployees = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employees'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployees(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployees(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employees', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getEmployeeById(token, id)
-    },
-    enabled: !!token && id > 0,
+    queryFn: () => getEmployeeById(id),
+    enabled: !!userData && id > 0,
     select: (data) => data,
   })
 }
 
 export const useGetEmpIdByUserId = (userId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employees', userId],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getEmpIdByUserId(token, userId)
-    },
-    enabled: !!token && userId > 0,
+    queryFn: () => getEmpIdByUserId(userId),
+    enabled: !!userData && userId > 0,
     select: (data) => data,
   })
 }
@@ -2701,13 +2528,11 @@ export const useUpdateEmployeeWithFees = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ data }: { data: FormData }) => {
-      return editEmployee(data, token)
+      return editEmployee(data)
     },
     onSuccess: () => {
       toast({
@@ -2734,13 +2559,11 @@ export const useDeleteEmployee = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployee(id, token)
+      const res = await deleteEmployee(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -2788,13 +2611,11 @@ export const useAssignLeaveType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ data }: { data: AssignLeaveTypeType }) => {
-      const res = await assignLeaveType(data, token)
+      const res = await assignLeaveType(data)
       return res
     },
     onSuccess: (res) => {
@@ -2831,18 +2652,13 @@ export const useAssignLeaveType = ({
 
 //holidays
 export const useGetHolidays = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['holidays'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllHolidays(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllHolidays(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -2855,12 +2671,11 @@ export const useAddHoliday = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateHolidayType) => {
-      const res = await createHoliday(data, token)
+      const res = await createHoliday(data)
       return res
     },
     onSuccess: (res) => {
@@ -2903,13 +2718,11 @@ export const useUpdateHoliday = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateHolidayType }) => {
-      return editHoliday(id, data, token)
+      return editHoliday(id, data)
     },
     onSuccess: () => {
       toast({
@@ -2937,13 +2750,11 @@ export const useDeleteHoliday = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteHoliday(id, token)
+      const res = await deleteHoliday(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -2985,18 +2796,13 @@ export const useDeleteHoliday = ({
 
 //leave type
 export const useGetLeaveTypes = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['leaveTypes'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllLeaveTypes(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllLeaveTypes(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -3009,12 +2815,11 @@ export const useAddLeaveType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateLeaveTypeType) => {
-      const res = await createLeaveType(data, token)
+      const res = await createLeaveType(data)
       return res
     },
     onSuccess: (res) => {
@@ -3057,13 +2862,11 @@ export const useUpdateLeaveType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetLeaveTypeType }) => {
-      return editLeaveType(id, data, token)
+      return editLeaveType(id, data)
     },
     onSuccess: () => {
       toast({
@@ -3091,13 +2894,11 @@ export const useDeleteLeaveType = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteLeaveType(id, token)
+      const res = await deleteLeaveType(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -3139,18 +2940,13 @@ export const useDeleteLeaveType = ({
 
 //leave policy
 export const useGetLeavePolicies = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['leavePolicy'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllLeavePolicies(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllLeavePolicies(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -3163,12 +2959,11 @@ export const useAddLeavePolicys = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateLeavePolicyType) => {
-      const res = await createLeavePolicy(data, token)
+      const res = await createLeavePolicy(data)
       return res
     },
     onSuccess: (res) => {
@@ -3211,13 +3006,11 @@ export const useUpdateLeavePolicy = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetLeavePolicyType }) => {
-      return editLeavePolicy(id, data, token)
+      return editLeavePolicy(id, data)
     },
     onSuccess: () => {
       toast({
@@ -3245,13 +3038,11 @@ export const useDeleteLeavePolicys = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteLeavePolicy(id, token)
+      const res = await deleteLeavePolicy(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -3292,18 +3083,13 @@ export const useDeleteLeavePolicys = ({
 }
 
 export const useGetSalaryStructures = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['salaryStructure'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllSalaryStructures(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllSalaryStructures(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -3316,12 +3102,11 @@ export const useAddSalaryStructures = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateSalaryStructureType) => {
-      const res = await createSalaryStructure(data, token)
+      const res = await createSalaryStructure(data)
       return res
     },
     onSuccess: (res) => {
@@ -3367,8 +3152,6 @@ export const useUpdateSalaryStructures = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -3379,7 +3162,7 @@ export const useUpdateSalaryStructures = ({
       id: number
       data: GetSalaryStructureType
     }) => {
-      return editSalaryStructure(id, data, token)
+      return editSalaryStructure(id, data)
     },
     onSuccess: () => {
       toast({
@@ -3415,12 +3198,11 @@ export const useDeleteSalaryStructures = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteSalaryStructure(id, token)
+      const res = await deleteSalaryStructure(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -3462,23 +3244,17 @@ export const useDeleteSalaryStructures = ({
 
 //employee leave assignment
 export const useGetEmployeeLeaveAssignments = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveAssignments'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployeeLeaveAssignments(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeLeaveAssignments(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
-// Create employee leave assignment
 export const useCreateEmployeeLeaveAssignment = ({
   onClose,
   reset,
@@ -3487,12 +3263,11 @@ export const useCreateEmployeeLeaveAssignment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeeLeaveAssignmentType[]) => {
-      const res = await createEmployeeLeaveAssignment(data, token)
+      const res = await createEmployeeLeaveAssignment(data)
       return res
     },
     onSuccess: (res) => {
@@ -3528,7 +3303,6 @@ export const useCreateEmployeeLeaveAssignment = ({
   return mutation
 }
 
-// Update employee leave assignment
 export const useUpdateEmployeeLeaveAssignment = ({
   onClose,
   reset,
@@ -3537,7 +3311,6 @@ export const useUpdateEmployeeLeaveAssignment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -3548,7 +3321,7 @@ export const useUpdateEmployeeLeaveAssignment = ({
       id: number
       data: GetEmployeeLeaveAssignmentType
     }) => {
-      return editEmployeeLeaveAssignment(id, data, token)
+      return editEmployeeLeaveAssignment(id, data)
     },
     onSuccess: (res) => {
       if (res?.error) {
@@ -3584,7 +3357,6 @@ export const useUpdateEmployeeLeaveAssignment = ({
   return mutation
 }
 
-// Delete employee leave assignment
 export const useDeleteEmployeeLeaveAssignment = ({
   onClose,
   reset,
@@ -3593,12 +3365,11 @@ export const useDeleteEmployeeLeaveAssignment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployeeLeaveAssignment(id, token)
+      const res = await deleteEmployeeLeaveAssignment(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -3640,19 +3411,13 @@ export const useDeleteEmployeeLeaveAssignment = ({
 
 //employee leave encashments
 export const useGetEmployeeLeaveEncashments = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveEncashments'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      return getAllEmployeeLeaveEncashments(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeLeaveEncashments(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -3665,17 +3430,11 @@ export const useCreateEmployeeLeaveEncashment = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: CreateEmployeeLeaveEncashment[]) => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      return createEmployeeLeaveEncashment(data, token)
+      return createEmployeeLeaveEncashment(data)
     },
 
     onSuccess: (res) => {
@@ -3716,20 +3475,13 @@ export const useCreateEmployeeLeaveEncashment = ({
 
 //employee leave apply
 export const useGetEmployeeLeaveApplications = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveApplications'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      return getAllEmployeeLeaveApplications(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeLeaveApplications(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -3741,15 +3493,12 @@ export const useCreateEmployeeLeaveApplication = ({
   onClose: () => void
   reset: () => void
 }) => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: CreateEmployeeLeaveApply) => {
-      return await createEmployeeLeaveApplication(data, token)
+      return await createEmployeeLeaveApplication(data)
     },
 
     onSuccess: (res) => {
@@ -3794,15 +3543,12 @@ export const useUpdateEmployeeLeaveApplication = ({
   onClose: () => void
   reset: () => void
 }) => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetEmployeeLeaveApply }) => {
-      return editEmployeeLeaveApplication(id, data, token)
+      return editEmployeeLeaveApplication(id, data)
     },
 
     onSuccess: (res) => {
@@ -3847,15 +3593,12 @@ export const useDeleteEmployeeLeaveApplication = ({
   onClose: () => void
   reset: () => void
 }) => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployeeLeaveApplication(id, token)
+      const res = await deleteEmployeeLeaveApplication(id)
 
       const apiError = res?.error || (res?.data === null && res?.error?.message)
 
@@ -3893,15 +3636,12 @@ export const useDeleteEmployeeLeaveApplication = ({
 }
 
 export const useApproveEmployeeLeaveRepAuth = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
-      approveEmployeeLeaveRepAuth(id, updatedBy, token),
+      approveEmployeeLeaveRepAuth(id, updatedBy),
 
     onSuccess: () => {
       toast({
@@ -3925,15 +3665,12 @@ export const useApproveEmployeeLeaveRepAuth = () => {
 }
 
 export const useApproveEmployeeLeaveHr = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
-      approveEmployeeLeaveHr(id, updatedBy, token),
+      approveEmployeeLeaveHr(id, updatedBy),
 
     onSuccess: () => {
       toast({
@@ -3957,15 +3694,12 @@ export const useApproveEmployeeLeaveHr = () => {
 }
 
 export const useRejectLeave = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
-
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) =>
-      rejectLeave(id, updatedBy, token),
+      rejectLeave(id, updatedBy),
 
     onSuccess: () => {
       toast({
@@ -3999,53 +3733,39 @@ export const useGetLeaveApplyNoOfDays = ({
   fromDate: string
   toDate: string
 }) => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['leaveApplyNoOfDays', userId, leaveTypeId, fromDate, toDate],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-
-      return getLeaveApplyNoOfDays(token, userId, leaveTypeId, fromDate, toDate)
-    },
-    enabled: !!token && userId > 0 && leaveTypeId > 0 && !!fromDate && !!toDate,
+    queryFn: () => getLeaveApplyNoOfDays(userId, leaveTypeId, fromDate, toDate),
+    enabled:
+      !!userData && userId > 0 && leaveTypeId > 0 && !!fromDate && !!toDate,
     select: (data) => data,
   })
 }
 
 //asset category
 export const useGetAllAssetCategories = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['assetCategories'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllAssetCategories(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllAssetCategories(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetAssetCategoryById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['assetCategory', id],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAssetCategoryById(token, id)
-    },
-    enabled: !!token && !!id,
+    queryFn: () => getAssetCategoryById(id),
+    enabled: !!userData && !!id,
     select: (data) => data,
   })
 }
@@ -4058,12 +3778,11 @@ export const useAddAssetCategory = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetCategoryType) => {
-      const res = await createAssetCategory(data, token)
+      const res = await createAssetCategory(data)
       return res
     },
     onSuccess: (res) => {
@@ -4106,12 +3825,11 @@ export const useUpdateAssetCategory = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetAssetCategoryType }) => {
-      return editAssetCategory(id, data, token)
+      return editAssetCategory(id, data)
     },
     onSuccess: () => {
       toast({
@@ -4143,12 +3861,11 @@ export const useDeleteAssetCategory = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAssetCategory(id, token)
+      const res = await deleteAssetCategory(id)
       console.log('DELETE RESPONSE:', res)
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
@@ -4182,52 +3899,37 @@ export const useDeleteAssetCategory = ({
 // ==================== ASSETS ====================
 
 export const useGetAllAssets = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['assets'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllAssets(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllAssets(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetLatestAssetTransactions = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['assetTransactions'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getLatestAssetTransactions(token)
-    },
-    enabled: !!token,
+    queryFn: () => getLatestAssetTransactions(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetAssetById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['asset', id],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAssetById(token, id)
-    },
-    enabled: !!token && !!id,
+    queryFn: () => getAssetById(id),
+    enabled: !!userData && !!id,
     select: (data) => data,
   })
 }
@@ -4240,12 +3942,11 @@ export const useAddAsset = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetType) => {
-      const res = await createAsset(data, token)
+      const res = await createAsset(data)
       return res
     },
     onSuccess: (res) => {
@@ -4288,12 +3989,11 @@ export const useUpdateAsset = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetAssetType }) => {
-      return editAsset(id, data, token)
+      return editAsset(id, data)
     },
     onSuccess: () => {
       toast({
@@ -4325,12 +4025,11 @@ export const useDeleteAsset = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAsset(id, token)
+      const res = await deleteAsset(id)
       console.log('DELETE RESPONSE:', res)
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
@@ -4369,12 +4068,11 @@ export const useAssignAsset = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateAssetTransactionType) => {
-      const res = await assignAsset(data, token)
+      const res = await assignAsset(data)
       return res
     },
     onSuccess: (res) => {
@@ -4412,18 +4110,13 @@ export const useAssignAsset = ({
 
 //employee attendances
 export const useGetEmployeeAttendances = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeAttendances'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployeeAttendances(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeAttendances(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -4437,12 +4130,11 @@ export const useAddEmployeeAttendance = ({
   showToast?: (type: 'success' | 'error', message: string) => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeeAttendanceType) => {
-      const res = await createEmployeeAttendance(data, token)
+      const res = await createEmployeeAttendance(data)
       return res
     },
     onSuccess: (res) => {
@@ -4488,8 +4180,6 @@ export const useUpdateEmployeeAttendance = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -4500,7 +4190,7 @@ export const useUpdateEmployeeAttendance = ({
       id: number
       data: GetEmployeeAttendanceType
     }) => {
-      return editEmployeeAttendance(id, data, token)
+      return editEmployeeAttendance(id, data)
     },
     onSuccess: () => {
       toast({
@@ -4528,13 +4218,11 @@ export const useDeleteEmployeeAttendance = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployeeAttendance(id, token)
+      const res = await deleteEmployeeAttendance(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -4576,18 +4264,13 @@ export const useDeleteEmployeeAttendance = ({
 
 //salary components
 export const useGetSalaryComponents = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['salaryComponents'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllSalaryComponents(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllSalaryComponents(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -4600,12 +4283,11 @@ export const useAddSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateSalaryComponentType) => {
-      const res = await createSalaryComponent(data, token)
+      const res = await createSalaryComponent(data)
       return res
     },
     onSuccess: (res) => {
@@ -4648,8 +4330,6 @@ export const useUpdateSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -4660,7 +4340,7 @@ export const useUpdateSalaryComponent = ({
       id: number
       data: CreateSalaryComponentType
     }) => {
-      return editSalaryComponent(id, data, token)
+      return editSalaryComponent(id, data)
     },
     onSuccess: () => {
       toast({
@@ -4688,13 +4368,11 @@ export const useDeleteSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteSalaryComponent(id, token)
+      const res = await deleteSalaryComponent(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -4736,18 +4414,13 @@ export const useDeleteSalaryComponent = ({
 
 //employee salary components
 export const useGetEmployeeSalaryComponents = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeSalaryComponents'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployeeSalaryComponents(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeSalaryComponents(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -4760,12 +4433,11 @@ export const useAddEmployeeSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeeSalaryComponentType) => {
-      const res = await createEmployeeSalaryComponent(data, token)
+      const res = await createEmployeeSalaryComponent(data)
       return res
     },
     onSuccess: (res) => {
@@ -4812,8 +4484,6 @@ export const useUpdateEmployeeSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -4824,7 +4494,7 @@ export const useUpdateEmployeeSalaryComponent = ({
       id: number
       data: CreateEmployeeSalaryComponentType
     }) => {
-      return editEmployeeSalaryComponent(id, data, token)
+      return editEmployeeSalaryComponent(id, data)
     },
     onSuccess: () => {
       toast({
@@ -4854,13 +4524,11 @@ export const useDeleteEmployeeSalaryComponent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployeeSalaryComponent(id, token)
+      const res = await deleteEmployeeSalaryComponent(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -4902,33 +4570,25 @@ export const useDeleteEmployeeSalaryComponent = ({
 
 //salary
 export const useGenerateSalary = (salaryMonth: string, salaryYear: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['generateSalary', salaryMonth, salaryYear],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return generateSalary(token, salaryMonth, salaryYear)
-    },
-    enabled: !!token && salaryMonth.length > 0 && salaryYear > 0,
+    queryFn: () => generateSalary(salaryMonth, salaryYear),
+    enabled: !!userData && salaryMonth.length > 0 && salaryYear > 0,
     select: (data) => data,
   })
 }
 
 export const useGetSalaries = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['salaries'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllSalaries(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllSalaries(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -4941,12 +4601,11 @@ export const useAddSalary = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateSalaryType) => {
-      const res = await createSalary(data, token)
+      const res = await createSalary(data)
       return res
     },
     onSuccess: (res) => {
@@ -4989,13 +4648,11 @@ export const useUpdateSalary = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ data }: { data: any }) => {
-      return editSalary(data, token)
+      return editSalary(data)
     },
     onSuccess: () => {
       toast({
@@ -5023,13 +4680,11 @@ export const useGiveSalary = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return giveSalary(id, token)
+      return giveSalary(id)
     },
     onSuccess: () => {
       toast({
@@ -5057,13 +4712,11 @@ export const useMakeSalaryPermanent = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return makeSalaryPermanent(id, token)
+      return makeSalaryPermanent(id)
     },
     onSuccess: () => {
       toast({
@@ -5085,18 +4738,13 @@ export const useMakeSalaryPermanent = ({
 
 //lones
 export const useGetLones = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['lones'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllLones(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllLones(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -5109,12 +4757,11 @@ export const useAddLone = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeeLoneType) => {
-      const res = await createLone(data, token)
+      const res = await createLone(data)
       return res
     },
     onSuccess: (res) => {
@@ -5159,7 +4806,6 @@ export const useSkipLone = ({
   onSuccess?: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
@@ -5170,7 +4816,7 @@ export const useSkipLone = ({
       employeeLoneInstallmentId: number
       updatedBy: number
     }) => {
-      const res = await skipLone(employeeLoneInstallmentId, updatedBy, token)
+      const res = await skipLone(employeeLoneInstallmentId, updatedBy)
       return res
     },
     onSuccess: (res) => {
@@ -5189,13 +4835,11 @@ export const useSkipLone = ({
           res.data?.message || 'Lone installment skipped successfully!',
       })
 
-      // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['lones'] })
       queryClient.invalidateQueries({
         queryKey: ['employeeSalaryComponents'],
       })
 
-      // If we have the employeeLoneId from response, invalidate specific lone query
       const employeeLoneId = res.data?.employeeLoneId
       if (employeeLoneId) {
         queryClient.invalidateQueries({
@@ -5228,13 +4872,11 @@ export const useUpdateLone = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetEmployeeLoneType }) => {
-      return editLone(id, data, token)
+      return editLone(id, data)
     },
     onSuccess: () => {
       toast({
@@ -5262,13 +4904,11 @@ export const useMakeEmployeeLoneFullPaid = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id }: { id: number }) => {
-      return makeEmployeeLoneFullPaid(id, token)
+      return makeEmployeeLoneFullPaid(id)
     },
     onSuccess: () => {
       toast({
@@ -5296,13 +4936,11 @@ export const useDeleteLone = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteLone(id, token)
+      const res = await deleteLone(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -5344,35 +4982,25 @@ export const useDeleteLone = ({
 
 //employee leaves
 export const useGetEmployeeLeaves = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaves'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployeeLeaves(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeLeaves(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLeaveTypes = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveTypes'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllEmployeeLeaveTypes(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllEmployeeLeaveTypes(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -5385,12 +5013,11 @@ export const useAddEmployeeLeave = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (data: CreateEmployeeLeaveType) => {
-      const res = await createEmployeeLeave(data, token)
+      const res = await createEmployeeLeave(data)
       return res
     },
     onSuccess: (res) => {
@@ -5432,13 +5059,11 @@ export const useUpdateEmployeeLeave = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: GetEmployeeLeaveType }) => {
-      return editEmployeeLeave(id, data, token)
+      return editEmployeeLeave(id, data)
     },
     onSuccess: () => {
       toast({
@@ -5466,13 +5091,11 @@ export const useDeleteEmployeeLeave = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteEmployeeLeave(id, token)
+      const res = await deleteEmployeeLeave(id)
 
       console.log('DELETE RESPONSE:', res)
 
@@ -5514,61 +5137,49 @@ export const useDeleteEmployeeLeave = ({
 
 //reports
 export const useGetEmployeeActivityReport = (employeeId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['activityReport', employeeId],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getEmployeeActivityReport(employeeId, token)
-    },
-    enabled: !!token && !!employeeId,
+    queryFn: () => getEmployeeActivityReport(employeeId),
+    enabled: !!userData && !!employeeId,
     select: (data) => data,
   })
 }
 
 export const useGetShiftReport = (date: string) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['shiftReport', date],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getShiftReport(date, token)
-    },
-    enabled: !!token && !!date,
+    queryFn: () => getShiftReport(date),
+    enabled: !!userData && !!date,
     select: (data) => data,
   })
 }
 
 export const useGetSalaryReport = (salaryMonth: string, salaryYear: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['salaryReport', salaryMonth, salaryYear],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getSalaryReport(salaryMonth, salaryYear, token)
-    },
-    enabled: !!token && salaryMonth.length > 0 && salaryYear > 0,
+    queryFn: () => getSalaryReport(salaryMonth, salaryYear),
+    enabled: !!userData && salaryMonth.length > 0 && salaryYear > 0,
     select: (data) => data,
   })
 }
 
 export const useGetAttendanceReport = (fromDate: string, toDate: string) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceReport', fromDate, toDate],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceReport(fromDate, toDate, token)
-    },
-    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    queryFn: () => getAttendanceReport(fromDate, toDate),
+    enabled: !!userData && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
   })
 }
@@ -5577,154 +5188,111 @@ export const useGetIndividualAttendanceSummaryReport = (
   fromDate: string,
   toDate: string
 ) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['individualAttendanceSummaryReport', fromDate, toDate],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getIndividualAttendanceSummaryReport(fromDate, toDate, token)
-    },
-    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    queryFn: () => getIndividualAttendanceSummaryReport(fromDate, toDate),
+    enabled: !!userData && fromDate.length > 0 && toDate.length > 0,
     select: (data) => data,
   })
 }
 
 export const useGetLeaveBalanceSummaryReport = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['leaveBalanceSummaryReport'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      return getLeaveBalanceSummaryReport(token)
-    },
-    enabled: !!token,
+    queryFn: () => getLeaveBalanceSummaryReport(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLeaveLedgerReport = () => {
-  const [token] = useAtom(tokenAtom)
-
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveLedgerReport'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-
-      return getEmployeeLeaveLedgerReport(token)
-    },
-    enabled: !!token,
+    queryFn: () => getEmployeeLeaveLedgerReport(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 //dashboard
 export const useGetEmployeeLeaveSummary = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveSummary'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getEmployeeLeaveSummary(token)
-    },
-    enabled: !!token,
+    queryFn: () => getEmployeeLeaveSummary(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeAttendanceSummary = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeAttendanceSummary'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getEmployeeAttendanceSummary(token)
-    },
-    enabled: !!token,
+    queryFn: () => getEmployeeAttendanceSummary(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLoneSummary = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLoneSummary'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getEmployeeLoneSummary(token)
-    },
-    enabled: !!token,
+    queryFn: () => getEmployeeLoneSummary(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeSalaryStatus = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeSalaryStatus'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getEmployeeSalaryStatus(token)
-    },
-    enabled: !!token,
+    queryFn: () => getEmployeeSalaryStatus(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 // attendance policy
 export const useGetAttendancePolicies = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendancePolicies'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendancePolicies(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllAttendancePolicies(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetAttendancePolicyById = (id: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendancePolicy', id],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendancePolicyById(token, id)
-    },
-    enabled: !!token && id > 0,
+    queryFn: () => getAttendancePolicyById(id),
+    enabled: !!userData && id > 0,
     select: (data) => data,
   })
 }
@@ -5737,12 +5305,11 @@ export const useAddAttendancePolicy = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: CreateAttendancePolicyType) => {
-      const res = await createAttendancePolicy(data, token)
+      const res = await createAttendancePolicy(data)
       return res
     },
     onSuccess: (res) => {
@@ -5781,7 +5348,6 @@ export const useUpdateAttendancePolicy = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -5792,7 +5358,7 @@ export const useUpdateAttendancePolicy = ({
       id: number
       data: GetAttendancePolicyType
     }) => {
-      return editAttendancePolicy(id, data, token)
+      return editAttendancePolicy(id, data)
     },
     onSuccess: () => {
       toast({
@@ -5821,12 +5387,11 @@ export const useDeleteAttendancePolicy = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAttendancePolicy(id, token)
+      const res = await deleteAttendancePolicy(id)
 
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
@@ -5857,16 +5422,13 @@ export const useDeleteAttendancePolicy = ({
 
 // shift allocations
 export const useGetShiftAllocations = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['shiftAllocations'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllShiftAllocations(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllShiftAllocations(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -5879,12 +5441,11 @@ export const useAddShiftAllocation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: CreateShiftAllocationType[]) => {
-      const res = await createShiftAllocation(data, token)
+      const res = await createShiftAllocation(data)
       return res
     },
     onSuccess: (res) => {
@@ -5922,12 +5483,11 @@ export const useAddBulkShiftAllocation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (data: CreateBulkShiftAllocationType) => {
-      const res = await createBulkShiftAllocation(data, token)
+      const res = await createBulkShiftAllocation(data)
       return res
     },
     onSuccess: (res) => {
@@ -5967,7 +5527,6 @@ export const useUpdateShiftAllocation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -5978,7 +5537,7 @@ export const useUpdateShiftAllocation = ({
       id: number
       data: Partial<CreateShiftAllocationType>
     }) => {
-      return editShiftAllocation(id, data, token)
+      return editShiftAllocation(id, data)
     },
     onSuccess: () => {
       toast({
@@ -6007,12 +5566,11 @@ export const useDeleteShiftAllocation = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteShiftAllocation(id, token)
+      const res = await deleteShiftAllocation(id)
 
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
@@ -6049,12 +5607,11 @@ export const useUpdateShiftAllocationRecurrence = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateRecurrenceType }) =>
-      updateShiftAllocationRecurrence(id, data, token),
+      updateShiftAllocationRecurrence(id, data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6081,12 +5638,11 @@ export const useUpdateShiftAllocationRecurrence = ({
 
 export const useCopyShiftAllocation = () => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, createdBy }: { id: number; createdBy: number }) =>
-      copyShiftAllocationById(id, createdBy, token),
+      copyShiftAllocationById(id, createdBy),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6114,7 +5670,6 @@ export const useCopyShiftAllocation = () => {
 
 export const useCopyAllActiveAllocations = () => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6124,7 +5679,7 @@ export const useCopyAllActiveAllocations = () => {
     }: {
       recurrenceType: 'weekly' | 'monthly'
       createdBy: number
-    }) => copyAllActiveShiftAllocations(recurrenceType, createdBy, token),
+    }) => copyAllActiveShiftAllocations(recurrenceType, createdBy),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6151,31 +5706,26 @@ export const useCopyAllActiveAllocations = () => {
 }
 
 export const useGetEmployeeWeekDays = (userId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['empWeekDays', userId],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return GetEmployeeWeekDays(userId, token)
-    },
-    enabled: !!token && userId > 0,
+    queryFn: () => GetEmployeeWeekDays(userId),
+    enabled: !!userData && userId > 0,
     select: (data) => data,
   })
 }
 
 // hooks/use-api.ts
 export const useGetDailyAttendanceReport = (date: string) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
   return useQuery({
     queryKey: ['dailyAttendanceReport', date],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getDailyAttendanceReport(date, token)
-    },
-    enabled: !!token && date.length > 0,
+    queryFn: () => getDailyAttendanceReport(date),
+    enabled: !!userData && date.length > 0,
   })
 }
 
@@ -6183,29 +5733,25 @@ export const useGetAttendanceSummaryReport = (
   fromDate: string,
   toDate: string
 ) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
   return useQuery({
     queryKey: ['attendanceSummaryReport', fromDate, toDate],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceSummaryReport(fromDate, toDate, token)
-    },
-    enabled: !!token && fromDate.length > 0 && toDate.length > 0,
+    queryFn: () => getAttendanceSummaryReport(fromDate, toDate),
+    enabled: !!userData && fromDate.length > 0 && toDate.length > 0,
   })
 }
 
 // ── Holiday Calendars ──
 export const useGetHolidayCalendars = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
   return useQuery({
     queryKey: ['holidayCalendars'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllHolidayCalendars(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllHolidayCalendars(),
+    enabled: !!userData,
   })
 }
 
@@ -6217,12 +5763,11 @@ export const useAddHolidayCalendar = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: CreateHolidayCalendarType) =>
-      createHolidayCalendar(data, token),
+      createHolidayCalendar(data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6255,7 +5800,6 @@ export const useUpdateHolidayCalendar = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6265,7 +5809,7 @@ export const useUpdateHolidayCalendar = ({
     }: {
       id: number
       data: Partial<CreateHolidayCalendarType>
-    }) => editHolidayCalendar(id, data, token),
+    }) => editHolidayCalendar(id, data),
     onSuccess: () => {
       toast({ title: 'Success!', description: 'Holiday calendar updated.' })
       queryClient.invalidateQueries({ queryKey: ['holidayCalendars'] })
@@ -6290,12 +5834,11 @@ export const useDeleteHolidayCalendar = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteHolidayCalendar(id, token)
+      const res = await deleteHolidayCalendar(id)
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
       if (apiError || successFlag === false) throw new Error('Failed to delete')
@@ -6319,15 +5862,13 @@ export const useDeleteHolidayCalendar = ({
 
 // ── New Holidays ──
 export const useGetNewHolidays = (calendarId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
   return useQuery({
     queryKey: ['newHolidays', calendarId],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllNewHolidays(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllNewHolidays(),
+    enabled: !!userData,
   })
 }
 
@@ -6339,12 +5880,10 @@ export const useAddNewHolidayRange = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: CreateNewHolidayType) =>
-      createNewHolidayRange(data, token),
+    mutationFn: (data: CreateNewHolidayType) => createNewHolidayRange(data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6380,7 +5919,6 @@ export const useUpdateNewHoliday = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6390,7 +5928,7 @@ export const useUpdateNewHoliday = ({
     }: {
       id: number
       data: Partial<CreateNewHolidayType>
-    }) => editNewHoliday(id, data, token),
+    }) => editNewHoliday(id, data),
     onSuccess: () => {
       toast({ title: 'Success!', description: 'Holiday updated.' })
       queryClient.invalidateQueries({ queryKey: ['newHolidays'] })
@@ -6415,12 +5953,11 @@ export const useDeleteNewHoliday = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteNewHoliday(id, token)
+      const res = await deleteNewHoliday(id)
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
       if (apiError || successFlag === false) throw new Error('Failed to delete')
@@ -6443,15 +5980,12 @@ export const useDeleteNewHoliday = ({
 }
 
 // attendance processing
-// hooks/use-api.ts এ যোগ করো
-
 export const useProcessAttendanceDate = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useMutation({
     mutationFn: (data: ProcessAttendanceDateType) =>
-      processAttendanceDate(data, token),
+      processAttendanceDate(data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6477,12 +6011,11 @@ export const useProcessAttendanceDate = () => {
 }
 
 export const useProcessAttendanceRange = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
 
   return useMutation({
     mutationFn: (data: ProcessAttendanceRangeType) =>
-      processAttendanceRange(data, token),
+      processAttendanceRange(data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6515,31 +6048,25 @@ export const useGetAttendanceAuditLogs = (params: {
   page?: number
   limit?: number
 }) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceAuditLogs', params],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceAuditLogs(params, token)
-    },
-    enabled: !!token,
+    queryFn: () => getAttendanceAuditLogs(params),
+    enabled: !!userData,
   })
 }
 
 // ── Attendance Daily (manual entry) ──
 export const useGetAllAttendanceDaily = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceDaily'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendanceDaily(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllAttendanceDaily(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -6549,21 +6076,14 @@ export const useGetAllAttendanceDailyWithParams = (
   fromDate?: string,
   toDate?: string
 ) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceDaily', { employeeId, fromDate, toDate }],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendanceDailyWithParams(
-        token,
-        employeeId,
-        fromDate,
-        toDate
-      )
-    },
-    enabled: !!token,
+    queryFn: () =>
+      getAllAttendanceDailyWithParams(employeeId, fromDate, toDate),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -6576,12 +6096,11 @@ export const useUploadAttendance = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation<any, any, FormData>({
     mutationFn: async (data: FormData) => {
-      const res = await uploadAttendance(data, token)
+      const res = await uploadAttendance(data)
       return res
     },
     onSuccess: (result: any) => {
@@ -6616,12 +6135,11 @@ export const useAddAttendanceDaily = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: CreateAttendanceDailyType) =>
-      createAttendanceDaily(data, token),
+      createAttendanceDaily(data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6658,7 +6176,6 @@ export const useUpdateAttendanceDaily = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6668,7 +6185,7 @@ export const useUpdateAttendanceDaily = ({
     }: {
       id: number
       data: UpdateAttendanceDailyType
-    }) => editAttendanceDaily(id, data, token),
+    }) => editAttendanceDaily(id, data),
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -6705,12 +6222,11 @@ export const useDeleteAttendanceDaily = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteAttendanceDaily(id, token)
+      const res = await deleteAttendanceDaily(id)
       const apiError = res?.error || (res?.data === null && res?.error?.message)
       const successFlag = (res?.error?.details as any)?.success
       if (apiError || successFlag === false) {
@@ -6737,57 +6253,44 @@ export const useDeleteAttendanceDaily = ({
   })
 }
 
-// user will be able to see his/her attendance daily data
 export const useGetAllAttendanceDailyByUserId = (userId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceDaily', { userId }],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceDailyByUserId(userId, token)
-    },
-    enabled: !!token,
+    queryFn: () => getAttendanceDailyByUserId(userId),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
-// user will be able to see his/her applied attendance daily
 export const useGetAllAttendanceDailyApplyByUserId = (userId: number) => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceDailyApply', { userId }],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAttendanceDailyApplyByUserId(userId, token)
-    },
-    enabled: !!token,
+    queryFn: () => getAttendanceDailyApplyByUserId(userId),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
-// rep auth will be able to see his/her applied attendance daily
 export const useGetAllAttendanceDailyApply = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['attendanceDailyApply'],
-    queryFn: () => {
-      if (!token) throw new Error('Token not found')
-      return getAllAttendanceApply(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllAttendanceApply(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
 
-// user will be able to apply for attendance daily manually
 export const useAddManualAttendanceDailyApply = () => {
-  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6798,8 +6301,7 @@ export const useAddManualAttendanceDailyApply = () => {
       id: number
       data: CreateAttendanceDailyApplyType
     }) => {
-      if (!token) throw new Error('Token not found')
-      return addManualAttendanceDailyApply(id, data, token)
+      return addManualAttendanceDailyApply(id, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -6812,9 +6314,8 @@ export const useAddManualAttendanceDailyApply = () => {
   })
 }
 
-// responsible authority will be able to change data if needed
 export const useEditManualAttendanceDailyApply = () => {
-  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -6825,8 +6326,7 @@ export const useEditManualAttendanceDailyApply = () => {
       id: number
       data: GetAttendanceDailyApplyType
     }) => {
-      if (!token) throw new Error('Token not found')
-      return editManualAttendanceDailyApply(id, data, token)
+      return editManualAttendanceDailyApply(id, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -6836,15 +6336,13 @@ export const useEditManualAttendanceDailyApply = () => {
   })
 }
 
-// APPROVE BY REPORTING AUTHORITY
 export const useApproveManualAttendanceByRepAuth = () => {
-  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
-      if (!token) throw new Error('Token not found')
-      return approveManualAttendanceByRepAuth(id, updatedBy, token)
+      return approveManualAttendanceByRepAuth(id, updatedBy)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -6857,15 +6355,13 @@ export const useApproveManualAttendanceByRepAuth = () => {
   })
 }
 
-// APPROVE BY HR
 export const useApproveManualAttendanceByHr = () => {
-  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
-      if (!token) throw new Error('Token not found')
-      return approveManualAttendanceByHr(id, updatedBy, token)
+      return approveManualAttendanceByHr(id, updatedBy)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -6878,15 +6374,13 @@ export const useApproveManualAttendanceByHr = () => {
   })
 }
 
-// REJECT MANUAL ATTENDANCE
 export const useRejectManualAttendance = () => {
-  const [token] = useAtom(tokenAtom)
+  useInitializeUser()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updatedBy }: { id: number; updatedBy: number }) => {
-      if (!token) throw new Error('Token not found')
-      return rejectManualAttendance(id, updatedBy, token)
+      return rejectManualAttendance(id, updatedBy)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -6901,18 +6395,13 @@ export const useRejectManualAttendance = () => {
 
 //notice
 export const useGetNotice = () => {
-  const [token] = useAtom(tokenAtom)
   useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['notice'],
-    queryFn: () => {
-      if (!token) {
-        throw new Error('Token not found')
-      }
-      return getAllNotice(token)
-    },
-    enabled: !!token,
+    queryFn: () => getAllNotice(),
+    enabled: !!userData,
     select: (data) => data,
   })
 }
@@ -6925,13 +6414,12 @@ export const useAddNotice = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
       console.log('🚀 ~ useAddNotice ~ formData:', formData)
-      const res = await createNotice(formData, token)
+      const res = await createNotice(formData)
       return res
     },
     onSuccess: () => {
@@ -6964,12 +6452,11 @@ export const useUpdateNotice = ({
   reset: () => void
 }) => {
   useInitializeUser()
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
-      return editNotice(id, formData, token)
+      return editNotice(id, formData)
     },
     onSuccess: () => {
       toast({
@@ -7001,13 +6488,11 @@ export const useDeleteNotice = ({
   reset: () => void
 }) => {
   useInitializeUser()
-
-  const [token] = useAtom(tokenAtom)
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
     mutationFn: async ({ id }: { id: number }) => {
-      const res = await deleteNotice(id, token)
+      const res = await deleteNotice(id)
 
       console.log('DELETE RESPONSE:', res)
 

@@ -19,6 +19,8 @@ import { toast } from '@/hooks/use-toast'
 import { getAllCompanies, signIn } from '@/utils/api'
 import { useAddTenant, useGetCompanies } from '@/hooks/use-api'
 import { Popup } from '@/utils/popup'
+import { useSetAtom } from 'jotai'
+import { userDataAtom } from '@/utils/user'
 
 type Tab = 'signin' | 'register'
 
@@ -61,6 +63,8 @@ export default function Home() {
   const addTenantMutation = useAddTenant({ onClose, reset })
 
   // ── Sign In ──────────────────────────────────────────────
+  const setUserData = useSetAtom(userDataAtom)
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setSigninError('')
@@ -80,38 +84,20 @@ export default function Home() {
           description: response.error?.message || 'Failed to sign in',
         })
       } else {
-        const { userId, roleId, tenantId } = response.data.user
-        const token = response.data.token
+        const { user } = response.data
+        setUserData(user)
 
-        localStorage.setItem('authToken', token)
-        localStorage.setItem(
-          'currentUser',
-          JSON.stringify({ userId, roleId, tenantId })
-        )
-
-        const companyResponse = await getAllCompanies(`Bearer ${token}`)
-
-        console.log(companyResponse)
+        const companyResponse = await getAllCompanies()
 
         const hasCompany =
           Array.isArray(companyResponse.data) &&
-          companyResponse.data.some((c: any) => c.tenantId === tenantId)
-          
-          if (!hasCompany) {
-            setShowWelcomePopup(true)
-          } else {
-            router.push('/dashboard/dashboard-overview')
-          }
+          companyResponse.data.some((c: any) => c.tenantId === user.tenantId)
 
-        // if (roleId == 4) {
-        //   router.push('/dashboard/leave-management/leave-apply')
-        // } else if (roleId == 1 || roleId == 2) {
-        //   if (!hasCompany) {
-        //     setShowWelcomePopup(true)
-        //   } else {
-        //     router.push('/dashboard/dashboard-overview')
-        //   }
-        // }
+        if (!hasCompany) {
+          setShowWelcomePopup(true)
+        } else {
+          router.push('/dashboard/dashboard-overview')
+        }
 
         toast({ title: 'Success', description: 'You are signed in' })
       }
