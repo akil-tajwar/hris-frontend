@@ -202,6 +202,7 @@ import {
   getAllPermissions,
   updateRolePermissions,
   getCurrentUser,
+  logout,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -390,6 +391,57 @@ export const useAddCustomer = ({
     },
     onError: (error: any) => {
       console.error('Error adding customer:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useLogout = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await logout()
+      return res
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to logout',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Logged out successfully!',
+      })
+
+      // Clear React Query cache
+      queryClient.clear()
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Error logging out:', error)
+
       toast({
         title: 'Error',
         variant: 'destructive',

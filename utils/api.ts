@@ -146,18 +146,18 @@ export async function signIn(credentials: SignInRequest) {
   })
 }
 
+export async function logout() {
+  return fetchApi<{ message: string }>({
+    url: 'api/auth/logout',
+    method: 'POST',
+  })
+}
+
 export async function getCurrentUser() {
   return fetchApi<CurrentUserResponse>({
     url: 'api/auth/currentUser',
     method: 'GET',
     schema: CurrentUserResponseSchema,
-  })
-}
-
-export async function logout() {
-  return fetchApi<{ message: string }>({
-    url: 'api/auth/logout',
-    method: 'POST',
   })
 }
 
