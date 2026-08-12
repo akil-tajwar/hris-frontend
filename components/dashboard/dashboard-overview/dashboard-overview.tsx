@@ -13,8 +13,8 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom } from 'jotai'
+import { isUserLoadingAtom, useInitializeUser, userDataAtom } from '@/utils/user'
+import { useAtom, useAtomValue } from 'jotai'
 import { useRouter } from 'next/navigation'
 import { Fragment, useEffect, useState } from 'react'
 import { Popup } from '@/utils/popup'
@@ -47,10 +47,8 @@ import {
 
 const DashboardOverview = () => {
   useInitializeUser()
-  const [userData] = useAtom(userDataAtom)
-  const [token] = useAtom(tokenAtom)
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(true)
+  useInitializeUser()
+  const isLoading = useAtomValue(isUserLoadingAtom)
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -73,20 +71,20 @@ const DashboardOverview = () => {
   const { data: salaryStatus } = useGetEmployeeSalaryStatus()
   const { data: notice } = useGetNotice()
 
-  useEffect(() => {
-    const checkUserData = () => {
-      const storedUserData = localStorage.getItem('currentUser')
-      const storedToken = localStorage.getItem('authToken')
+  // useEffect(() => {
+  //   const checkUserData = () => {
+  //     const storedUserData = localStorage.getItem('currentUser')
+  //     const storedToken = localStorage.getItem('authToken')
 
-      if (!storedUserData || !storedToken) {
-        router.push('/')
-        return
-      }
-      setIsLoading(false)
-    }
+  //     if (!storedUserData || !storedToken) {
+  //       router.push('/')
+  //       return
+  //     }
+  //     setIsLoading(false)
+  //   }
 
-    checkUserData()
-  }, [userData, token, router])
+  //   checkUserData()
+  // }, [userData, router])
 
   const openModal = (type: 'leaves' | 'absent' | 'loans') => {
     const titles = {

@@ -1,15 +1,18 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Bell, PlusCircle, User2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Bell, User2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, List } from 'lucide-react'
-import { tokenAtom, useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom } from 'jotai'
 import {
-  useGetAllEmployees,
+  isUserLoadingAtom,
+  useInitializeUser,
+  userDataAtom,
+} from '@/utils/user'
+import { useAtom, useAtomValue } from 'jotai'
+import {
   useGetNotificationsByUserId,
+  useLogout,
   useMarksAsRead,
 } from '@/hooks/use-api'
 
@@ -17,7 +20,7 @@ export default function Navbar() {
   useInitializeUser()
 
   const [userData] = useAtom(userDataAtom)
-  const [token] = useAtom(tokenAtom)
+  const isUserLoading = useAtomValue(isUserLoadingAtom)
 
   const { data: notificationsResponse, refetch } = useGetNotificationsByUserId(
     userData?.userId || 0
@@ -44,9 +47,15 @@ export default function Navbar() {
     reset: () => {},
   })
 
-  // -------------------------
-  // ROUTING LOGIC (EXTENDABLE)
-  // -------------------------
+  const logoutMutation = useLogout({
+    onClose: () => {
+      setIsProfileOpen(false)
+      router.push('/')
+    },
+    reset: () => {},
+  })
+
+  // ROUTING LOGIC
   const getNotificationRoute = (notification: any) => {
     const msg = notification.notification?.toLowerCase() || ''
 
@@ -65,9 +74,7 @@ export default function Navbar() {
     return '/dashboard/dashboard-overview'
   }
 
-  // -------------------------
   // CLICK NOTIFICATION
-  // -------------------------
   const handleNotificationClick = async (notification: any) => {
     setIsNotificationOpen(false)
 
@@ -90,9 +97,7 @@ export default function Navbar() {
     }
   }
 
-  // -------------------------
   // MARK ALL AS READ
-  // -------------------------
   const handleMarkAllAsRead = async () => {
     const allIds = notifications.map((n: any) => n.notificationId)
 
@@ -103,14 +108,9 @@ export default function Navbar() {
     refetch()
   }
 
-  // -------------------------
-  // SIGN OUT (UNCHANGED)
-  // -------------------------
+  // SIGN OUT
   const handleSignOut = () => {
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('authToken')
-    setIsProfileOpen(false)
-    router.push('/')
+    logoutMutation.mutate()
   }
 
   const formatDate = (date: any) => {
@@ -143,17 +143,10 @@ export default function Navbar() {
   }, [userData?.userId, refetch])
 
   useEffect(() => {
-    const checkUserData = () => {
-      const storedUserData = localStorage.getItem('currentUser')
-      const storedToken = localStorage.getItem('authToken')
-
-      if (!storedUserData || !storedToken) {
-        router.push('/')
-      }
+    if (!isUserLoading && !userData) {
+      router.push('/')
     }
-
-    checkUserData()
-  }, [userData, token, router])
+  }, [isUserLoading, userData, router])
 
   // Handle click outside for both dropdowns
   useEffect(() => {
@@ -277,9 +270,10 @@ export default function Navbar() {
 
                   <button
                     onClick={handleSignOut}
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    disabled={logoutMutation.isPending}
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Sign out
+                    {logoutMutation.isPending ? 'Signing out...' : 'Sign out'}
                   </button>
                 </div>
               )}

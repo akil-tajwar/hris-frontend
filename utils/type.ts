@@ -26,7 +26,6 @@ export const RoleSchema = z.object({
 export const UserSchema = z.object({
   userId: z.number(),
   username: z.string(),
-  password: z.string(),
   active: z.boolean(),
   roleId: z.number(),
   tenantId: z.number().optional(),
@@ -39,11 +38,15 @@ export const UserSchema = z.object({
 export type User = z.infer<typeof UserSchema>
 
 export const SignInResponseSchema = z.object({
-  token: z.string(),
   user: UserSchema,
 })
 export type SignInRequest = z.infer<typeof SignInRequestSchema>
 export type SignInResponse = z.infer<typeof SignInResponseSchema>
+
+export const CurrentUserResponseSchema = z.object({
+  user: UserSchema,
+})
+export type CurrentUserResponse = z.infer<typeof CurrentUserResponseSchema>
 
 export const RegisterUserResponseSchema = z.object({
   status: z.string(),
