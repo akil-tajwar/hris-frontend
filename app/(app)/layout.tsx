@@ -6,6 +6,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import Navbar from '@/components/shared/navbar'
 import { Toaster } from '@/components/ui/toaster'
 import { ReactQueryProvider } from '@/provider/ReactQueryProvider'
+import { ChatBot } from '@/components/shared/chatbot'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +27,7 @@ export default function RootLayout({
       <SidebarInset>
         <Navbar />
         <main className="p-6">{children}</main>
+        <ChatBot />
         <Toaster />
       </SidebarInset>
     </SidebarProvider>

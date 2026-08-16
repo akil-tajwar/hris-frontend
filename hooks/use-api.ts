@@ -203,6 +203,7 @@ import {
   updateRolePermissions,
   getCurrentUser,
   logout,
+  chatBot,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -441,6 +442,45 @@ export const useLogout = ({
 
     onError: (error: any) => {
       console.error('Error logging out:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useChatBot = ({
+  onAnswer,
+}: {
+  onAnswer: (answer: string) => void
+}) => {
+  const mutation = useMutation({
+    mutationFn: async (message: string) => {
+      const res = await chatBot(message)
+      return res
+    },
+
+    onSuccess: (res) => {
+      console.log('🚀 raw res:', res)
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to chat',
+        })
+        return
+      }
+
+      onAnswer(res?.data?.answer ?? '')
+    },
+
+    onError: (error: any) => {
+      console.error('Error chatting:', error)
 
       toast({
         title: 'Error',

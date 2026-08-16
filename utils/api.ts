@@ -153,6 +153,14 @@ export async function logout() {
   })
 }
 
+export async function chatBot(message: string) {
+  return fetchApi<{ answer: string }>({
+    url: 'api/ai/chat',
+    method: 'POST',
+    body: { message },
+  })
+}
+
 export async function getCurrentUser() {
   return fetchApi<CurrentUserResponse>({
     url: 'api/auth/currentUser',
