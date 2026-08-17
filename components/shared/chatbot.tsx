@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, X, Send, Bot, BotIcon } from 'lucide-react'
-import { useChatBot } from '@/hooks/use-api' // adjust path to your actual hook location
+import { X, Send, Bot } from 'lucide-react'
+import { useChatBot } from '@/hooks/use-api'
+import ReactMarkdown from 'react-markdown'
 
 type ChatMessage = {
   role: 'user' | 'bot'
@@ -17,7 +18,7 @@ export const ChatBot = () => {
 
   const mutation = useChatBot({
     onAnswer: (answer) => {
-      console.log("🚀 ~ ChatBot ~ answer:", answer)
+      console.log('🚀 ~ ChatBot ~ answer:', answer)
       setMessages((prev) => [...prev, { role: 'bot', content: answer }])
     },
   })
@@ -85,7 +86,13 @@ export const ChatBot = () => {
                       : 'bg-white text-gray-800 border'
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === 'bot' ? (
+                    <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-1 prose-ul:my-1">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}
