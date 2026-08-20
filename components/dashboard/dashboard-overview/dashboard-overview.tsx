@@ -14,9 +14,8 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { isUserLoadingAtom, useInitializeUser, userDataAtom } from '@/utils/user'
-import { useAtom, useAtomValue } from 'jotai'
-import { useRouter } from 'next/navigation'
-import { Fragment, useEffect, useState } from 'react'
+import { useAtomValue } from 'jotai'
+import { Fragment, useState } from 'react'
 import { Popup } from '@/utils/popup'
 import {
   Table,
