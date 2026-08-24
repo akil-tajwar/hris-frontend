@@ -204,6 +204,8 @@ import {
   getCurrentUser,
   logout,
   chatBot,
+  getAllCompanyPolicy,
+  createCompanyPolicy,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -6617,6 +6619,56 @@ export const useDeleteNotice = ({
         title: 'Error',
         variant: 'destructive',
         description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
+//company policy
+export const useGetCompanyPolicy = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['companyPolicy'],
+    queryFn: () => getAllCompanyPolicy(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useAddCompanyPolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await createCompanyPolicy(formData)
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Company Policy created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companyPolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding company policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
       })
     },
   })
