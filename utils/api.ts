@@ -108,6 +108,8 @@ import {
   GetEmployeeSalaryStatusType,
   CurrentUserResponse,
   CurrentUserResponseSchema,
+  GetCompanyPolicyType,
+  CreateCompanyPolicyType,
 } from '@/utils/type'
 
 export async function getAllRoles() {
@@ -1803,5 +1805,21 @@ export async function deleteNotice(id: number) {
   return fetchApi<{ id: number }>({
     url: `api/notice/delete/${id}`,
     method: 'DELETE',
+  })
+}
+
+//company policy
+export async function getAllCompanyPolicy() {
+  return fetchApi<GetCompanyPolicyType[]>({
+    url: 'api/companyPolicy/getall',
+    method: 'GET',
+  })
+}
+
+export async function createCompanyPolicy(formData: FormData) {
+  return fetchApiWithFile<CreateCompanyPolicyType>({
+    url: 'api/companyPolicy/create',
+    method: 'POST',
+    body: formData,
   })
 }
