@@ -70,7 +70,6 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/holiday-calendars',
         },
         { title: 'Holidays', href: '/dashboard/setup/holidays' },
-        { title: 'Pending Tasks', href: '/dashboard/setup/pending-tasks' },
         { title: 'Checklists', href: '/dashboard/setup/checklists' },
         { title: 'Notices', href: '/dashboard/setup/notice' },
         { title: 'Company Policy', href: '/dashboard/setup/company-policy' },
@@ -99,6 +98,10 @@ export function DashboardSidebar() {
       href: '/dashboard/employee-management',
       roles: [1, 2, 3, 4],
       subItems: [
+        {
+          title: 'Pending Tasks',
+          href: '/dashboard/employee-management/pending-tasks',
+        },
         {
           title: 'Employee Preboardings',
           href: '/dashboard/employee-management/employee-preboardings',
