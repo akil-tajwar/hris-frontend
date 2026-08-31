@@ -110,6 +110,8 @@ import {
   CurrentUserResponseSchema,
   GetCompanyPolicyType,
   CreateCompanyPolicyType,
+  GetEmployeeLateAndEarlyOutSummary,
+  GetEmployeeHeadCountSummary,
 } from '@/utils/type'
 
 export async function getAllRoles() {
@@ -1347,30 +1349,62 @@ export async function getEmployeeLeaveLedgerReport() {
   })
 }
 
-export async function getEmployeeLeaveSummary() {
+export async function getEmployeeHeadCountSummary(
+  companyId: number,
+  departmentId: number
+) {
+  return fetchApi<GetEmployeeHeadCountSummary[]>({
+    url: `api/dashboard/head-count-summary?companyId=${companyId}&departmentId=${departmentId}`,
+    method: 'GET',
+  })
+}
+
+export async function getEmployeeLeaveSummary(
+  companyId: number,
+  departmentId: number
+) {
   return fetchApi<GetEmployeeLeaveSummaryType[]>({
-    url: 'api/dashboard/leave-summary',
+    url: `api/dashboard/leave-summary?companyId=${companyId}&departmentId=${departmentId}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeAttendanceSummary() {
+export async function getEmployeeAttendanceSummary(
+  companyId: number,
+  departmentId: number
+) {
   return fetchApi<GetEmployeeAttendanceSummaryType[]>({
-    url: 'api/dashboard/attendance-summary',
+    url: `api/dashboard/attendance-summary?companyId=${companyId}&departmentId=${departmentId}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeLoneSummary() {
+export async function getEmployeeLoneSummary(
+  companyId: number,
+  departmentId: number
+) {
   return fetchApi<GetEmployeeLoneSummaryType[]>({
-    url: 'api/dashboard/lone-summary',
+    url: `api/dashboard/lone-summary?companyId=${companyId}&departmentId=${departmentId}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeSalaryStatus() {
+export async function getEmployeeSalaryStatus(
+  companyId: number,
+  departmentId: number
+) {
   return fetchApi<GetEmployeeSalaryStatusType[]>({
-    url: 'api/dashboard/salary-status',
+    url: `api/dashboard/salary-status?companyId=${companyId}&departmentId=${departmentId}`,
+    method: 'GET',
+  })
+}
+
+export async function getEmployeeLateAndEarlyOutSummary(
+  companyId: number,
+  departmentId: number
+) {
+  return fetchApi<GetEmployeeLateAndEarlyOutSummary[]>({
+    url: `api/dashboard/late-and-early-out-summary?companyId=${companyId}&departmentId=${departmentId}`,
     method: 'GET',
   })
 }

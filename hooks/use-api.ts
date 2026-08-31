@@ -207,6 +207,8 @@ import {
   getAllCompanyPolicy,
   createCompanyPolicy,
   editCompanyPolicy,
+  getEmployeeLateAndEarlyOutSummary,
+  getEmployeeHeadCountSummary,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5319,49 +5321,91 @@ export const useGetEmployeeLeaveLedgerReport = () => {
 }
 
 //dashboard
-export const useGetEmployeeLeaveSummary = () => {
+export const useGetEmployeeHeadCountSummary = (
+  companyId: number,
+  departmentId: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLeaveSummary'],
-    queryFn: () => getEmployeeLeaveSummary(),
+    queryFn: () => getEmployeeHeadCountSummary(companyId, departmentId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeAttendanceSummary = () => {
+export const useGetEmployeeLeaveSummary = (
+  companyId: number,
+  departmentId: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeLeaveSummary'],
+    queryFn: () => getEmployeeLeaveSummary(companyId, departmentId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeAttendanceSummary = (
+  companyId: number,
+  departmentId: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeAttendanceSummary'],
-    queryFn: () => getEmployeeAttendanceSummary(),
+    queryFn: () => getEmployeeAttendanceSummary(companyId, departmentId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeLoneSummary = () => {
+export const useGetEmployeeLoneSummary = (
+  companyId: number,
+  departmentId: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeLoneSummary'],
-    queryFn: () => getEmployeeLoneSummary(),
+    queryFn: () => getEmployeeLoneSummary(companyId, departmentId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeSalaryStatus = () => {
+export const useGetEmployeeSalaryStatus = (
+  companyId: number,
+  departmentId: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
     queryKey: ['employeeSalaryStatus'],
-    queryFn: () => getEmployeeSalaryStatus(),
+    queryFn: () => getEmployeeSalaryStatus(companyId, departmentId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeLateAndEarlyOutSummary = (
+  companyId: number,
+  departmentId: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeLateAndEarlyOutSummary'],
+    queryFn: () => getEmployeeLateAndEarlyOutSummary(companyId, departmentId),
     enabled: !!userData,
     select: (data) => data,
   })
