@@ -1690,6 +1690,7 @@ export const NoticeSchema = z.object({
   description: z.string().nullable().optional(),
   pdfUrl: z.string().nullable().optional(),
   noticeDate: z.date(),
+  showTill: z.date(),
   tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
