@@ -1823,3 +1823,11 @@ export async function createCompanyPolicy(formData: FormData) {
     body: formData,
   })
 }
+
+export async function editCompanyPolicy(id: number, formData: FormData) {
+  return fetchApiWithFile<GetCompanyPolicyType>({
+    url: `api/companyPolicy/edit/${id}`,
+    method: 'PATCH',
+    body: formData,
+  })
+}

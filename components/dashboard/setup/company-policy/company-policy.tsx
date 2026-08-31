@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import CustomSwitch from '@/utils/custom-switch'
 import {
   Table,
   TableBody,
@@ -21,12 +22,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { ArrowUpDown, Search, FileText, Plus, X } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ArrowUpDown, Search, FileText, Plus, X, Pencil } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import type { GetCompanyPolicyType, GetCompanyType } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
 import {
   useAddCompanyPolicy,
+  useUpdateCompanyPolicy,
   useGetCompanyPolicy,
   useGetCompanies,
 } from '@/hooks/use-api'
@@ -47,6 +59,7 @@ const emptyRow = (): PolicyRow => ({
   year: CURRENT_YEAR,
   pdfUrl: null,
   createdBy: 0,
+  active: false,
   file: null,
 })
 
@@ -68,42 +81,37 @@ const CompanyPolicy = () => {
   const [error, setError] = useState<string | null>(null)
   const [rows, setRows] = useState<PolicyRow[]>([emptyRow()])
 
+  const [isEditPopupOpen, setIsEditPopupOpen] = useState(false)
+  const [editRow, setEditRow] = useState<PolicyRow | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  // Pending toggle confirmation (table Active switch)
+  const [pendingToggle, setPendingToggle] =
+    useState<GetCompanyPolicyType | null>(null)
+
   const updateRow = (index: number, patch: Partial<PolicyRow>) => {
     setRows((prev) =>
       prev.map((row, i) => (i === index ? { ...row, ...patch } : row))
     )
   }
 
+  // No longer filtering out companies with an existing policy for the year —
+  // multiple policies per company/year are allowed now.
   const optionsByRow = useMemo(() => {
-    return rows.map((row, rowIndex) => {
-      const yearToCheck = row.year
+    return rows.map(() =>
+      (companies?.data ?? []).map((c: GetCompanyType) => ({
+        id: String(c.companyId),
+        name: c.companyName,
+      }))
+    )
+  }, [rows, companies?.data])
 
-      const takenByExisting = new Set(
-        (policies?.data ?? [])
-          .filter((p: GetCompanyPolicyType) => p.year === yearToCheck)
-          .map((p: GetCompanyPolicyType) => p.companyId)
-      )
-
-      const takenByOtherRows = new Set(
-        rows
-          .filter(
-            (r, i) => i !== rowIndex && r.year === yearToCheck && r.companyId
-          )
-          .map((r) => r.companyId)
-      )
-
-      return (companies?.data ?? [])
-        .filter(
-          (c: GetCompanyType) =>
-            !takenByExisting.has(c.companyId ?? 0) &&
-            !takenByOtherRows.has(c.companyId ?? 0)
-        )
-        .map((c: GetCompanyType) => ({
-          id: String(c.companyId),
-          name: c.companyName,
-        }))
-    })
-  }, [rows, policies?.data, companies?.data])
+  const editCompanyOptions = useMemo(() => {
+    return (companies?.data ?? []).map((c: GetCompanyType) => ({
+      id: String(c.companyId),
+      name: c.companyName,
+    }))
+  }, [companies?.data])
 
   const resetForm = useCallback(() => {
     setRows([emptyRow()])
@@ -117,9 +125,20 @@ const CompanyPolicy = () => {
     resetForm()
   }, [resetForm])
 
+  const closeEditPopup = useCallback(() => {
+    setIsEditPopupOpen(false)
+    setEditRow(null)
+    setEditError(null)
+  }, [])
+
   const addMutation = useAddCompanyPolicy({
     onClose: closePopup,
     reset: resetForm,
+  })
+
+  const updateMutation = useUpdateCompanyPolicy({
+    onClose: closeEditPopup,
+    reset: closeEditPopup,
   })
 
   const handleSort = (column: keyof GetCompanyPolicyType) => {
@@ -183,27 +202,17 @@ const CompanyPolicy = () => {
         return
       }
 
-      const seen = new Set<string>()
-      for (const r of rows) {
-        const key = `${r.companyId}-${r.year}`
-        if (seen.has(key)) {
-          setError(
-            'You cannot add multiple policies for the same company and year.'
-          )
-          return
+      // Only one active policy is allowed per company/year — check within this submission.
+      const activeCounts = new Map<string, number>()
+      rows.forEach((r) => {
+        if (r.active) {
+          const key = `${r.companyId}-${r.year}`
+          activeCounts.set(key, (activeCounts.get(key) ?? 0) + 1)
         }
-        seen.add(key)
-      }
-
-      const conflictsWithExisting = rows.some((r) =>
-        (policies?.data ?? []).some(
-          (p: GetCompanyPolicyType) =>
-            p.companyId === r.companyId && p.year === r.year
-        )
-      )
-      if (conflictsWithExisting) {
+      })
+      if ([...activeCounts.values()].some((count) => count > 1)) {
         setError(
-          'A policy already exists for one of the selected company/year combinations.'
+          'Only one policy can be active per company per year — uncheck Active on the duplicate row.'
         )
         return
       }
@@ -216,7 +225,8 @@ const CompanyPolicy = () => {
           name: r.name,
           description: r.description || undefined,
           year: r.year,
-          createdBy: userData?.userId,
+          active: r.active,
+          createdBy: userData?.userId || 0,
         }))
 
         submitData.append('policies', JSON.stringify(policiesPayload))
@@ -230,8 +240,107 @@ const CompanyPolicy = () => {
         console.error(err)
       }
     },
-    [rows, addMutation, userData?.userId, policies?.data]
+    [rows, addMutation, userData?.userId]
   )
+
+  const openEditPopup = (policy: GetCompanyPolicyType) => {
+    setEditRow({ ...policy, file: null })
+    setEditError(null)
+    setIsEditPopupOpen(true)
+  }
+
+  const handleEditSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!editRow) return
+      setEditError(null)
+
+      if (!editRow.companyId || !editRow.name) {
+        setEditError('Company and policy name are required.')
+        return
+      }
+
+      if (!editRow.companyPolicyId) {
+        setEditError('Missing policy id.')
+        return
+      }
+
+      try {
+        const submitData = new FormData()
+        const payload = {
+          companyId: editRow.companyId,
+          name: editRow.name,
+          description: editRow.description || undefined,
+          year: editRow.year,
+          active: editRow.active,
+        }
+        submitData.append('policy', JSON.stringify(payload))
+        if (editRow.file) submitData.append('pdfUrl', editRow.file)
+
+        updateMutation.mutate({
+          id: editRow.companyPolicyId,
+          formData: submitData,
+        })
+      } catch (err) {
+        setEditError('Failed to update company policy')
+        console.error(err)
+      }
+    },
+    [editRow, updateMutation]
+  )
+
+  // Policies (excluding the one being toggled) that are active for the same
+  // company + year — these get force-deactivated when the toggled policy
+  // becomes active.
+  const getConflictingActivePolicies = useCallback(
+    (policy: GetCompanyPolicyType) => {
+      if (!Array.isArray(policies?.data)) return []
+      return policies.data.filter(
+        (p: GetCompanyPolicyType) =>
+          p.companyPolicyId !== policy.companyPolicyId &&
+          p.companyId === policy.companyId &&
+          p.year === policy.year &&
+          p.active === true
+      )
+    },
+    [policies?.data]
+  )
+
+  const handleToggleActive = useCallback(
+    (policy: GetCompanyPolicyType) => {
+      if (!policy.companyPolicyId) return
+      const nextActive = !policy.active
+
+      // Activating this policy: deactivate any other active policy for the
+      // same company/year first, since only one can be active at a time.
+      if (nextActive) {
+        const conflicting = getConflictingActivePolicies(policy)
+        conflicting.forEach((p: GetCompanyPolicyType) => {
+          if (!p.companyPolicyId) return
+          const deactivateData = new FormData()
+          deactivateData.append('policy', JSON.stringify({ active: false }))
+          updateMutation.mutate({
+            id: p.companyPolicyId,
+            formData: deactivateData,
+          })
+        })
+      }
+
+      const submitData = new FormData()
+      submitData.append('policy', JSON.stringify({ active: nextActive }))
+      updateMutation.mutate({
+        id: policy.companyPolicyId,
+        formData: submitData,
+      })
+    },
+    [updateMutation, getConflictingActivePolicies]
+  )
+
+  const confirmPendingToggle = useCallback(() => {
+    if (!pendingToggle) return
+    handleToggleActive(pendingToggle)
+    setPendingToggle(null)
+  }, [pendingToggle, handleToggleActive])
 
   useEffect(() => {
     if (addMutation.error) {
@@ -239,10 +348,20 @@ const CompanyPolicy = () => {
     }
   }, [addMutation.error])
 
+  useEffect(() => {
+    if (updateMutation.error) {
+      setEditError('Error updating company policy')
+    }
+  }, [updateMutation.error])
+
   const getCompanyName = (companyId: number) =>
     (companies?.data ?? []).find(
       (c: GetCompanyType) => c.companyId === companyId
     )?.companyName ?? '—'
+
+  const pendingConflicts = pendingToggle
+    ? getConflictingActivePolicies(pendingToggle)
+    : []
 
   return (
     <div className="p-6 space-y-6">
@@ -290,25 +409,28 @@ const CompanyPolicy = () => {
               >
                 Year <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead>Description</TableHead>
               <TableHead>PDF</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!policies || policies.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   Loading policies...
                 </TableCell>
               </TableRow>
             ) : !policies.data || policies.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   No policies found
                 </TableCell>
               </TableRow>
             ) : paginatedPolicies.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   No policies match your search
                 </TableCell>
               </TableRow>
@@ -321,6 +443,7 @@ const CompanyPolicy = () => {
                   <TableCell className="font-medium">{policy.name}</TableCell>
                   <TableCell>{getCompanyName(policy.companyId)}</TableCell>
                   <TableCell>{policy.year}</TableCell>
+                  <TableCell>{policy.description}</TableCell>
                   <TableCell>
                     {policy.pdfUrl ? (
                       <a
@@ -334,6 +457,23 @@ const CompanyPolicy = () => {
                     ) : (
                       '—'
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <CustomSwitch
+                      label=""
+                      checked={policy.active === true}
+                      onChange={() => setPendingToggle(policy)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditPopup(policy)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -404,12 +544,14 @@ const CompanyPolicy = () => {
       <Popup
         isOpen={isPopupOpen}
         onClose={closePopup}
-        title="Add GetCompanyType Policies"
+        title="Add Company Policies"
         size="sm:max-w-3xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
             Add one row per company. Each row uploads its own policy PDF.
+            Multiple policies per company/year are allowed, but only one can be
+            active per company per year.
           </p>
 
           <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
@@ -496,6 +638,14 @@ const CompanyPolicy = () => {
                   </div>
 
                   <div className="space-y-2 sm:col-span-2">
+                    <CustomSwitch
+                      label="Active"
+                      checked={row.active === true}
+                      onChange={(value) => updateRow(index, { active: value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>Description</Label>
                     <textarea
                       value={row.description ?? ''}
@@ -537,6 +687,193 @@ const CompanyPolicy = () => {
           </div>
         </form>
       </Popup>
+
+      <Popup
+        isOpen={isEditPopupOpen}
+        onClose={closeEditPopup}
+        title="Edit Company Policy"
+        size="sm:max-w-lg"
+      >
+        {editRow && (
+          <form onSubmit={handleEditSubmit} className="space-y-4 py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>
+                  Company <span className="text-red-500">*</span>
+                </Label>
+                <CustomCombobox
+                  items={editCompanyOptions}
+                  value={
+                    editRow.companyId
+                      ? (editCompanyOptions.find(
+                          (c) => c.id === String(editRow.companyId)
+                        ) ?? null)
+                      : null
+                  }
+                  onChange={(value) =>
+                    setEditRow((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            companyId: value
+                              ? Number(value.id)
+                              : prev.companyId,
+                          }
+                        : prev
+                    )
+                  }
+                  placeholder="Select company"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>
+                  Policy Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={editRow.name}
+                  onChange={(e) =>
+                    setEditRow((prev) =>
+                      prev ? { ...prev, name: e.target.value } : prev
+                    )
+                  }
+                  maxLength={100}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Year</Label>
+                <Input
+                  type="number"
+                  value={editRow.year}
+                  onChange={(e) =>
+                    setEditRow((prev) =>
+                      prev ? { ...prev, year: Number(e.target.value) } : prev
+                    )
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Replace PDF (optional)</Label>
+                <Input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) =>
+                    setEditRow((prev) =>
+                      prev
+                        ? { ...prev, file: e.target.files?.[0] ?? null }
+                        : prev
+                    )
+                  }
+                  className="cursor-pointer"
+                />
+                {editRow.file ? (
+                  <p className="text-xs text-gray-500">{editRow.file.name}</p>
+                ) : editRow.pdfUrl ? (
+                  <a
+                    href={editRow.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Current PDF
+                  </a>
+                ) : null}
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <CustomSwitch
+                  label="Active"
+                  checked={editRow.active === true}
+                  onChange={(value) =>
+                    setEditRow((prev) =>
+                      prev ? { ...prev, active: value } : prev
+                    )
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Description</Label>
+                <textarea
+                  value={editRow.description ?? ''}
+                  onChange={(e) =>
+                    setEditRow((prev) =>
+                      prev ? { ...prev, description: e.target.value } : prev
+                    )
+                  }
+                  rows={2}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                />
+              </div>
+            </div>
+
+            {editError && (
+              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                {editError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={closeEditPopup}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Popup>
+
+      <AlertDialog
+        open={!!pendingToggle}
+        onOpenChange={(open) => {
+          if (!open) setPendingToggle(null)
+        }}
+      >
+        <AlertDialogContent className='bg-white'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingToggle?.active
+                ? 'Deactivate policy?'
+                : 'Activate policy?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingToggle &&
+              !pendingToggle.active &&
+              pendingConflicts.length > 0 ? (
+                <>
+                  This will activate &quot;{pendingToggle.name}&quot; and
+                  deactivate {pendingConflicts.length === 1 ? 'the' : 'the'}{' '}
+                  currently active{' '}
+                  {pendingConflicts.length > 1 ? 'policies' : 'policy'} (
+                  {pendingConflicts.map((p) => p.name).join(', ')}) for{' '}
+                  {getCompanyName(pendingToggle.companyId)} in{' '}
+                  {pendingToggle.year}, since only one policy can be active per
+                  company per year.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to{' '}
+                  {pendingToggle?.active ? 'deactivate' : 'activate'} &quot;
+                  {pendingToggle?.name}&quot;?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingToggle(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPendingToggle} className='bg-blue-500 text-white'>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

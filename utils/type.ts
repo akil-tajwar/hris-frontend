@@ -1708,6 +1708,7 @@ export const companyPolicySchema = z.object({
   companyId: z.number().int().positive(),
   tenantId: z.number().int().positive(),
   year: z.number().int(),
+  active: z.boolean(),
   createdBy: z.number().int().positive(),
   createdAt: z.date().optional(),
   updatedBy: z.number().int().positive().nullable().optional(),

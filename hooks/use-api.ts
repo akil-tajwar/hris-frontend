@@ -206,6 +206,7 @@ import {
   chatBot,
   getAllCompanyPolicy,
   createCompanyPolicy,
+  editCompanyPolicy,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -6665,6 +6666,42 @@ export const useAddCompanyPolicy = ({
     },
     onError: (error: any) => {
       console.error('Error adding company policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCompanyPolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
+      return editCompanyPolicy(id, formData)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Company policy updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companyPolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error editing company policy:', error)
       toast({
         title: 'Error',
         variant: 'destructive',
