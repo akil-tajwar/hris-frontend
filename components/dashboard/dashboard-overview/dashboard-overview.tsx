@@ -423,31 +423,33 @@ const DashboardOverview = () => {
 
   const ModalFilterBar = () => (
     <div className="flex flex-wrap items-center gap-3 pb-4">
-      <div className="min-w-[200px]">
-        <CustomCombobox
-          items={departmentItems}
-          value={
-            modalFilters.departmentId
-              ? {
-                  id: modalFilters.departmentId,
-                  name:
-                    departmentItems.find(
-                      (d) => d.id === modalFilters.departmentId
-                    )?.name || '',
-                }
-              : null
-          }
-          onChange={(value) => {
-            setExpandedLeaveRows(new Set())
-            setExpandedLateEarlyRows(new Set())
-            setModalFilters((prev) => ({
-              ...prev,
-              departmentId: value ? String(value.id) : '',
-            }))
-          }}
-          placeholder="All departments"
-        />
-      </div>
+      {userData?.roleId !== 4 && (
+        <div className="min-w-[200px]">
+          <CustomCombobox
+            items={departmentItems}
+            value={
+              modalFilters.departmentId
+                ? {
+                    id: modalFilters.departmentId,
+                    name:
+                      departmentItems.find(
+                        (d) => d.id === modalFilters.departmentId
+                      )?.name || '',
+                  }
+                : null
+            }
+            onChange={(value) => {
+              setExpandedLeaveRows(new Set())
+              setExpandedLateEarlyRows(new Set())
+              setModalFilters((prev) => ({
+                ...prev,
+                departmentId: value ? String(value.id) : '',
+              }))
+            }}
+            placeholder="All departments"
+          />
+        </div>
+      )}
       <Select
         value={modalFilters.dateFilter}
         onValueChange={(value: DateFilter) => {
@@ -1006,29 +1008,31 @@ const DashboardOverview = () => {
                 Salary Overview (Net Payroll)
               </CardTitle>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="min-w-[180px]">
-                  <CustomCombobox
-                    items={departmentItems}
-                    value={
-                      salaryFilters.departmentId
-                        ? {
-                            id: salaryFilters.departmentId,
-                            name:
-                              departmentItems.find(
-                                (d) => d.id === salaryFilters.departmentId
-                              )?.name || '',
-                          }
-                        : null
-                    }
-                    onChange={(value) =>
-                      setSalaryFilters((prev) => ({
-                        ...prev,
-                        departmentId: value ? String(value.id) : '',
-                      }))
-                    }
-                    placeholder="All departments"
-                  />
-                </div>
+                {userData?.roleId !== 4 && (
+                  <div className="min-w-[180px]">
+                    <CustomCombobox
+                      items={departmentItems}
+                      value={
+                        salaryFilters.departmentId
+                          ? {
+                              id: salaryFilters.departmentId,
+                              name:
+                                departmentItems.find(
+                                  (d) => d.id === salaryFilters.departmentId
+                                )?.name || '',
+                            }
+                          : null
+                      }
+                      onChange={(value) =>
+                        setSalaryFilters((prev) => ({
+                          ...prev,
+                          departmentId: value ? String(value.id) : '',
+                        }))
+                      }
+                      placeholder="All departments"
+                    />
+                  </div>
+                )}
                 <Select
                   value={salaryFilters.dateFilter}
                   onValueChange={(value: DateFilter) =>
@@ -1165,40 +1169,51 @@ const DashboardOverview = () => {
           <CardContent>
             <div className="h-80 overflow-y-auto space-y-3">
               {notice?.data && notice.data.length > 0 ? (
-                notice.data.map((item: any) => (
-                  <div
-                    key={item.noticeId}
-                    className="border border-gray-200 bg-slate-100 rounded-md p-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-900">
-                        {item.title}
-                      </p>
-                      {item.pdfUrl && (
-                        <a
-                          href={item.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-500 hover:underline"
-                        >
-                          View PDF
-                        </a>
+                notice.data
+                  .filter((item: any) => {
+                    // Only show notices where current date <= showTill
+                    if (!item.showTill) return false
+                    const currentDate = new Date()
+                    const showTillDate = new Date(item.showTill)
+                    // Reset time to compare only dates
+                    currentDate.setHours(0, 0, 0, 0)
+                    showTillDate.setHours(0, 0, 0, 0)
+                    return currentDate <= showTillDate
+                  })
+                  .map((item: any) => (
+                    <div
+                      key={item.noticeId}
+                      className="border border-gray-200 bg-slate-100 rounded-md p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {item.title}
+                        </p>
+                        {item.pdfUrl && (
+                          <a
+                            href={item.pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:underline"
+                          >
+                            View PDF
+                          </a>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(item.noticeDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </span>
+                      {item.description && (
+                        <p className="text-xs text-gray-600 mt-3">
+                          {item.description}
+                        </p>
                       )}
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(item.noticeDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                    {item.description && (
-                      <p className="text-xs text-gray-600 mt-3">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                ))
+                  ))
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500 text-sm">
                   No notices available
