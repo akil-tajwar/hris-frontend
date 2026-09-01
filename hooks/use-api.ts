@@ -1910,10 +1910,11 @@ export const useAddShiftDayAndWeekDays = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateShiftType) => {
+    mutationFn: async (data: CreateShiftType[]) => {
       const res = await createShiftDayAndWeekDays(data)
       return res
     },
+
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -1929,12 +1930,17 @@ export const useAddShiftDayAndWeekDays = ({
         description: 'Office timing created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['shift'] })
+      queryClient.invalidateQueries({
+        queryKey: ['shift'],
+      })
+
       reset()
       onClose()
     },
+
     onError: (error: any) => {
       console.error('Error adding shift:', error)
+
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -5363,7 +5369,8 @@ export const useGetEmployeeAttendanceSummary = (
 
   return useQuery({
     queryKey: ['employeeAttendanceSummary', companyId, departmentId, userId],
-    queryFn: () => getEmployeeAttendanceSummary(companyId, departmentId, userId),
+    queryFn: () =>
+      getEmployeeAttendanceSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
@@ -5410,8 +5417,14 @@ export const useGetEmployeeLateAndEarlyOutSummary = (
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLateAndEarlyOutSummary', companyId, departmentId, userId],
-    queryFn: () => getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
+    queryKey: [
+      'employeeLateAndEarlyOutSummary',
+      companyId,
+      departmentId,
+      userId,
+    ],
+    queryFn: () =>
+      getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
@@ -5598,7 +5611,9 @@ export const useAddShiftAllocation = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: (res.error?.details as any)?.message || 'Failed to create shift allocation',
+          description:
+            (res.error?.details as any)?.message ||
+            'Failed to create shift allocation',
         })
         return
       }

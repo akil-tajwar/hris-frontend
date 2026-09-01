@@ -1,4 +1,5 @@
 'use client'
+
 import { Fragment, useState, useRef } from 'react'
 import { Combobox, Transition } from '@headlessui/react'
 import { Check, ChevronsUpDown } from 'lucide-react'
@@ -21,6 +22,7 @@ export function CustomCombobox<T extends ComboboxItem>({
   value,
   onChange,
   placeholder = 'Select an item...',
+  disabled = false,
 }: CustomComboboxProps<T>) {
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -38,6 +40,7 @@ export function CustomCombobox<T extends ComboboxItem>({
   const handleContainerMouseDown = (
     event: React.MouseEvent<HTMLDivElement>
   ) => {
+    if (disabled) return
     if ((event.target as HTMLElement).closest('.combobox-option')) {
       // If an option was clicked, do not trigger our custom behavior.
       return
@@ -56,18 +59,26 @@ export function CustomCombobox<T extends ComboboxItem>({
 
   return (
     <div onMouseDown={handleContainerMouseDown} className="w-full">
-      <Combobox value={value} onChange={onChange}>
+      <Combobox value={value} onChange={onChange} disabled={disabled}>
         <div className="relative">
-          <div className="relative w-full cursor-default overflow-hidden border rounded-lg bg-white text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm">
+          <div
+            className={`relative w-full cursor-default overflow-hidden border rounded-lg bg-white text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm ${
+              disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+            }`}
+          >
             <Combobox.Input
               ref={inputRef}
-              className="w-full border-none py-2 pl-3 pr-10 text-sm leading-3 text-gray-900 focus:ring-0"
+              className="w-full border-none py-2 pl-3 pr-10 text-sm leading-3 text-gray-900 focus:ring-0 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
               displayValue={(item: T | null) => item?.name || ''}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={placeholder}
               autoComplete="off"
+              disabled={disabled}
             />
-            <Combobox.Button className="absolute inset-y-0 top-2 right-0 flex items-center pr-2">
+            <Combobox.Button
+              className="absolute inset-y-0 top-2 right-0 flex items-center pr-2 disabled:cursor-not-allowed"
+              disabled={disabled}
+            >
               <ChevronsUpDown
                 className="h-5 w-5 text-gray-400"
                 aria-hidden="true"
