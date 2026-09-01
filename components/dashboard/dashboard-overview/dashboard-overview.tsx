@@ -1005,7 +1005,7 @@ const DashboardOverview = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-green-600" />
-                Salary Overview (Net Payroll)
+                Payroll Trend (Net Payroll)
               </CardTitle>
               <div className="flex flex-wrap items-center gap-3">
                 {userData?.roleId !== 4 && (

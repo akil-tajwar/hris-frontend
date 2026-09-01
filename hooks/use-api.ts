@@ -5598,7 +5598,7 @@ export const useAddShiftAllocation = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to create shift allocation',
+          description: (res.error?.details as any)?.message || 'Failed to create shift allocation',
         })
         return
       }
@@ -5614,7 +5614,7 @@ export const useAddShiftAllocation = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description: error?.message || 'Unexpected error occurred',
+        description: error?.details?.message || 'Unexpected error occurred',
       })
     },
   })
