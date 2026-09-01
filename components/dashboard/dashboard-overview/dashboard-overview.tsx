@@ -14,8 +14,12 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { isUserLoadingAtom, useInitializeUser } from '@/utils/user'
-import { useAtomValue } from 'jotai'
+import {
+  isUserLoadingAtom,
+  useInitializeUser,
+  userDataAtom,
+} from '@/utils/user'
+import { useAtom, useAtomValue } from 'jotai'
 import { Fragment, useState } from 'react'
 import { Popup } from '@/utils/popup'
 import {
@@ -85,7 +89,12 @@ const changeTypeColor: Record<string, string> = {
 
 const DashboardOverview = () => {
   useInitializeUser()
+  const [userData] = useAtom(userDataAtom)
   const isLoading = useAtomValue(isUserLoadingAtom)
+
+  const userId = userData?.userId
+  const roleId = userData?.roleId
+  const isRoleFour = roleId === 4
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -119,58 +128,81 @@ const DashboardOverview = () => {
     DEFAULT_MODAL_FILTERS
   )
 
-  const companyId = formData.companyId || undefined
-
-  // ---- Card-level data (company filter only) ----
-  const { data: leaveSummary } = useGetEmployeeLeaveSummary({ companyId })
-  const { data: attendanceSummary } = useGetEmployeeAttendanceSummary({
-    companyId,
-  })
-  const { data: loneSummary } = useGetEmployeeLoneSummary({ companyId })
-  const { data: lateEarlyOutSummary } = useGetEmployeeLateAndEarlyOutSummary({
-    companyId,
-  })
-  const { data: headCountSummary } = useGetEmployeeHeadCountSummary({
-    companyId,
-  })
   const { data: notice } = useGetNotice()
   const { data: companies } = useGetCompanies()
   const { data: departments } = useGetDepartments()
 
-  // ---- Salary graph data (company + its own department/date filters) ----
-  const { data: salaryStatus } = useGetEmployeeSalaryStatus({
-    companyId,
-    departmentId: salaryFilters.departmentId || undefined,
-    dateFilter: salaryFilters.dateFilter,
-  })
+  const companyIdNum = formData.companyId
+    ? Number(formData.companyId)
+    : undefined
+  const modalDepartmentIdNum = modalFilters.departmentId
+    ? Number(modalFilters.departmentId)
+    : undefined
+  const salaryDepartmentIdNum = salaryFilters.departmentId
+    ? Number(salaryFilters.departmentId)
+    : undefined
 
-  // ---- Popup-level data (company + modal department/date filters) ----
-  const { data: leaveSummaryModal } = useGetEmployeeLeaveSummary({
-    companyId,
-    departmentId: modalFilters.departmentId || undefined,
-    dateFilter: modalFilters.dateFilter,
-  })
-  const { data: attendanceSummaryModal } = useGetEmployeeAttendanceSummary({
-    companyId,
-    departmentId: modalFilters.departmentId || undefined,
-    dateFilter: modalFilters.dateFilter,
-  })
-  const { data: loneSummaryModal } = useGetEmployeeLoneSummary({
-    companyId,
-    departmentId: modalFilters.departmentId || undefined,
-    dateFilter: modalFilters.dateFilter,
-  })
+  // ---- Card-level data (company only, all departments) ----
+  const { data: leaveSummary } = useGetEmployeeLeaveSummary(
+    companyIdNum,
+    undefined,
+    isRoleFour ? userId : undefined
+  )
+  const { data: attendanceSummary } = useGetEmployeeAttendanceSummary(
+    companyIdNum,
+    undefined,
+    isRoleFour ? userId : undefined
+  )
+  const { data: loneSummary } = useGetEmployeeLoneSummary(
+    companyIdNum,
+    undefined,
+    isRoleFour ? userId : undefined
+  )
+  const { data: lateEarlyOutSummary } = useGetEmployeeLateAndEarlyOutSummary(
+    companyIdNum,
+    undefined,
+    isRoleFour ? userId : undefined
+  )
+  const { data: headCountSummary } = useGetEmployeeHeadCountSummary(
+    companyIdNum,
+    undefined,
+    isRoleFour ? userId : undefined
+  )
+
+  // ---- Salary graph data (company + its own department filter) ----
+  const { data: salaryStatus } = useGetEmployeeSalaryStatus(
+    companyIdNum,
+    salaryDepartmentIdNum,
+    isRoleFour ? userId : undefined
+  )
+
+  // ---- Popup-level data (company + modal department filter) ----
+  const { data: leaveSummaryModal } = useGetEmployeeLeaveSummary(
+    companyIdNum,
+    modalDepartmentIdNum,
+    isRoleFour ? userId : undefined
+  )
+  const { data: attendanceSummaryModal } = useGetEmployeeAttendanceSummary(
+    companyIdNum,
+    modalDepartmentIdNum,
+    isRoleFour ? userId : undefined
+  )
+  const { data: loneSummaryModal } = useGetEmployeeLoneSummary(
+    companyIdNum,
+    modalDepartmentIdNum,
+    isRoleFour ? userId : undefined
+  )
   const { data: lateEarlyOutSummaryModal } =
-    useGetEmployeeLateAndEarlyOutSummary({
-      companyId,
-      departmentId: modalFilters.departmentId || undefined,
-      dateFilter: modalFilters.dateFilter,
-    })
-  const { data: headCountSummaryModal } = useGetEmployeeHeadCountSummary({
-    companyId,
-    departmentId: modalFilters.departmentId || undefined,
-    dateFilter: modalFilters.dateFilter,
-  })
+    useGetEmployeeLateAndEarlyOutSummary(
+      companyIdNum,
+      modalDepartmentIdNum,
+      isRoleFour ? userId : undefined
+    )
+  const { data: headCountSummaryModal } = useGetEmployeeHeadCountSummary(
+    companyIdNum,
+    modalDepartmentIdNum,
+    isRoleFour ? userId : undefined
+  )
 
   const departmentItems = (departments?.data ?? [])
     .filter((d: any) => d?.departmentId && d?.departmentName)
@@ -178,6 +210,39 @@ const DashboardOverview = () => {
       id: String(d.departmentId),
       name: d.departmentName,
     }))
+
+  // The API always returns a full year of data; "this month" is applied
+  // client-side using each record's createdAt field.
+  const isThisMonth = (dateStr?: string) => {
+    if (!dateStr) return false
+    const d = new Date(dateStr)
+    const now = new Date()
+    return (
+      d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    )
+  }
+
+  const applyMonthFilter = (data: any[] | null | undefined) => {
+    const rows = data ?? []
+    return modalFilters.dateFilter === 'month'
+      ? rows.filter((row: any) => isThisMonth(row.createdAt))
+      : rows
+  }
+
+  const leaveSummaryModalData = applyMonthFilter(leaveSummaryModal?.data)
+  const attendanceSummaryModalData = applyMonthFilter(
+    attendanceSummaryModal?.data
+  )
+  const loneSummaryModalData = applyMonthFilter(loneSummaryModal?.data)
+  const lateEarlyOutSummaryModalData = applyMonthFilter(
+    lateEarlyOutSummaryModal?.data
+  )
+  // Headcount rows are one-per-month already (no createdAt) — "this month"
+  // just means the most recent entry in the series.
+  const headCountSummaryModalData =
+    modalFilters.dateFilter === 'month'
+      ? (headCountSummaryModal?.data ?? []).slice(-1)
+      : (headCountSummaryModal?.data ?? [])
 
   const handleSelectChange = (field: 'companyId', value: string) => {
     setFormData((prev) => ({
@@ -268,7 +333,7 @@ const DashboardOverview = () => {
   const currentHeadCount =
     headCountData.length > 0 ? headCountData[headCountData.length - 1] : null
 
-  const salaryChartData = salaryStatus?.data
+  const salaryChartDataAll = salaryStatus?.data
     ? salaryStatus.data.map((month: any) => ({
         month: month.monthName ?? month.month,
         year: month.year,
@@ -278,6 +343,13 @@ const DashboardOverview = () => {
         totalUnpaidAmount: month.totalUnpaidAmount,
       }))
     : []
+
+  // Salary rows are one-per-month already (no createdAt) — "this month"
+  // just means the most recent entry in the series.
+  const salaryChartData =
+    salaryFilters.dateFilter === 'month'
+      ? salaryChartDataAll.slice(-1)
+      : salaryChartDataAll
 
   type MetricItem = {
     title: string
@@ -294,20 +366,24 @@ const DashboardOverview = () => {
   }
 
   const metrics: MetricItem[] = [
-    {
-      title: 'Head Count',
-      value: currentHeadCount?.employeeCount ?? 0,
-      icon: User,
-      color: 'bg-blue-500',
-      onClick: () => openModal('headcount'),
-      clickable: true,
-      changeIndicator: currentHeadCount
-        ? {
-            percentageChange: currentHeadCount.percentageChange,
-            changeType: currentHeadCount.changeType,
-          }
-        : null,
-    },
+    ...(isRoleFour
+      ? []
+      : [
+          {
+            title: 'Head Count',
+            value: currentHeadCount?.employeeCount ?? 0,
+            icon: User,
+            color: 'bg-blue-500',
+            onClick: () => openModal('headcount'),
+            clickable: true,
+            changeIndicator: currentHeadCount
+              ? {
+                  percentageChange: currentHeadCount.percentageChange,
+                  changeType: currentHeadCount.changeType,
+                }
+              : null,
+          },
+        ]),
     {
       title: 'Leave Trend',
       value: totalLeaves,
@@ -361,20 +437,24 @@ const DashboardOverview = () => {
                 }
               : null
           }
-          onChange={(value) =>
+          onChange={(value) => {
+            setExpandedLeaveRows(new Set())
+            setExpandedLateEarlyRows(new Set())
             setModalFilters((prev) => ({
               ...prev,
               departmentId: value ? String(value.id) : '',
             }))
-          }
+          }}
           placeholder="All departments"
         />
       </div>
       <Select
         value={modalFilters.dateFilter}
-        onValueChange={(value: DateFilter) =>
+        onValueChange={(value: DateFilter) => {
+          setExpandedLeaveRows(new Set())
+          setExpandedLateEarlyRows(new Set())
           setModalFilters((prev) => ({ ...prev, dateFilter: value }))
-        }
+        }}
       >
         <SelectTrigger className="w-40">
           <SelectValue />
@@ -408,9 +488,8 @@ const DashboardOverview = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leaveSummaryModal?.data &&
-                  leaveSummaryModal.data.length > 0 ? (
-                    leaveSummaryModal.data.map((emp: any, index: number) => {
+                  {leaveSummaryModalData.length > 0 ? (
+                    leaveSummaryModalData.map((emp: any, index: number) => {
                       const isExpanded = expandedLeaveRows.has(index)
                       return (
                         <Fragment key={index}>
@@ -505,9 +584,8 @@ const DashboardOverview = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendanceSummaryModal?.data &&
-                  attendanceSummaryModal.data.length > 0 ? (
-                    attendanceSummaryModal.data.map(
+                  {attendanceSummaryModalData.length > 0 ? (
+                    attendanceSummaryModalData.map(
                       (emp: any, index: number) => (
                         <TableRow key={index}>
                           <TableCell className="font-medium">
@@ -569,9 +647,8 @@ const DashboardOverview = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loneSummaryModal?.data &&
-                  loneSummaryModal.data.length > 0 ? (
-                    loneSummaryModal.data.map((emp: any, index: number) => (
+                  {loneSummaryModalData.length > 0 ? (
+                    loneSummaryModalData.map((emp: any, index: number) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">
                           {emp.empCode}
@@ -635,9 +712,8 @@ const DashboardOverview = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lateEarlyOutSummaryModal?.data &&
-                  lateEarlyOutSummaryModal.data.length > 0 ? (
-                    lateEarlyOutSummaryModal.data.map(
+                  {lateEarlyOutSummaryModalData.length > 0 ? (
+                    lateEarlyOutSummaryModalData.map(
                       (emp: any, index: number) => {
                         const isExpanded = expandedLateEarlyRows.has(index)
                         return (
@@ -741,37 +817,34 @@ const DashboardOverview = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {headCountSummaryModal?.data &&
-                  headCountSummaryModal.data.length > 0 ? (
-                    headCountSummaryModal.data.map(
-                      (row: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">
-                            {row.month}
-                          </TableCell>
-                          <TableCell>{row.year}</TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {row.employeeCount}
-                          </TableCell>
-                          <TableCell
-                            className={`text-right font-semibold ${
-                              changeTypeColor[row.changeType] ?? 'text-gray-700'
-                            }`}
-                          >
-                            {row.percentageChange !== null
-                              ? `${row.percentageChange > 0 ? '+' : ''}${row.percentageChange}%`
-                              : '—'}
-                          </TableCell>
-                          <TableCell
-                            className={
-                              changeTypeColor[row.changeType] ?? 'text-gray-700'
-                            }
-                          >
-                            {row.changeType}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    )
+                  {headCountSummaryModalData.length > 0 ? (
+                    headCountSummaryModalData.map((row: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">
+                          {row.month}
+                        </TableCell>
+                        <TableCell>{row.year}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {row.employeeCount}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-semibold ${
+                            changeTypeColor[row.changeType] ?? 'text-gray-700'
+                          }`}
+                        >
+                          {row.percentageChange !== null
+                            ? `${row.percentageChange > 0 ? '+' : ''}${row.percentageChange}%`
+                            : '—'}
+                        </TableCell>
+                        <TableCell
+                          className={
+                            changeTypeColor[row.changeType] ?? 'text-gray-700'
+                          }
+                        >
+                          {row.changeType}
+                        </TableCell>
+                      </TableRow>
+                    ))
                   ) : (
                     <TableRow>
                       <TableCell
@@ -797,7 +870,9 @@ const DashboardOverview = () => {
     return (
       <div className="p-6 space-y-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div
+          className={`${userData?.roleId == 4 ? 'grid grid-cols-1 md:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-5'} gap-4`}
+        >
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
           ))}
@@ -813,35 +888,39 @@ const DashboardOverview = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         </div>
-        <div className="space-y-2 min-w-[200px]">
-          <CustomCombobox
-            items={(companies?.data ?? [])
-              .filter((c: any) => c?.companyId && c?.companyName)
-              .map((c: any) => ({
-                id: String(c.companyId),
-                name: c.companyName,
-              }))}
-            value={
-              formData.companyId
-                ? {
-                    id: formData.companyId,
-                    name:
-                      companies?.data?.find(
-                        (c: any) => String(c.companyId) === formData.companyId
-                      )?.companyName || '',
-                  }
-                : null
-            }
-            onChange={(value) =>
-              handleSelectChange('companyId', value ? String(value.id) : '')
-            }
-            placeholder="Select company"
-          />
-        </div>
+        {userData?.roleId !== 4 && (
+          <div className="space-y-2 min-w-[200px]">
+            <CustomCombobox
+              items={(companies?.data ?? [])
+                .filter((c: any) => c?.companyId && c?.companyName)
+                .map((c: any) => ({
+                  id: String(c.companyId),
+                  name: c.companyName,
+                }))}
+              value={
+                formData.companyId
+                  ? {
+                      id: formData.companyId,
+                      name:
+                        companies?.data?.find(
+                          (c: any) => String(c.companyId) === formData.companyId
+                        )?.companyName || '',
+                    }
+                  : null
+              }
+              onChange={(value) =>
+                handleSelectChange('companyId', value ? String(value.id) : '')
+              }
+              placeholder="Select company"
+            />
+          </div>
+        )}
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div
+        className={`${userData?.roleId == 4 ? 'grid grid-cols-1 md:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-5'} gap-6`}
+      >
         {metrics.map((metric, index) => (
           <Card
             key={index}

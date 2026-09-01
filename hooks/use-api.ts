@@ -5322,90 +5322,96 @@ export const useGetEmployeeLeaveLedgerReport = () => {
 
 //dashboard
 export const useGetEmployeeHeadCountSummary = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLeaveSummary'],
-    queryFn: () => getEmployeeHeadCountSummary(companyId, departmentId),
+    queryKey: ['employeeHeadCountSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeHeadCountSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLeaveSummary = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLeaveSummary'],
-    queryFn: () => getEmployeeLeaveSummary(companyId, departmentId),
+    queryKey: ['employeeLeaveSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLeaveSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeAttendanceSummary = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeAttendanceSummary'],
-    queryFn: () => getEmployeeAttendanceSummary(companyId, departmentId),
+    queryKey: ['employeeAttendanceSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeAttendanceSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLoneSummary = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLoneSummary'],
-    queryFn: () => getEmployeeLoneSummary(companyId, departmentId),
+    queryKey: ['employeeLoneSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLoneSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeSalaryStatus = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeSalaryStatus'],
-    queryFn: () => getEmployeeSalaryStatus(companyId, departmentId),
+    queryKey: ['employeeSalaryStatus', companyId, departmentId, userId],
+    queryFn: () => getEmployeeSalaryStatus(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
 export const useGetEmployeeLateAndEarlyOutSummary = (
-  companyId: number,
-  departmentId: number
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
 ) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLateAndEarlyOutSummary'],
-    queryFn: () => getEmployeeLateAndEarlyOutSummary(companyId, departmentId),
+    queryKey: ['employeeLateAndEarlyOutSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
