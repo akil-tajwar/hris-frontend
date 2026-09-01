@@ -499,8 +499,8 @@ export async function getAllShiftDayAndWeekDays() {
   })
 }
 
-export async function createShiftDayAndWeekDays(data: CreateShiftType) {
-  return fetchApi<CreateShiftType>({
+export async function createShiftDayAndWeekDays(data: CreateShiftType[]) {
+  return fetchApi<CreateShiftType[]>({
     url: 'api/shift/create',
     method: 'POST',
     body: data,
