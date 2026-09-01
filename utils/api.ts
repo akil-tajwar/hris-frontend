@@ -110,6 +110,8 @@ import {
   CurrentUserResponseSchema,
   GetCompanyPolicyType,
   CreateCompanyPolicyType,
+  GetEmployeeLateAndEarlyOutSummary,
+  GetEmployeeHeadCountSummary,
 } from '@/utils/type'
 
 export async function getAllRoles() {
@@ -1347,30 +1349,98 @@ export async function getEmployeeLeaveLedgerReport() {
   })
 }
 
-export async function getEmployeeLeaveSummary() {
-  return fetchApi<GetEmployeeLeaveSummaryType[]>({
-    url: 'api/dashboard/leave-summary',
+export async function getEmployeeHeadCountSummary(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
+  return fetchApi<GetEmployeeHeadCountSummary>({
+    url: `api/dashboard/head-count-summary?${params.toString()}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeAttendanceSummary() {
+export async function getEmployeeLeaveSummary(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
+  return fetchApi<GetEmployeeLeaveSummaryType>({
+    url: `api/dashboard/leave-summary?${params.toString()}`,
+    method: 'GET',
+  })
+}
+
+export async function getEmployeeAttendanceSummary(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
   return fetchApi<GetEmployeeAttendanceSummaryType[]>({
-    url: 'api/dashboard/attendance-summary',
+    url: `api/dashboard/attendance-summary?${params.toString()}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeLoneSummary() {
-  return fetchApi<GetEmployeeLoneSummaryType[]>({
-    url: 'api/dashboard/lone-summary',
+export async function getEmployeeLoneSummary(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
+  return fetchApi<GetEmployeeLoneSummaryType>({
+    url: `api/dashboard/lone-summary?${params.toString()}`,
     method: 'GET',
   })
 }
 
-export async function getEmployeeSalaryStatus() {
+export async function getEmployeeSalaryStatus(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
   return fetchApi<GetEmployeeSalaryStatusType[]>({
-    url: 'api/dashboard/salary-status',
+    url: `api/dashboard/salary-status?${params.toString()}`,
+    method: 'GET',
+  })
+}
+
+export async function getEmployeeLateAndEarlyOutSummary(
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) {
+  const params = new URLSearchParams()
+  if (companyId !== undefined) params.set('companyId', String(companyId))
+  if (departmentId !== undefined)
+    params.set('departmentId', String(departmentId))
+  if (userId !== undefined) params.set('userId', String(userId))
+  return fetchApi<GetEmployeeLateAndEarlyOutSummary[]>({
+    url: `api/dashboard/late-and-early-out-summary?${params.toString()}`,
     method: 'GET',
   })
 }
@@ -1820,6 +1890,14 @@ export async function createCompanyPolicy(formData: FormData) {
   return fetchApiWithFile<CreateCompanyPolicyType>({
     url: 'api/companyPolicy/create',
     method: 'POST',
+    body: formData,
+  })
+}
+
+export async function editCompanyPolicy(id: number, formData: FormData) {
+  return fetchApiWithFile<GetCompanyPolicyType>({
+    url: `api/companyPolicy/edit/${id}`,
+    method: 'PATCH',
     body: formData,
   })
 }

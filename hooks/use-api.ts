@@ -206,6 +206,9 @@ import {
   chatBot,
   getAllCompanyPolicy,
   createCompanyPolicy,
+  editCompanyPolicy,
+  getEmployeeLateAndEarlyOutSummary,
+  getEmployeeHeadCountSummary,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5318,49 +5321,97 @@ export const useGetEmployeeLeaveLedgerReport = () => {
 }
 
 //dashboard
-export const useGetEmployeeLeaveSummary = () => {
+export const useGetEmployeeHeadCountSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLeaveSummary'],
-    queryFn: () => getEmployeeLeaveSummary(),
+    queryKey: ['employeeHeadCountSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeHeadCountSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeAttendanceSummary = () => {
+export const useGetEmployeeLeaveSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeAttendanceSummary'],
-    queryFn: () => getEmployeeAttendanceSummary(),
+    queryKey: ['employeeLeaveSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLeaveSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeLoneSummary = () => {
+export const useGetEmployeeAttendanceSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLoneSummary'],
-    queryFn: () => getEmployeeLoneSummary(),
+    queryKey: ['employeeAttendanceSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeAttendanceSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeSalaryStatus = () => {
+export const useGetEmployeeLoneSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeSalaryStatus'],
-    queryFn: () => getEmployeeSalaryStatus(),
+    queryKey: ['employeeLoneSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLoneSummary(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeSalaryStatus = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeSalaryStatus', companyId, departmentId, userId],
+    queryFn: () => getEmployeeSalaryStatus(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeLateAndEarlyOutSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeLateAndEarlyOutSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
@@ -6665,6 +6716,42 @@ export const useAddCompanyPolicy = ({
     },
     onError: (error: any) => {
       console.error('Error adding company policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCompanyPolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
+      return editCompanyPolicy(id, formData)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Company policy updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companyPolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error editing company policy:', error)
       toast({
         title: 'Error',
         variant: 'destructive',

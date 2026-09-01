@@ -1246,6 +1246,24 @@ export type GetEmployeeLeaveType = z.infer<typeof employeeLeaveSchema> & {
 }
 
 //dashboard
+export const employeeHeadCountSummarySchema = z.array(
+  z.object({
+    month: z.string(),
+    year: z.number(),
+    employeeCount: z.number(),
+    percentageChange: z.number().nullable(),
+    changeType: z.enum([
+      'INITIAL',
+      'INCREASE',
+      'DECREASE',
+      'NO_CHANGE',
+    ]),
+  })
+)
+export type GetEmployeeHeadCountSummary = z.infer<
+  typeof employeeHeadCountSummarySchema
+>
+
 export const employeeLeaveSummarySchema = z.array(
   z.object({
     employeeDetails: z.object({
@@ -1331,6 +1349,35 @@ export const employeeSalaryStatusSchema = z.object({
 })
 export type GetEmployeeSalaryStatusType = z.infer<
   typeof employeeSalaryStatusSchema
+>
+
+export const employeeLateAndEarlyOutSummarySchema = z.array(
+  z.object({
+    employeeDetails: z.object({
+      employeeId: z.number(),
+      empCode: z.string(),
+      empFullName: z.string(),
+      designationName: z.string(),
+      departmentName: z.string(),
+
+      totalLateInMinutes: z.number(),
+      totalEarlyOutMinutes: z.number(),
+      lateInOccurrences: z.number(),
+      earlyOutOccurrences: z.number(),
+    }),
+
+    attendanceDetails: z.array(
+      z.object({
+        attendanceDate: z.string(),
+        status: z.string(),
+        lateInMinutes: z.number(),
+        earlyOutMinutes: z.number(),
+      })
+    ),
+  })
+)
+export type GetEmployeeLateAndEarlyOutSummary = z.infer<
+  typeof employeeLateAndEarlyOutSummarySchema
 >
 
 //attendance policy
@@ -1690,6 +1737,7 @@ export const NoticeSchema = z.object({
   description: z.string().nullable().optional(),
   pdfUrl: z.string().nullable().optional(),
   noticeDate: z.date(),
+  showTill: z.date(),
   tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
@@ -1707,6 +1755,7 @@ export const companyPolicySchema = z.object({
   companyId: z.number().int().positive(),
   tenantId: z.number().int().positive(),
   year: z.number().int(),
+  active: z.boolean(),
   createdBy: z.number().int().positive(),
   createdAt: z.date().optional(),
   updatedBy: z.number().int().positive().nullable().optional(),

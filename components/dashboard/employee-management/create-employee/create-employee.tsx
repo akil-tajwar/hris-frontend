@@ -23,9 +23,7 @@ import {
   useGetDesignations,
   useGetEmploymentTypes,
   useGetCompanies,
-  useGetWorkStations,
   useGetDivisions,
-  useGetCostCenters,
   useGetAllEmployees,
   useGetRoles,
   useGetEmployeePreboardingById,
@@ -240,9 +238,7 @@ const CreateEmployee = () => {
   const { data: designations } = useGetDesignations()
   const { data: employmentTypes } = useGetEmploymentTypes()
   const { data: companies } = useGetCompanies()
-  const { data: workStations } = useGetWorkStations()
   const { data: divisions } = useGetDivisions()
-  const { data: costCenters } = useGetCostCenters()
   const { data: employees } = useGetAllEmployees()
   const { data: roles } = useGetRoles()
   const { data: attendancePolicies } = useGetAttendancePolicies()
