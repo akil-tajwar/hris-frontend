@@ -564,36 +564,57 @@ const UploadAttendance = () => {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination - Updated with ellipsis and smart page display like Attendance Processing */}
       {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-            {[...Array(totalPages)].map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink
-                  onClick={() => setPage(i + 1)}
-                  isActive={page === i + 1}
-                >
-                  {i + 1}
-                </PaginationLink>
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                  className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
               </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                className={
-                  page === totalPages ? 'pointer-events-none opacity-50' : ''
+
+              {[...Array(totalPages)].map((_, index) => {
+                if (
+                  index === 0 ||
+                  index === totalPages - 1 ||
+                  (index >= page - 3 && index <= page + 1)
+                ) {
+                  return (
+                    <PaginationItem key={`page-${index}`}>
+                      <PaginationLink
+                        onClick={() => setPage(index + 1)}
+                        isActive={page === index + 1}
+                      >
+                        {index + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                } else if (index === page - 4 || index === page + 2) {
+                  return (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <PaginationLink>...</PaginationLink>
+                    </PaginationItem>
+                  )
                 }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+                return null
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  className={
+                    page === totalPages ? 'pointer-events-none opacity-50' : ''
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       )}
 
       {/* Confirm Upload Dialog */}
