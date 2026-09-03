@@ -20,7 +20,7 @@ import {
   userDataAtom,
 } from '@/utils/user'
 import { useAtom, useAtomValue } from 'jotai'
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Popup } from '@/utils/popup'
 import {
   Table,
@@ -54,6 +54,7 @@ import {
   useGetEmployeeSalaryStatus,
   useGetEmployeeLateAndEarlyOutSummary,
   useGetEmployeeHeadCountSummary,
+  useGetDepartmentHeadStatus,
   useGetNotice,
   useGetCompanies,
   useGetDepartments,
@@ -75,6 +76,11 @@ type ModalFilters = {
   dateFilter: DateFilter
 }
 
+// 'full'       = admin/hr, all data, both comboboxes
+// 'my'         = own data only, no comboboxes, no headcount card
+// 'department' = dept head's own department, company+department comboboxes hidden
+type ViewMode = 'full' | 'my' | 'department'
+
 const DEFAULT_MODAL_FILTERS: ModalFilters = {
   departmentId: '',
   dateFilter: 'year',
@@ -94,7 +100,8 @@ const DashboardOverview = () => {
 
   const userId = userData?.userId
   const roleId = userData?.roleId
-  const isRoleFour = roleId === 4
+  const isAdmin = roleId === 1
+  const isHr = roleId === 2
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -128,9 +135,59 @@ const DashboardOverview = () => {
     DEFAULT_MODAL_FILTERS
   )
 
+  // null = not yet resolved to a default; gates rendering alongside isLoading
+  const [viewMode, setViewMode] = useState<ViewMode | null>(null)
+
   const { data: notice } = useGetNotice()
   const { data: companies } = useGetCompanies()
   const { data: departments } = useGetDepartments()
+  const { data: departmentHeadStatus } = useGetDepartmentHeadStatus(userId ?? 0)
+  console.log("🚀 ~ DashboardOverview ~ departmentHeadStatus:", departmentHeadStatus)
+
+  const isDeptHead = !!departmentHeadStatus?.data?.deptHead
+  const headDepartmentId = departmentHeadStatus?.data?.departmentId
+
+  useEffect(() => {
+    if (viewMode !== null) return
+    if (!userData) return
+
+    if (isAdmin) {
+      setViewMode('full')
+      return
+    }
+
+    if (isHr) {
+      // HR always defaults to full, whether or not they're also a dept head
+      setViewMode('full')
+      return
+    }
+
+    // employee (roleId 4)
+    if (departmentHeadStatus === undefined) return // still loading
+    setViewMode(isDeptHead ? 'department' : 'my')
+  }, [viewMode, userData, isAdmin, isHr, isDeptHead, departmentHeadStatus])
+
+  const effectiveViewMode: ViewMode = viewMode ?? 'my'
+
+  const availableViewModes: { mode: ViewMode; label: string }[] = isAdmin
+    ? []
+    : isHr
+      ? isDeptHead
+        ? [
+            { mode: 'full', label: 'Dashboard' },
+            { mode: 'my', label: 'My Dashboard' },
+            { mode: 'department', label: 'Department Dashboard' },
+          ]
+        : [
+            { mode: 'full', label: 'Dashboard' },
+            { mode: 'my', label: 'My Dashboard' },
+          ]
+      : isDeptHead
+        ? [
+            { mode: 'my', label: 'My Dashboard' },
+            { mode: 'department', label: 'Department Dashboard' },
+          ]
+        : []
 
   const companyIdNum = formData.companyId
     ? Number(formData.companyId)
@@ -142,66 +199,86 @@ const DashboardOverview = () => {
     ? Number(salaryFilters.departmentId)
     : undefined
 
-  // ---- Card-level data (company only, all departments) ----
+  // ---- Params derived from the active view mode ----
+  const paramCompanyId = effectiveViewMode === 'full' ? companyIdNum : undefined
+  const paramCardDepartmentId =
+    effectiveViewMode === 'department' ? headDepartmentId : undefined
+
+  const paramSalaryDepartmentId =
+    effectiveViewMode === 'full'
+      ? salaryDepartmentIdNum
+      : effectiveViewMode === 'department'
+        ? headDepartmentId
+        : undefined
+
+  const paramModalDepartmentId =
+    effectiveViewMode === 'full'
+      ? modalDepartmentIdNum
+      : effectiveViewMode === 'department'
+        ? headDepartmentId
+        : undefined
+  const paramUserId = effectiveViewMode === 'my' ? userId : undefined
+
+  // ---- Card-level data ----
   const { data: leaveSummary } = useGetEmployeeLeaveSummary(
-    companyIdNum,
-    undefined,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramCardDepartmentId,
+    paramUserId
   )
   const { data: attendanceSummary } = useGetEmployeeAttendanceSummary(
-    companyIdNum,
-    undefined,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramCardDepartmentId,
+    paramUserId
   )
   const { data: loneSummary } = useGetEmployeeLoneSummary(
-    companyIdNum,
-    undefined,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramCardDepartmentId,
+    paramUserId
   )
   const { data: lateEarlyOutSummary } = useGetEmployeeLateAndEarlyOutSummary(
-    companyIdNum,
-    undefined,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramCardDepartmentId,
+    paramUserId
   )
   const { data: headCountSummary } = useGetEmployeeHeadCountSummary(
-    companyIdNum,
-    undefined,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramCardDepartmentId,
+    paramUserId
   )
 
-  // ---- Salary graph data (company + its own department filter) ----
+  // ---- Salary graph data ----
   const { data: salaryStatus } = useGetEmployeeSalaryStatus(
-    companyIdNum,
-    salaryDepartmentIdNum,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramSalaryDepartmentId,
+    paramUserId
   )
 
-  // ---- Popup-level data (company + modal department filter) ----
+  // ---- Popup-level data ----
   const { data: leaveSummaryModal } = useGetEmployeeLeaveSummary(
-    companyIdNum,
-    modalDepartmentIdNum,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramModalDepartmentId,
+    paramUserId
   )
   const { data: attendanceSummaryModal } = useGetEmployeeAttendanceSummary(
-    companyIdNum,
-    modalDepartmentIdNum,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramModalDepartmentId,
+    paramUserId
   )
   const { data: loneSummaryModal } = useGetEmployeeLoneSummary(
-    companyIdNum,
-    modalDepartmentIdNum,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramModalDepartmentId,
+    paramUserId
   )
   const { data: lateEarlyOutSummaryModal } =
     useGetEmployeeLateAndEarlyOutSummary(
-      companyIdNum,
-      modalDepartmentIdNum,
-      isRoleFour ? userId : undefined
+      paramCompanyId,
+      paramModalDepartmentId,
+      paramUserId
     )
   const { data: headCountSummaryModal } = useGetEmployeeHeadCountSummary(
-    companyIdNum,
-    modalDepartmentIdNum,
-    isRoleFour ? userId : undefined
+    paramCompanyId,
+    paramModalDepartmentId,
+    paramUserId
   )
 
   const departmentItems = (departments?.data ?? [])
@@ -366,7 +443,7 @@ const DashboardOverview = () => {
   }
 
   const metrics: MetricItem[] = [
-    ...(isRoleFour
+    ...(effectiveViewMode === 'my'
       ? []
       : [
           {
@@ -423,7 +500,7 @@ const DashboardOverview = () => {
 
   const ModalFilterBar = () => (
     <div className="flex flex-wrap items-center gap-3 pb-4">
-      {userData?.roleId !== 4 && (
+      {effectiveViewMode === 'full' && (
         <div className="min-w-[200px]">
           <CustomCombobox
             items={departmentItems}
@@ -773,8 +850,25 @@ const DashboardOverview = () => {
                                             ({att.status})
                                           </span>
                                           <span>
-                                            Late: {att.lateInMinutes}m, Early
-                                            Out: {att.earlyOutMinutes}m
+                                            <span
+                                              className={
+                                                att.lateInMinutes > 0
+                                                  ? 'text-red-100'
+                                                  : ''
+                                              }
+                                            >
+                                              Late: {att.lateInMinutes}m
+                                            </span>
+                                            {', '}
+                                            <span
+                                              className={
+                                                att.earlyOutMinutes > 0
+                                                  ? 'text-red-100'
+                                                  : ''
+                                              }
+                                            >
+                                              Early Out: {att.earlyOutMinutes}m
+                                            </span>
                                           </span>
                                         </div>
                                       )
@@ -868,13 +962,11 @@ const DashboardOverview = () => {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || viewMode === null) {
     return (
       <div className="p-6 space-y-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-        <div
-          className={`${userData?.roleId == 4 ? 'grid grid-cols-1 md:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-5'} gap-4`}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
           ))}
@@ -887,10 +979,28 @@ const DashboardOverview = () => {
     <div className="p-6 space-y-6 mx-auto">
       {/* Dashboard Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="flex flex-wrap items-center gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          {availableViewModes.length > 0 && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              {availableViewModes.map(({ mode, label }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    effectiveViewMode === mode
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {userData?.roleId !== 4 && (
+        {effectiveViewMode === 'full' && (
           <div className="space-y-2 min-w-[200px]">
             <CustomCombobox
               items={(companies?.data ?? [])
@@ -921,7 +1031,7 @@ const DashboardOverview = () => {
 
       {/* Metric Cards */}
       <div
-        className={`${userData?.roleId == 4 ? 'grid grid-cols-1 md:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-5'} gap-6`}
+        className={`${effectiveViewMode === 'my' ? 'grid grid-cols-1 md:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-5'} gap-6`}
       >
         {metrics.map((metric, index) => (
           <Card
@@ -1008,7 +1118,7 @@ const DashboardOverview = () => {
                 Payroll Trend (Net Payroll)
               </CardTitle>
               <div className="flex flex-wrap items-center gap-3">
-                {userData?.roleId !== 4 && (
+                {effectiveViewMode === 'full' && (
                   <div className="min-w-[180px]">
                     <CustomCombobox
                       items={departmentItems}

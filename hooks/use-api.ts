@@ -209,6 +209,7 @@ import {
   editCompanyPolicy,
   getEmployeeLateAndEarlyOutSummary,
   getEmployeeHeadCountSummary,
+  getDepartmentHeadStatus,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -5425,6 +5426,18 @@ export const useGetEmployeeLateAndEarlyOutSummary = (
     ],
     queryFn: () =>
       getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetDepartmentHeadStatus = (userId: number) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeDepartmentHeadStatus', userId],
+    queryFn: () => getDepartmentHeadStatus(userId),
     enabled: !!userData,
     select: (data) => data,
   })
