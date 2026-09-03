@@ -1445,6 +1445,13 @@ export async function getEmployeeLateAndEarlyOutSummary(
   })
 }
 
+export async function getDepartmentHeadStatus(userId: number) {
+  return fetchApi<{ deptHead: boolean; departmentId: number }>({
+    url: `api/dashboard/department-head-status/${userId}`,
+    method: 'GET',
+  })
+}
+
 export async function getAllAttendancePolicies() {
   return fetchApi<GetAttendancePolicyType[]>({
     url: 'api/attendancePolicies/getAll',

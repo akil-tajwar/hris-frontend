@@ -111,7 +111,7 @@ const IndividualAttendanceSummaryReport = () => {
       new Blob([buf], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       }),
-      `individual-attendance-summary-${fromDate}-to-${toDate}.xlsx`
+      `employeewise-attendance-summary-${fromDate}-to-${toDate}.xlsx`
     )
   }
 
