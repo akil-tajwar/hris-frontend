@@ -210,6 +210,10 @@ import {
   getEmployeeLateAndEarlyOutSummary,
   getEmployeeHeadCountSummary,
   getDepartmentHeadStatus,
+  getAllOfficeLocations,
+  createOfficeLocation,
+  editOfficeLocation,
+  deleteOfficeLocations,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -277,6 +281,8 @@ import {
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
   CreateEmployeeLeaveEncashment,
+  CreateOfficeLocationType,
+  GetOfficeLocationType,
 } from '@/utils/type'
 
 //roles
@@ -6784,6 +6790,149 @@ export const useUpdateCompanyPolicy = ({
         title: 'Error',
         variant: 'destructive',
         description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useGetOfficeLocations = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['officeLocations'],
+    queryFn: () => getAllOfficeLocations(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useAddOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateOfficeLocationType) => {
+      const res = await createOfficeLocation(data)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create department',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'OfficeLocation created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding office location:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetOfficeLocationType }) => {
+      return editOfficeLocation(id, data)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'office location edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing office location:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteOfficeLocations(id)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete department')
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'office location is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
       })
     },
   })

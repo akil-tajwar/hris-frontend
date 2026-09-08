@@ -60,6 +60,7 @@ export function DashboardSidebar() {
       subItems: [
         { title: 'Companies', href: '/dashboard/setup/company' },
         // { title: 'Register User', href: '/dashboard/setup/register-user' },
+        { title: 'Office Locations', href: '/dashboard/setup/office-locations' },
         { title: 'Departments', href: '/dashboard/setup/departments' },
         { title: 'Designations', href: '/dashboard/setup/designations' },
         { title: 'Business Units', href: '/dashboard/setup/business-units' },

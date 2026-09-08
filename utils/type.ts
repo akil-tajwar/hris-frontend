@@ -1252,12 +1252,7 @@ export const employeeHeadCountSummarySchema = z.array(
     year: z.number(),
     employeeCount: z.number(),
     percentageChange: z.number().nullable(),
-    changeType: z.enum([
-      'INITIAL',
-      'INCREASE',
-      'DECREASE',
-      'NO_CHANGE',
-    ]),
+    changeType: z.enum(['INITIAL', 'INCREASE', 'DECREASE', 'NO_CHANGE']),
   })
 )
 export type GetEmployeeHeadCountSummary = z.infer<
@@ -1763,3 +1758,21 @@ export const companyPolicySchema = z.object({
 })
 export type CreateCompanyPolicyType = z.infer<typeof companyPolicySchema>
 export type GetCompanyPolicyType = z.infer<typeof companyPolicySchema>
+
+export const officeLocationsSchema = z.object({
+  officeLocationId: z.number().optional(),
+  companyId: z.number(),
+  address: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  radiusMeters: z.number(),
+  tenantId: z.number().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateOfficeLocationType = z.infer<typeof officeLocationsSchema>
+export type GetOfficeLocationType = z.infer<typeof officeLocationsSchema> & {
+  companyName: string
+}

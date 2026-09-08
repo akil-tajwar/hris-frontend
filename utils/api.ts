@@ -112,6 +112,8 @@ import {
   CreateCompanyPolicyType,
   GetEmployeeLateAndEarlyOutSummary,
   GetEmployeeHeadCountSummary,
+  GetOfficeLocationType,
+  CreateOfficeLocationType,
 } from '@/utils/type'
 
 export async function getAllRoles() {
@@ -1906,5 +1908,35 @@ export async function editCompanyPolicy(id: number, formData: FormData) {
     url: `api/companyPolicy/edit/${id}`,
     method: 'PATCH',
     body: formData,
+  })
+}
+
+export async function getAllOfficeLocations() {
+  return fetchApi<GetOfficeLocationType[]>({
+    url: 'api/officeLocations/getall',
+    method: 'GET',
+  })
+}
+
+export async function createOfficeLocation(data: CreateOfficeLocationType) {
+  return fetchApi<CreateOfficeLocationType>({
+    url: 'api/officeLocations/create',
+    method: 'POST',
+    body: data,
+  })
+}
+
+export async function editOfficeLocation(id: number, data: GetOfficeLocationType) {
+  return fetchApi<GetOfficeLocationType>({
+    url: `api/officeLocations/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+  })
+}
+
+export async function deleteOfficeLocations(id: number) {
+  return fetchApi<{ id: number }>({
+    url: `api/officeLocations/delete/${id}`,
+    method: 'DELETE',
   })
 }
