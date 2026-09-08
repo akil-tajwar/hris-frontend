@@ -252,7 +252,7 @@ const Designations = () => {
                 Designation Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Code</TableHead>
-              <TableHead>Job Level</TableHead>
+              {/* <TableHead>Job Level</TableHead> */}
               <TableHead>Description</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -287,7 +287,7 @@ const Designations = () => {
                     {desig.designationName}
                   </TableCell>
                   <TableCell>{desig.designationCode ?? '-'}</TableCell>
-                  <TableCell>{desig.jobLevel ?? '-'}</TableCell>
+                  {/* <TableCell>{desig.jobLevel ?? '-'}</TableCell> */}
                   <TableCell className="max-w-[160px] truncate">
                     {desig.description ?? '-'}
                   </TableCell>
@@ -425,7 +425,7 @@ const Designations = () => {
             </div>
 
             {/* Job Level */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="jobLevel">Job Level</Label>
               <Input
                 id="jobLevel"
@@ -436,7 +436,7 @@ const Designations = () => {
                 onChange={handleNumberChange}
                 placeholder="e.g. 1"
               />
-            </div>
+            </div> */}
 
             {/* Description */}
             <div className="space-y-2 col-span-2">

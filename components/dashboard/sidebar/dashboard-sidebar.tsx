@@ -60,6 +60,7 @@ export function DashboardSidebar() {
       subItems: [
         { title: 'Companies', href: '/dashboard/setup/company' },
         // { title: 'Register User', href: '/dashboard/setup/register-user' },
+        { title: 'Office Locations', href: '/dashboard/setup/office-locations' },
         { title: 'Departments', href: '/dashboard/setup/departments' },
         { title: 'Designations', href: '/dashboard/setup/designations' },
         { title: 'Business Units', href: '/dashboard/setup/business-units' },
@@ -70,9 +71,9 @@ export function DashboardSidebar() {
           href: '/dashboard/setup/holiday-calendars',
         },
         { title: 'Holidays', href: '/dashboard/setup/holidays' },
-        { title: 'Pending Tasks', href: '/dashboard/setup/pending-tasks' },
         { title: 'Checklists', href: '/dashboard/setup/checklists' },
         { title: 'Notices', href: '/dashboard/setup/notice' },
+        { title: 'Company Policy', href: '/dashboard/setup/company-policy' },
         { title: 'Permissions', href: '/dashboard/setup/permission' },
       ],
     },
@@ -98,6 +99,10 @@ export function DashboardSidebar() {
       href: '/dashboard/employee-management',
       roles: [1, 2, 3, 4],
       subItems: [
+        {
+          title: 'Pending Tasks',
+          href: '/dashboard/employee-management/pending-tasks',
+        },
         {
           title: 'Employee Preboardings',
           href: '/dashboard/employee-management/employee-preboardings',

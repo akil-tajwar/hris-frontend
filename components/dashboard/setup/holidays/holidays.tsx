@@ -7,31 +7,27 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowUpDown, Search, Calendar, Edit2, Trash2 } from 'lucide-react'
+import {
+  Calendar as CalendarIcon,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from 'lucide-react'
 import { Popup } from '@/utils/popup'
-import type { CreateNewHolidayType, GetNewHolidayType, GetHolidayCalendarType } from '@/utils/type'
+import type {
+  CreateNewHolidayType,
+  GetNewHolidayType,
+  GetHolidayCalendarType,
+} from '@/utils/type'
 import { useInitializeUser } from '@/utils/user'
 import {
   useGetNewHolidays,
@@ -54,6 +50,64 @@ import { formatDate } from '@/utils/conversions'
 
 const HOLIDAY_TYPES = ['PUBLIC', 'RELIGIOUS', 'NATIONAL', 'COMPANY', 'OPTIONAL']
 
+const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'R', 'F', 'S']
+
+const TYPE_DOT_CLASSES: Record<string, string> = {
+  PUBLIC: 'bg-blue-500',
+  RELIGIOUS: 'bg-purple-500',
+  NATIONAL: 'bg-green-500',
+  COMPANY: 'bg-orange-500',
+  OPTIONAL: 'bg-gray-400',
+}
+
+const TYPE_ACCENT_CLASSES: Record<string, string> = {
+  PUBLIC: 'border-l-blue-500',
+  RELIGIOUS: 'border-l-purple-500',
+  NATIONAL: 'border-l-green-500',
+  COMPANY: 'border-l-orange-500',
+  OPTIONAL: 'border-l-gray-400',
+}
+
+// ── Date helpers (local time, no UTC drift) ──
+const toDateKey = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const holidayDateKey = (dateStr: string) => dateStr.split(' ')[0].split('T')[0]
+
+const isSameDay = (a: Date, b: Date) => toDateKey(a) === toDateKey(b)
+
+type CalendarCell = { date: Date; isCurrentMonth: boolean }
+
+const getCalendarCells = (year: number, month: number): CalendarCell[] => {
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startWeekday = firstDay.getDay()
+  const daysInMonth = lastDay.getDate()
+
+  const cells: CalendarCell[] = []
+
+  for (let i = startWeekday; i > 0; i--) {
+    cells.push({ date: new Date(year, month, 1 - i), isCurrentMonth: false })
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: new Date(year, month, d), isCurrentMonth: true })
+  }
+  while (cells.length % 7 !== 0) {
+    const last = cells[cells.length - 1].date
+    const next = new Date(last)
+    next.setDate(last.getDate() + 1)
+    cells.push({ date: next, isCurrentMonth: false })
+  }
+
+  return cells
+}
+
+const getTodayDate = () => new Date().toISOString().split('T')[0]
+
 const Holidays = () => {
   useInitializeUser()
 
@@ -75,15 +129,12 @@ const Holidays = () => {
 
   useEffect(() => {
     if (calendarIdFromUrl > 0) {
-      // URL থেকে আসলে সেটাই use করো
       setSelectedCalendarId(calendarIdFromUrl)
     } else if (calendarList.length > 0 && selectedCalendarId === 0) {
-      // না হলে প্রথম calendar auto-select
       setSelectedCalendarId(calendarList[0].id)
     }
   }, [calendarIdFromUrl, calendarList, selectedCalendarId])
 
-  // Selected calendar এর label
   const selectedCalendarLabel = useMemo(() => {
     const cal = calendarList.find((c) => c.id === selectedCalendarId)
     if (!cal) return ''
@@ -94,20 +145,20 @@ const Holidays = () => {
   const { data: holidays } = useGetNewHolidays(selectedCalendarId)
 
   const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [holidaysPerPage] = useState(10)
-  const [sortColumn, setSortColumn] = useState<keyof GetNewHolidayType>('title')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
+
+  // ── Calendar view state ──
+  const [visibleMonth, setVisibleMonth] = useState<Date>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingHolidayId, setEditingHolidayId] = useState<number | null>(null)
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [deletingHolidayId, setDeletingHolidayId] = useState<number | null>(null)
-
-  const getTodayDate = () => new Date().toISOString().split('T')[0]
+  const [deletingHolidayId, setDeletingHolidayId] = useState<number | null>(
+    null
+  )
 
   const [formData, setFormData] = useState<CreateNewHolidayType>({
     calendarId: selectedCalendarId,
@@ -150,18 +201,18 @@ const Holidays = () => {
     resetForm()
   }, [resetForm])
 
-  const addMutation = useAddNewHolidayRange({ onClose: closePopup, reset: resetForm })
-  const updateMutation = useUpdateNewHoliday({ onClose: closePopup, reset: resetForm })
-  const deleteMutation = useDeleteNewHoliday({ onClose: closePopup, reset: resetForm })
-
-  const handleSort = (column: keyof GetNewHolidayType) => {
-    if (column === sortColumn) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortColumn(column)
-      setSortDirection('asc')
-    }
-  }
+  const addMutation = useAddNewHolidayRange({
+    onClose: closePopup,
+    reset: resetForm,
+  })
+  const updateMutation = useUpdateNewHoliday({
+    onClose: closePopup,
+    reset: resetForm,
+  })
+  const deleteMutation = useDeleteNewHoliday({
+    onClose: closePopup,
+    reset: resetForm,
+  })
 
   // Client-side filter by selectedCalendarId
   const holidayList: GetNewHolidayType[] = useMemo(() => {
@@ -179,27 +230,57 @@ const Holidays = () => {
     )
   }, [holidayList, searchTerm])
 
-  const sortedHolidays = useMemo(() => {
-    return [...filteredHolidays].sort((a, b) => {
-      const aValue = a[sortColumn] ?? ''
-      const bValue = b[sortColumn] ?? ''
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-      return sortDirection === 'asc'
-        ? aValue > bValue ? 1 : -1
-        : bValue > aValue ? 1 : -1
+  // ── Group holidays by date key for calendar lookups ──
+  const holidaysByDate = useMemo(() => {
+    const map = new Map<string, GetNewHolidayType[]>()
+    filteredHolidays.forEach((h) => {
+      if (!h.date) return
+      const key = holidayDateKey(h.date)
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(h)
     })
-  }, [filteredHolidays, sortColumn, sortDirection])
+    return map
+  }, [filteredHolidays])
 
-  const totalPages = Math.ceil(sortedHolidays.length / holidaysPerPage)
+  const calendarCells = useMemo(
+    () => getCalendarCells(visibleMonth.getFullYear(), visibleMonth.getMonth()),
+    [visibleMonth]
+  )
 
-  const paginatedHolidays = useMemo(() => {
-    const startIndex = (currentPage - 1) * holidaysPerPage
-    return sortedHolidays.slice(startIndex, startIndex + holidaysPerPage)
-  }, [sortedHolidays, currentPage, holidaysPerPage])
+  const selectedDateKey = toDateKey(selectedDate)
+  const selectedDateHolidays = holidaysByDate.get(selectedDateKey) ?? []
+
+  const monthLabel = visibleMonth.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const goToPrevMonth = () => {
+    setVisibleMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    )
+  }
+
+  const goToNextMonth = () => {
+    setVisibleMonth(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    )
+  }
+
+  const goToToday = () => {
+    const today = new Date()
+    setVisibleMonth(today)
+    setSelectedDate(today)
+  }
+
+  const handleSelectDate = (cell: CalendarCell) => {
+    setSelectedDate(cell.date)
+    if (!cell.isCurrentMonth) {
+      setVisibleMonth(
+        new Date(cell.date.getFullYear(), cell.date.getMonth(), 1)
+      )
+    }
+  }
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -228,7 +309,14 @@ const Holidays = () => {
         console.error(err)
       }
     },
-    [formData, isEditMode, editingHolidayId, addMutation, updateMutation, selectedCalendarId]
+    [
+      formData,
+      isEditMode,
+      editingHolidayId,
+      addMutation,
+      updateMutation,
+      selectedCalendarId,
+    ]
   )
 
   const handleEditClick = (holiday: GetNewHolidayType) => {
@@ -247,13 +335,24 @@ const Holidays = () => {
     setIsPopupOpen(true)
   }
 
+  const handleAddForSelectedDate = () => {
+    setFormData((prev) => ({
+      ...prev,
+      calendarId: selectedCalendarId,
+      startDate: selectedDateKey,
+      endDate: selectedDateKey,
+    }))
+    setIsEditMode(false)
+    setIsPopupOpen(true)
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2 mb-4">
           <div className="bg-blue-100 p-2 rounded-md">
-            <Calendar className="text-blue-600" />
+            <CalendarIcon className="text-blue-600" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Holidays</h2>
@@ -264,13 +363,11 @@ const Holidays = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Calendar dropdown — শুধু URL এ calendarId না থাকলে দেখাবে */}
           {showCalendarDropdown && (
             <Select
               value={selectedCalendarId > 0 ? String(selectedCalendarId) : ''}
               onValueChange={(val) => {
                 setSelectedCalendarId(Number(val))
-                setCurrentPage(1)
               }}
             >
               <SelectTrigger className="w-52">
@@ -279,7 +376,9 @@ const Holidays = () => {
               <SelectContent>
                 {calendarList.map((cal) => (
                   <SelectItem key={cal.id} value={String(cal.id)}>
-                    {cal.name ? `${cal.name} (${cal.year})` : `Calendar ${cal.year}`}
+                    {cal.name
+                      ? `${cal.name} (${cal.year})`
+                      : `Calendar ${cal.year}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -299,7 +398,11 @@ const Holidays = () => {
           <Button
             className="bg-blue-400 hover:bg-blue-500 text-black"
             onClick={() => {
-              setFormData((prev) => ({ ...prev, calendarId: selectedCalendarId }))
+              setFormData((prev) => ({
+                ...prev,
+                calendarId: selectedCalendarId,
+              }))
+              setIsEditMode(false)
               setIsPopupOpen(true)
             }}
             disabled={selectedCalendarId === 0}
@@ -309,140 +412,218 @@ const Holidays = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader className="bg-blue-100">
-            <TableRow>
-              <TableHead>Sl No.</TableHead>
-              <TableHead onClick={() => handleSort('title')} className="cursor-pointer">
-                Holiday Name <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead onClick={() => handleSort('date')} className="cursor-pointer">
-                Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead onClick={() => handleSort('type')} className="cursor-pointer">
-                Type <ArrowUpDown className="ml-2 h-4 w-4 inline" />
-              </TableHead>
-              <TableHead>Recurring</TableHead>
-              <TableHead>Optional</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {selectedCalendarId === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-4 text-gray-400">
-                  Please select a calendar to view holidays
-                </TableCell>
-              </TableRow>
-            ) : holidays === undefined ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-4">
-                  Loading holidays...
-                </TableCell>
-              </TableRow>
-            ) : holidayList.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-4">
-                  No holidays found for {selectedCalendarLabel}
-                </TableCell>
-              </TableRow>
-            ) : paginatedHolidays.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-4">
-                  No holidays match your search
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedHolidays.map((holiday, index) => (
-                <TableRow key={holiday.id}>
-                  <TableCell>
-                    {(currentPage - 1) * holidaysPerPage + index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium">{holiday.title}</TableCell>
-                  <TableCell>
-                    {holiday.date ? formatDate(new Date(holiday.date)) : '-'}
-                  </TableCell>
-                  <TableCell>{holiday.type}</TableCell>
-                  <TableCell>{holiday.isRecurring ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{holiday.isOptional ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{holiday.description || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700"
-                        onClick={() => handleEditClick(holiday)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => {
-                          setDeletingHolidayId(holiday.id)
-                          setIsDeleteDialogOpen(true)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {selectedCalendarId === 0 ? (
+        <div className="rounded-md border py-10 text-center text-gray-400">
+          Please select a calendar to view holidays
+        </div>
+      ) : holidays === undefined ? (
+        <div className="rounded-md border py-10 text-center text-gray-500">
+          Loading holidays...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Calendar (left, 3/5) */}
+          <div className="lg:col-span-3 rounded-lg border border-gray-300 overflow-hidden">
+            {/* Header bar: prev/month/next on left, Today on right */}
+            <div className="flex items-center justify-between bg-blue-500 text-white px-4 py-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPrevMonth}
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/15 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <h3 className="text-lg font-semibold tracking-tight w-40 text-center">
+                  {monthLabel}
+                </h3>
+                <button
+                  type="button"
+                  onClick={goToNextMonth}
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/15 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={goToToday}
+                className="text-sm px-3 py-1 rounded-md border border-white/40 hover:bg-white/15 transition-colors"
+              >
+                Today
+              </button>
+            </div>
 
-      {/* Pagination */}
-      {sortedHolidays.length > 0 && (
-        <div className="mt-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              {[...Array(totalPages)].map((_, index) => {
-                if (
-                  index === 0 ||
-                  index === totalPages - 1 ||
-                  (index >= currentPage - 2 && index <= currentPage + 2)
-                ) {
-                  return (
-                    <PaginationItem key={`page-${index}`}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(index + 1)}
-                        isActive={currentPage === index + 1}
-                      >
-                        {index + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                } else if (index === currentPage - 3 || index === currentPage + 3) {
-                  return (
-                    <PaginationItem key={`ellipsis-${index}`}>
-                      <PaginationLink>...</PaginationLink>
-                    </PaginationItem>
-                  )
-                }
-                return null
+            {/* Weekday header row */}
+            <div className="grid grid-cols-7 bg-slate-700">
+              {WEEKDAY_LABELS.map((label, i) => (
+                <div
+                  key={`${label}-${i}`}
+                  className="text-center text-sm font-medium text-white py-2 border-l border-slate-600 first:border-l-0"
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Day grid */}
+            <div className="grid grid-cols-7">
+              {calendarCells.map((cell, idx) => {
+                const key = toDateKey(cell.date)
+                const dayHolidays = holidaysByDate.get(key) ?? []
+                const hasHoliday = dayHolidays.length > 0
+                const isSelected = isSameDay(cell.date, selectedDate)
+                const isToday = isSameDay(cell.date, new Date())
+                const uniqueTypes = Array.from(
+                  new Set(dayHolidays.map((h) => h.type))
+                )
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleSelectDate(cell)}
+                    className={[
+                      'aspect-square border-t border-l border-gray-200 flex flex-col items-center justify-center gap-1 text-sm transition-colors',
+                      idx % 7 === 0 ? 'border-l-0' : '',
+                      isToday
+                        ? 'bg-blue-50'
+                        : isSelected
+                          ? 'bg-slate-100'
+                          : 'hover:bg-gray-50',
+                      !cell.isCurrentMonth ? 'opacity-40' : '',
+                    ].join(' ')}
+                  >
+                    <span
+                      className={[
+                        'tabular-nums',
+                        hasHoliday
+                          ? 'text-red-600 font-semibold'
+                          : isToday
+                            ? 'text-blue-700 font-bold'
+                            : 'text-gray-800',
+                      ].join(' ')}
+                    >
+                      {cell.date.getDate()}
+                    </span>
+                    <span className="h-1.5 flex items-center gap-0.5">
+                      {uniqueTypes.slice(0, 3).map((t) => (
+                        <span
+                          key={t}
+                          className={`h-1.5 w-1.5 rounded-full ${TYPE_DOT_CLASSES[t?.toUpperCase()] ?? 'bg-gray-400'}`}
+                        />
+                      ))}
+                    </span>
+                  </button>
+                )
               })}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-4 py-3 border-t border-gray-200 bg-gray-50">
+              {HOLIDAY_TYPES.map((t) => (
+                <div key={t} className="flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${TYPE_DOT_CLASSES[t.toUpperCase()]}`}
+                  />
+                  <span className="text-xs text-gray-500">
+                    {t.charAt(0) + t.slice(1).toLowerCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Selected date detail (right, 2/5) */}
+          <div className="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-5">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <p className="text-xs font-medium text-gray-400">
+                  {selectedDate.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                  })}
+                </p>
+                <h3 className="text-xl font-semibold tracking-tight text-gray-900">
+                  {selectedDate.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </h3>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAddForSelectedDate}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </div>
+
+            {selectedDateHolidays.length === 0 ? (
+              <div className="py-12 flex flex-col items-center text-center">
+                <CalendarIcon className="h-8 w-8 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-400">
+                  No holiday is assigned in this date
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedDateHolidays.map((holiday) => (
+                  <div
+                    key={holiday.id}
+                    className={[
+                      'rounded-md border border-gray-200 border-l-4 pl-3 pr-3 py-3',
+                      TYPE_ACCENT_CLASSES[holiday.type?.toUpperCase()] ??
+                        'border-l-gray-400',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {holiday.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {holiday.type.charAt(0) +
+                            holiday.type.slice(1).toLowerCase()}
+                          {holiday.isRecurring ? ' · Recurring yearly' : ''}
+                          {holiday.isOptional ? ' · Optional' : ''}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-700"
+                          onClick={() => handleEditClick(holiday)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            setDeletingHolidayId(holiday.id)
+                            setIsDeleteDialogOpen(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {holiday.description && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        {holiday.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -543,7 +724,10 @@ const Holidays = () => {
                   type="checkbox"
                   checked={formData.isRecurring ?? false}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, isRecurring: e.target.checked }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      isRecurring: e.target.checked,
+                    }))
                   }
                 />
                 <span className="text-sm">Recurring (yearly)</span>
@@ -553,7 +737,10 @@ const Holidays = () => {
                   type="checkbox"
                   checked={formData.isOptional ?? false}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, isOptional: e.target.checked }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      isOptional: e.target.checked,
+                    }))
                   }
                 />
                 <span className="text-sm">Optional</span>
@@ -586,19 +773,25 @@ const Holidays = () => {
               type="submit"
               disabled={addMutation.isPending || updateMutation.isPending}
             >
-              {addMutation.isPending || updateMutation.isPending ? 'Saving...' : 'Save'}
+              {addMutation.isPending || updateMutation.isPending
+                ? 'Saving...'
+                : 'Save'}
             </Button>
           </div>
         </form>
       </Popup>
 
       {/* Delete Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this holiday? This action cannot be undone.
+              Are you sure you want to delete this holiday? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -624,5 +817,3 @@ const Holidays = () => {
 }
 
 export default Holidays
-
-

@@ -40,6 +40,7 @@ import {
   CopyCheck,
   Settings2,
   RefreshCw,
+  Building2,
 } from 'lucide-react'
 import { Popup } from '@/utils/popup'
 import { CustomCombobox } from '@/utils/custom-combobox'
@@ -48,6 +49,8 @@ import type {
   GetShiftAllocationType,
   GetEmployeeType,
   GetDepartmentType,
+  // ⚠️ Adjust this type name/import if your project exports company types differently.
+  GetCompanyType,
   UpdateRecurrenceType,
 } from '@/utils/type'
 import { useInitializeUser, userDataAtom } from '@/utils/user'
@@ -62,6 +65,8 @@ import {
   useGetShiftDayAndWeekDays,
   // ⚠️ Adjust this hook name if your project exports it differently.
   useGetDepartments,
+  // ⚠️ Adjust this hook name if your project exports it differently.
+  useGetCompanies,
 } from '@/hooks/use-api'
 import {
   AlertDialog,
@@ -75,12 +80,15 @@ import {
 
 // ─── Local (non-domain) helper types ───────────────────────────────
 // GetShiftAllocationType (from type.ts) didn't show departmentId/departmentName
-// in what you shared, but you mentioned the GET api now returns them.
-// This intersection just widens the field for this file — if type.ts already
-// has these two fields, this is a harmless no-op and can be removed.
+// or companyId/companyName in what you shared, but you mentioned the GET api
+// now returns them. This intersection just widens the field for this file —
+// if type.ts already has these fields, this is a harmless no-op and can be
+// removed.
 type AllocationRow = GetShiftAllocationType & {
   departmentId?: number | null
   departmentName?: string | null
+  companyId?: number | null
+  companyName?: string | null
 }
 
 type SortColumn =
@@ -174,30 +182,40 @@ const calcMonthRange = (fromDate: string) => {
   }
 }
 
-// Given an existing allocation's range + its recurrence type, compute the
-// NEXT period's range for a "copy" action.
-// monthly: 1 Jun–30 Jun  -> 1 Jul–31 Jul (next full calendar month)
-// weekly:  shift both dates forward by 7 days
-const getNextPeriodRange = (
-  effectiveFrom: string,
-  effectiveTo: string,
-  recurrenceType: 'weekly' | 'monthly'
-) => {
-  if (recurrenceType === 'monthly') {
-    const { year, month } = parseLocalDate(effectiveFrom)
-    let newMonthIndex = month + 1
-    let newYear = year
-    if (newMonthIndex > 11) {
-      newMonthIndex = 0
-      newYear += 1
-    }
-    const lastDay = new Date(newYear, newMonthIndex + 1, 0).getDate()
-    return {
-      effectiveFrom: `${newYear}-${padTwo(newMonthIndex + 1)}-01`,
-      effectiveTo: `${newYear}-${padTwo(newMonthIndex + 1)}-${padTwo(lastDay)}`,
-    }
+// Given a native <input type="month"> value ("YYYY-MM"), compute the first
+// and last calendar date of that month. Used to auto-fill the Copy All
+// popup's "Effective From/To" once a target month is picked.
+const calcMonthRangeFromYearMonth = (yearMonth: string) => {
+  const [year, month] = yearMonth.split('-').map(Number)
+  const lastDay = new Date(year, month, 0).getDate()
+  return {
+    effectiveFrom: `${year}-${padTwo(month)}-01`,
+    effectiveTo: `${year}-${padTwo(month)}-${padTwo(lastDay)}`,
   }
-  // weekly
+}
+
+// Given a source date, compute the calendar month right after it — used to
+// default the monthly Copy All target to "next month" (still editable by
+// the user afterwards).
+const getNextMonthRange = (fromDate: string) => {
+  const { year, month } = parseLocalDate(fromDate)
+  let nextMonthIndex = month + 1
+  let nextYear = year
+  if (nextMonthIndex > 11) {
+    nextMonthIndex = 0
+    nextYear += 1
+  }
+  const lastDay = new Date(nextYear, nextMonthIndex + 1, 0).getDate()
+  return {
+    yearMonth: `${nextYear}-${padTwo(nextMonthIndex + 1)}`,
+    effectiveFrom: `${nextYear}-${padTwo(nextMonthIndex + 1)}-01`,
+    effectiveTo: `${nextYear}-${padTwo(nextMonthIndex + 1)}-${padTwo(lastDay)}`,
+  }
+}
+
+// Weekly copy has no explicit target-period UI — each matched row just
+// shifts forward by exactly one week, same as the original behavior.
+const getNextWeekRange = (effectiveFrom: string, effectiveTo: string) => {
   const from = parseLocalDate(effectiveFrom)
   const to = parseLocalDate(effectiveTo || effectiveFrom)
   const newFrom = new Date(from.year, from.month, from.day + 7)
@@ -252,6 +270,7 @@ const ShiftAllocationPage = () => {
   const { data: employeesData } = useGetAllEmployees()
   const { data: shiftsData } = useGetShiftDayAndWeekDays()
   const { data: departmentsData } = useGetDepartments()
+  const { data: companiesData } = useGetCompanies()
 
   const employees: GetEmployeeType[] = useMemo(
     () => employeesData?.data ?? [],
@@ -262,6 +281,10 @@ const ShiftAllocationPage = () => {
     () => departmentsData?.data ?? [],
     [departmentsData]
   )
+  const companies: GetCompanyType[] = useMemo(
+    () => companiesData?.data ?? [],
+    [companiesData]
+  )
 
   const [currentPage, setCurrentPage] = useState(1)
   const [perPage] = useState(10)
@@ -269,6 +292,11 @@ const ShiftAllocationPage = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [searchTerm, setSearchTerm] = useState('')
   const [showLatestOnly, setShowLatestOnly] = useState(true)
+
+  // Company filter — page-wide. Unselected (null) by default = show all companies.
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
+    null
+  )
 
   // Popup states
   const [isPopupOpen, setIsPopupOpen] = useState(false)
@@ -288,11 +316,18 @@ const ShiftAllocationPage = () => {
   // Copy All popup
   const [isCopyAllPopupOpen, setIsCopyAllPopupOpen] = useState(false)
   const [bulkDepartmentId, setBulkDepartmentId] = useState<number | null>(null)
+  // Section 1 — "Copying From": filters used to find matching source rows.
   const [copyRecurrenceType, setCopyRecurrenceType] = useState<
     'weekly' | 'monthly'
   >('monthly')
   const [copyFromDate, setCopyFromDate] = useState('')
   const [copyToDate, setCopyToDate] = useState('')
+  // Section 2 — "Copy To": the target period every selected row will be
+  // copied into. Picking a month auto-fills the from/to dates, but both
+  // stay editable afterwards.
+  const [copyTargetMonth, setCopyTargetMonth] = useState('')
+  const [copyTargetFrom, setCopyTargetFrom] = useState('')
+  const [copyTargetTo, setCopyTargetTo] = useState('')
   const [selectedCopyIds, setSelectedCopyIds] = useState<Set<number>>(new Set())
 
   // Delete
@@ -338,6 +373,9 @@ const ShiftAllocationPage = () => {
     setCopyRecurrenceType('monthly')
     setCopyFromDate('')
     setCopyToDate('')
+    setCopyTargetMonth('')
+    setCopyTargetFrom('')
+    setCopyTargetTo('')
     setSelectedCopyIds(new Set())
   }, [])
 
@@ -424,9 +462,17 @@ const ShiftAllocationPage = () => {
         a.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.shiftName?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesLatest = !showLatestOnly || latestAllocationIds.has(a.id)
-      return matchesSearch && matchesLatest
+      const matchesCompany =
+        selectedCompanyId == null || a.companyId === selectedCompanyId
+      return matchesSearch && matchesLatest && matchesCompany
     })
-  }, [allocations?.data, searchTerm, showLatestOnly, latestAllocationIds])
+  }, [
+    allocations?.data,
+    searchTerm,
+    showLatestOnly,
+    latestAllocationIds,
+    selectedCompanyId,
+  ])
 
   const compareByColumn = useCallback(
     (a: AllocationRow, b: AllocationRow, column: SortColumn) => {
@@ -743,24 +789,34 @@ const ShiftAllocationPage = () => {
   const isPending = createMutation.isPending || updateMutation.isPending
 
   // ─── Copy All logic ─────────────────────────────────────────────
+  // Section 1 results: source rows matching the "Copying From" filters.
   const copyMatches: AllocationRow[] = useMemo(() => {
     const rows: AllocationRow[] = allocations?.data ?? []
     if (!copyFromDate || !copyToDate) return []
     return rows.filter((a) => {
       const from = a.effectiveFrom?.slice(0, 10) ?? ''
+      const matchesCompany =
+        selectedCompanyId == null || a.companyId === selectedCompanyId
       return (
         a.recurrenceType === copyRecurrenceType &&
         Boolean(a.recurrenceActive) &&
         from >= copyFromDate &&
-        from <= copyToDate
+        from <= copyToDate &&
+        matchesCompany
       )
     })
-  }, [allocations?.data, copyRecurrenceType, copyFromDate, copyToDate])
+  }, [
+    allocations?.data,
+    copyRecurrenceType,
+    copyFromDate,
+    copyToDate,
+    selectedCompanyId,
+  ])
 
-  // Reset the checkbox selection whenever the filter criteria change.
+  // Reset the checkbox selection whenever the "Copying From" filter criteria change.
   useEffect(() => {
     setSelectedCopyIds(new Set())
-  }, [copyRecurrenceType, copyFromDate, copyToDate])
+  }, [copyRecurrenceType, copyFromDate, copyToDate, selectedCompanyId])
 
   const copyAllSelected =
     copyMatches.length > 0 && selectedCopyIds.size === copyMatches.length
@@ -780,18 +836,79 @@ const ShiftAllocationPage = () => {
     })
   }
 
+  // "Copy To" only exists for monthly copies. Switching recurrence type, or
+  // changing the "Copying From" start date while on monthly, both re-default
+  // the target month to "next month after the source" — the user can still
+  // edit it afterwards.
+  const handleCopyRecurrenceTypeChange = (value: 'weekly' | 'monthly') => {
+    setCopyRecurrenceType(value)
+    if (value === 'monthly' && copyFromDate) {
+      const range = getNextMonthRange(copyFromDate)
+      setCopyTargetMonth(range.yearMonth)
+      setCopyTargetFrom(range.effectiveFrom)
+      setCopyTargetTo(range.effectiveTo)
+    } else {
+      setCopyTargetMonth('')
+      setCopyTargetFrom('')
+      setCopyTargetTo('')
+    }
+  }
+
+  const handleCopyFromDateChange = (value: string) => {
+    setCopyFromDate(value)
+    if (copyRecurrenceType === 'monthly' && value) {
+      const range = getNextMonthRange(value)
+      setCopyTargetMonth(range.yearMonth)
+      setCopyTargetFrom(range.effectiveFrom)
+      setCopyTargetTo(range.effectiveTo)
+    }
+  }
+
+  // Picking a month directly auto-fills Effective From/To to that month's
+  // first/last date. The fields stay editable afterwards — changing them
+  // directly doesn't reset the month picker.
+  const handleCopyTargetMonthChange = (value: string) => {
+    setCopyTargetMonth(value)
+    if (value) {
+      const range = calcMonthRangeFromYearMonth(value)
+      setCopyTargetFrom(range.effectiveFrom)
+      setCopyTargetTo(range.effectiveTo)
+    }
+  }
+
   const handleCopySubmit = () => {
     const selectedRows = copyMatches.filter((a) => selectedCopyIds.has(a.id))
     if (selectedRows.length === 0) return
 
+    if (copyRecurrenceType === 'monthly') {
+      if (!copyTargetFrom || !copyTargetTo) {
+        alert('Please select the target Effective From / Effective To dates.')
+        return
+      }
+      // Every selected row gets copied into the same target period chosen in
+      // Section 2 — no per-row date shifting.
+      const payloads: CreateShiftAllocationType[] = selectedRows.map((a) => ({
+        employeeId: a.employeeId,
+        shiftId: a.shiftId,
+        effectiveFrom: copyTargetFrom,
+        effectiveTo: copyTargetTo,
+        remarks: a.remarks ?? undefined,
+        approvedBy: a.approvedBy ?? undefined,
+        createdBy: userData?.userId || 0,
+        recurrenceType: 'monthly',
+        recurrenceActive: true,
+        // companyId intentionally omitted — backend resolves it.
+      }))
+      copyCreateMutation.mutate(payloads)
+      return
+    }
+
+    // Weekly — same as the original behavior: each row shifts forward by
+    // exactly one week from its own dates, no shared target period.
     const payloads: CreateShiftAllocationType[] = selectedRows.map((a) => {
-      const recurrenceType = (a.recurrenceType ?? copyRecurrenceType) as
-        | 'weekly'
-        | 'monthly'
-      const range = getNextPeriodRange(
+      const range = getNextWeekRange(
         a.effectiveFrom.slice(0, 10),
-        (a.effectiveTo ?? a.effectiveFrom).slice(0, 10),
-        recurrenceType
+        (a.effectiveTo ?? a.effectiveFrom).slice(0, 10)
       )
       return {
         employeeId: a.employeeId,
@@ -801,11 +918,11 @@ const ShiftAllocationPage = () => {
         remarks: a.remarks ?? undefined,
         approvedBy: a.approvedBy ?? undefined,
         createdBy: userData?.userId || 0,
-        recurrenceType,
+        recurrenceType: 'weekly',
         recurrenceActive: true,
+        // companyId intentionally omitted — backend resolves it.
       }
     })
-
     copyCreateMutation.mutate(payloads)
   }
 
@@ -835,6 +952,16 @@ const ShiftAllocationPage = () => {
         name: d.departmentName,
       })),
     [departments]
+  )
+
+  // ⚠️ Adjust field names (companyId/companyName) to match GetCompanyType.
+  const companyItems: ComboItem[] = useMemo(
+    () =>
+      companies.map((c: any) => ({
+        id: String(c.companyId),
+        name: c.companyName,
+      })),
+    [companies]
   )
 
   const singleEmployeeValue: ComboItem | null = singleForm.employeeId
@@ -871,6 +998,16 @@ const ShiftAllocationPage = () => {
           name:
             departmentItems.find((i) => i.id === String(bulkDepartmentId))
               ?.name ?? String(bulkDepartmentId),
+        }
+      : null
+
+  const selectedCompanyValue: ComboItem | null =
+    selectedCompanyId != null
+      ? {
+          id: String(selectedCompanyId),
+          name:
+            companyItems.find((i) => i.id === String(selectedCompanyId))
+              ?.name ?? String(selectedCompanyId),
         }
       : null
 
@@ -920,8 +1057,26 @@ const ShiftAllocationPage = () => {
         </div>
       </div>
 
-      {/* Latest-only toggle */}
+      {/* Company filter — page-wide. No company selected by default = show all. */}
       <div className="flex items-center gap-2 -mt-4">
+        <Building2 className="h-4 w-4 text-gray-500" />
+        <Label className="text-sm text-gray-600 whitespace-nowrap">
+          Company
+        </Label>
+        <div className="w-64">
+          <CustomCombobox
+            items={companyItems}
+            value={selectedCompanyValue}
+            onChange={(v: ComboItem | null) =>
+              setSelectedCompanyId(v ? Number(v.id) : null)
+            }
+            placeholder="All Companies"
+          />
+        </div>
+      </div>
+
+      {/* Latest-only toggle */}
+      <div className="flex items-center gap-2 -mt-2">
         <input
           type="checkbox"
           id="latest-only"
@@ -1500,45 +1655,110 @@ const ShiftAllocationPage = () => {
       >
         <div className="space-y-5 py-4">
           <p className="text-sm text-gray-600">
-            Pick a recurrence type and a date range, then choose which matching
-            allocations to copy into their next period.
+            {copyRecurrenceType === 'monthly'
+              ? 'First pick which existing monthly allocations to search for, then pick the new month to copy them into.'
+              : 'Pick which existing weekly allocations to search for — each one copies exactly one week forward automatically.'}
           </p>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Recurrence Type</Label>
-              <Select
-                value={copyRecurrenceType}
-                onValueChange={(v) =>
-                  setCopyRecurrenceType(v as 'weekly' | 'monthly')
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>From Date</Label>
-              <Input
-                type="date"
-                value={copyFromDate}
-                onChange={(e) => setCopyFromDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>To Date</Label>
-              <Input
-                type="date"
-                value={copyToDate}
-                onChange={(e) => setCopyToDate(e.target.value)}
-              />
+          {/* Section 1 — Copying From */}
+          <div className="space-y-3 border rounded-md p-3">
+            <p className="text-sm font-semibold text-gray-700">Copying From</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Recurrence Type</Label>
+                <Select
+                  value={copyRecurrenceType}
+                  onValueChange={(v) =>
+                    handleCopyRecurrenceTypeChange(v as 'weekly' | 'monthly')
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>From Date</Label>
+                <Input
+                  type="date"
+                  value={copyFromDate}
+                  onChange={(e) => handleCopyFromDateChange(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>To Date</Label>
+                <Input
+                  type="date"
+                  value={copyToDate}
+                  onChange={(e) => setCopyToDate(e.target.value)}
+                />
+              </div>
             </div>
           </div>
+
+          {/* Section 2 — Copy To (target period). Monthly only: weekly keeps
+              the original behavior of shifting each row forward one week
+              automatically, with no explicit target-period UI. */}
+          {copyRecurrenceType === 'monthly' && (
+            <div className="space-y-3 border rounded-md p-3">
+              <p className="text-sm font-semibold text-gray-700">
+                Copy To (New Period)
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>
+                    Month
+                    {copyTargetMonth && (
+                      <span className="ml-2 text-xs text-green-600 font-normal">
+                        defaults to next month
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    type="month"
+                    value={copyTargetMonth}
+                    onChange={(e) =>
+                      handleCopyTargetMonthChange(e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Effective From
+                    {copyTargetMonth && (
+                      <span className="ml-2 text-xs text-green-600 font-normal">
+                        auto-filled
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={copyTargetFrom}
+                    onChange={(e) => setCopyTargetFrom(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Effective To
+                    {copyTargetMonth && (
+                      <span className="ml-2 text-xs text-green-600 font-normal">
+                        auto-filled
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    type="date"
+                    value={copyTargetTo}
+                    onChange={(e) => setCopyTargetTo(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {copyFromDate && copyToDate && (
             <div className="space-y-2">
@@ -1601,7 +1821,10 @@ const ShiftAllocationPage = () => {
             <Button
               className="bg-green-600 hover:bg-green-700 text-white"
               disabled={
-                copyCreateMutation.isPending || selectedCopyIds.size === 0
+                copyCreateMutation.isPending ||
+                selectedCopyIds.size === 0 ||
+                (copyRecurrenceType === 'monthly' &&
+                  (!copyTargetFrom || !copyTargetTo))
               }
               onClick={handleCopySubmit}
             >

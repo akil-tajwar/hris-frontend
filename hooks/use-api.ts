@@ -204,6 +204,16 @@ import {
   getCurrentUser,
   logout,
   chatBot,
+  getAllCompanyPolicy,
+  createCompanyPolicy,
+  editCompanyPolicy,
+  getEmployeeLateAndEarlyOutSummary,
+  getEmployeeHeadCountSummary,
+  getDepartmentHeadStatus,
+  getAllOfficeLocations,
+  createOfficeLocation,
+  editOfficeLocation,
+  deleteOfficeLocations,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -271,6 +281,8 @@ import {
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
   CreateEmployeeLeaveEncashment,
+  CreateOfficeLocationType,
+  GetOfficeLocationType,
 } from '@/utils/type'
 
 //roles
@@ -1905,10 +1917,11 @@ export const useAddShiftDayAndWeekDays = ({
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (data: CreateShiftType) => {
+    mutationFn: async (data: CreateShiftType[]) => {
       const res = await createShiftDayAndWeekDays(data)
       return res
     },
+
     onSuccess: (res) => {
       if (res?.error) {
         toast({
@@ -1924,12 +1937,17 @@ export const useAddShiftDayAndWeekDays = ({
         description: 'Office timing created successfully!',
       })
 
-      queryClient.invalidateQueries({ queryKey: ['shift'] })
+      queryClient.invalidateQueries({
+        queryKey: ['shift'],
+      })
+
       reset()
       onClose()
     },
+
     onError: (error: any) => {
       console.error('Error adding shift:', error)
+
       toast({
         title: 'Error',
         variant: 'destructive',
@@ -5316,49 +5334,116 @@ export const useGetEmployeeLeaveLedgerReport = () => {
 }
 
 //dashboard
-export const useGetEmployeeLeaveSummary = () => {
+export const useGetEmployeeHeadCountSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLeaveSummary'],
-    queryFn: () => getEmployeeLeaveSummary(),
+    queryKey: ['employeeHeadCountSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeHeadCountSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeAttendanceSummary = () => {
+export const useGetEmployeeLeaveSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeAttendanceSummary'],
-    queryFn: () => getEmployeeAttendanceSummary(),
+    queryKey: ['employeeLeaveSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLeaveSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeLoneSummary = () => {
+export const useGetEmployeeAttendanceSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeLoneSummary'],
-    queryFn: () => getEmployeeLoneSummary(),
+    queryKey: ['employeeAttendanceSummary', companyId, departmentId, userId],
+    queryFn: () =>
+      getEmployeeAttendanceSummary(companyId, departmentId, userId),
     enabled: !!userData,
     select: (data) => data,
   })
 }
 
-export const useGetEmployeeSalaryStatus = () => {
+export const useGetEmployeeLoneSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
   useInitializeUser()
   const userData = useAtomValue(userDataAtom)
 
   return useQuery({
-    queryKey: ['employeeSalaryStatus'],
-    queryFn: () => getEmployeeSalaryStatus(),
+    queryKey: ['employeeLoneSummary', companyId, departmentId, userId],
+    queryFn: () => getEmployeeLoneSummary(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeSalaryStatus = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeSalaryStatus', companyId, departmentId, userId],
+    queryFn: () => getEmployeeSalaryStatus(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetEmployeeLateAndEarlyOutSummary = (
+  companyId?: number,
+  departmentId?: number,
+  userId?: number
+) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: [
+      'employeeLateAndEarlyOutSummary',
+      companyId,
+      departmentId,
+      userId,
+    ],
+    queryFn: () =>
+      getEmployeeLateAndEarlyOutSummary(companyId, departmentId, userId),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useGetDepartmentHeadStatus = (userId: number) => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeDepartmentHeadStatus', userId],
+    queryFn: () => getDepartmentHeadStatus(userId),
     enabled: !!userData,
     select: (data) => data,
   })
@@ -5545,7 +5630,9 @@ export const useAddShiftAllocation = ({
         toast({
           title: 'Error',
           variant: 'destructive',
-          description: res.error.message || 'Failed to create shift allocation',
+          description:
+            (res.error?.details as any)?.message ||
+            'Failed to create shift allocation',
         })
         return
       }
@@ -5561,7 +5648,7 @@ export const useAddShiftAllocation = ({
       toast({
         title: 'Error',
         variant: 'destructive',
-        description: error?.message || 'Unexpected error occurred',
+        description: error?.details?.message || 'Unexpected error occurred',
       })
     },
   })
@@ -6605,6 +6692,235 @@ export const useDeleteNotice = ({
         description: 'Notice is deleted successfully.',
       })
       queryClient.invalidateQueries({ queryKey: ['notice'] })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
+//company policy
+export const useGetCompanyPolicy = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['companyPolicy'],
+    queryFn: () => getAllCompanyPolicy(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useAddCompanyPolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const res = await createCompanyPolicy(formData)
+      return res
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Company Policy created successfully!',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companyPolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding company policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateCompanyPolicy = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, formData }: { id: number; formData: FormData }) => {
+      return editCompanyPolicy(id, formData)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Company policy updated successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['companyPolicy'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error editing company policy:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useGetOfficeLocations = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['officeLocations'],
+    queryFn: () => getAllOfficeLocations(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useAddOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateOfficeLocationType) => {
+      const res = await createOfficeLocation(data)
+      return res
+    },
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description: res.error.message || 'Failed to create department',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'OfficeLocation created successfully!',
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
+      reset()
+      onClose()
+    },
+    onError: (error: any) => {
+      console.error('Error adding office location:', error)
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: GetOfficeLocationType }) => {
+      return editOfficeLocation(id, data)
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'office location edited successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
+
+      reset()
+      onClose()
+    },
+    onError: (error) => {
+      console.error('Error editing office location:', error)
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteOfficeLocations(id)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete department')
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'office location is deleted successfully.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['officeLocations'] })
 
       reset()
       onClose()

@@ -144,6 +144,11 @@ const ShiftAndWeekDays = () => {
   const [deletingTimingId, setDeletingTimingId] = useState<number | null>(null)
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
+  // NEW: "for all companies" toggle — only relevant in create mode.
+  // When true, the company combobox is disabled/ignored and the submit
+  // handler fans the same shift + day config out to every company.
+  const [applyToAllCompanies, setApplyToAllCompanies] = useState(false)
+
   // When we just loaded a shift into the form for editing, we want to skip the
   // very next "re-sync day configs from shift fields" pass so the DB-loaded
   // per-day data isn't immediately overwritten with recomputed defaults.
@@ -283,6 +288,7 @@ const ShiftAndWeekDays = () => {
     setEditingTimingId(null)
     setIsEditMode(false)
     setIsPopupOpen(false)
+    setApplyToAllCompanies(false)
     setError(null)
   }, [userData?.userId])
 
@@ -365,7 +371,7 @@ const ShiftAndWeekDays = () => {
       e.preventDefault()
       setError(null)
 
-      if (!formData.shift.companyId) {
+      if (!applyToAllCompanies && !formData.shift.companyId) {
         setError('Please select a company')
         return
       }
@@ -392,16 +398,30 @@ const ShiftAndWeekDays = () => {
             },
             shiftDayAndWeekDays: formData.shiftDayAndWeekDays,
           }
+          // Backend now expects an array even for a single-shift update.
           updateMutation.mutate({ id: editingTimingId, data: updateData })
         } else {
-          const createData: CreateShiftType = {
-            shift: {
-              ...formData.shift,
-              createdBy: userData?.userId || 0,
-            },
-            shiftDayAndWeekDays: formData.shiftDayAndWeekDays,
+          const targetCompanyIds: number[] = applyToAllCompanies
+            ? (companies?.data?.map((c: any) => c.companyId) ?? [])
+            : [formData.shift.companyId]
+
+          if (applyToAllCompanies && targetCompanyIds.length === 0) {
+            setError('No companies available to apply to')
+            return
           }
-          addMutation.mutate(createData)
+
+          const createPayload: CreateShiftType[] = targetCompanyIds.map(
+            (companyId) => ({
+              shift: {
+                ...formData.shift,
+                companyId,
+                createdBy: userData?.userId || 0,
+              },
+              shiftDayAndWeekDays: formData.shiftDayAndWeekDays,
+            })
+          )
+
+          addMutation.mutate(createPayload)
         }
       } catch (err) {
         setError('Failed to save shift')
@@ -412,6 +432,8 @@ const ShiftAndWeekDays = () => {
       formData,
       isEditMode,
       editingTimingId,
+      applyToAllCompanies,
+      companies?.data,
       addMutation,
       updateMutation,
       userData,
@@ -504,6 +526,7 @@ const ShiftAndWeekDays = () => {
     skipNextResyncRef.current = true
 
     setIsEditMode(true)
+    setApplyToAllCompanies(false)
     setEditingTimingId(item.shift?.shiftId || null)
     setFormData({
       shift: {
@@ -838,10 +861,32 @@ const ShiftAndWeekDays = () => {
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* ── Shift Info ── */}
           <div className="grid grid-cols-2 gap-4">
+            {/* For All Companies toggle — create mode only */}
+            {!isEditMode && (
+              <div className="space-y-2 col-span-2 flex items-center">
+                <CustomSwitch
+                  label="For all companies"
+                  checked={applyToAllCompanies}
+                  onChange={(value) => {
+                    setApplyToAllCompanies(value)
+                    if (value) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        shift: { ...prev.shift, companyId: 0 },
+                      }))
+                    }
+                  }}
+                />
+              </div>
+            )}
+
             {/* Company — CustomCombobox (foreign key) */}
             <div className="space-y-2 col-span-2">
               <Label htmlFor="companyId">
-                Company <span className="text-red-500">*</span>
+                Company{' '}
+                {!applyToAllCompanies && (
+                  <span className="text-red-500">*</span>
+                )}
               </Label>
               <CustomCombobox
                 items={
@@ -861,7 +906,8 @@ const ShiftAndWeekDays = () => {
                       }
                     : null
                 }
-                onChange={(value) =>
+                onChange={(value) => {
+                  if (applyToAllCompanies) return
                   setFormData((prev) => ({
                     ...prev,
                     shift: {
@@ -869,8 +915,13 @@ const ShiftAndWeekDays = () => {
                       companyId: value ? Number(value.id) : 0,
                     },
                   }))
+                }}
+                placeholder={
+                  applyToAllCompanies
+                    ? 'Applying to all companies'
+                    : 'Select company'
                 }
-                placeholder="Select company"
+                disabled={applyToAllCompanies}
               />
             </div>
 

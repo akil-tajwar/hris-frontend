@@ -844,8 +844,12 @@ export const employeeLeaveEncashmentSchema = z.object({
   updatedBy: z.number().optional(),
   updatedAt: z.coerce.date().optional(),
 })
-export type CreateEmployeeLeaveEncashment = z.infer<typeof employeeLeaveEncashmentSchema>
-export type GetEmployeeLeaveEncashment = z.infer<typeof employeeLeaveEncashmentSchema> & {
+export type CreateEmployeeLeaveEncashment = z.infer<
+  typeof employeeLeaveEncashmentSchema
+>
+export type GetEmployeeLeaveEncashment = z.infer<
+  typeof employeeLeaveEncashmentSchema
+> & {
   empCode: string
   empFullName: string
   empDepartment: string
@@ -1059,10 +1063,7 @@ export const createSalarySchema = z.array(
         salaryStructureDetailId: z.number(),
         salaryComponentId: z.number(),
         componentName: z.string().optional(),
-        componentType: z.enum([
-          'Allowance',
-          'Deduction',
-        ]),
+        componentType: z.enum(['Allowance', 'Deduction']),
         amount: z.number(),
       })
     ),
@@ -1197,20 +1198,22 @@ export const getEmployeeLoneSchema = z.object({
   empCode: z.string(),
   designationName: z.string(),
   departmentName: z.string(),
-  installments: z.array(z.object({
-    employeeLoneInstallmentId: z.number(),
-    employeeLoneId: z.number(),
-    employeeId: z.number(),
-    amount: z.number(),
-    loneInstallmentMonth: z.string(),
-    loneInstallmentYear: z.number(),
-    isSkipped: z.boolean(),
-    isPaid: z.boolean(),
-    createdBy: z.number(),
-    createdAt: z.date().nullable(),
-    updatedBy: z.number().nullable(),
-    updatedAt: z.date().nullable(),
-  })),
+  installments: z.array(
+    z.object({
+      employeeLoneInstallmentId: z.number(),
+      employeeLoneId: z.number(),
+      employeeId: z.number(),
+      amount: z.number(),
+      loneInstallmentMonth: z.string(),
+      loneInstallmentYear: z.number(),
+      isSkipped: z.boolean(),
+      isPaid: z.boolean(),
+      createdBy: z.number(),
+      createdAt: z.date().nullable(),
+      updatedBy: z.number().nullable(),
+      updatedAt: z.date().nullable(),
+    })
+  ),
   totalPaid: z.number(),
   remainingBalance: z.number(),
   totalInstallments: z.number(),
@@ -1243,6 +1246,19 @@ export type GetEmployeeLeaveType = z.infer<typeof employeeLeaveSchema> & {
 }
 
 //dashboard
+export const employeeHeadCountSummarySchema = z.array(
+  z.object({
+    month: z.string(),
+    year: z.number(),
+    employeeCount: z.number(),
+    percentageChange: z.number().nullable(),
+    changeType: z.enum(['INITIAL', 'INCREASE', 'DECREASE', 'NO_CHANGE']),
+  })
+)
+export type GetEmployeeHeadCountSummary = z.infer<
+  typeof employeeHeadCountSummarySchema
+>
+
 export const employeeLeaveSummarySchema = z.array(
   z.object({
     employeeDetails: z.object({
@@ -1326,7 +1342,38 @@ export const employeeSalaryStatusSchema = z.object({
   grossPayroll: z.number(),
   netPayroll: z.number(),
 })
-export type GetEmployeeSalaryStatusType = z.infer<typeof employeeSalaryStatusSchema>
+export type GetEmployeeSalaryStatusType = z.infer<
+  typeof employeeSalaryStatusSchema
+>
+
+export const employeeLateAndEarlyOutSummarySchema = z.array(
+  z.object({
+    employeeDetails: z.object({
+      employeeId: z.number(),
+      empCode: z.string(),
+      empFullName: z.string(),
+      designationName: z.string(),
+      departmentName: z.string(),
+
+      totalLateInMinutes: z.number(),
+      totalEarlyOutMinutes: z.number(),
+      lateInOccurrences: z.number(),
+      earlyOutOccurrences: z.number(),
+    }),
+
+    attendanceDetails: z.array(
+      z.object({
+        attendanceDate: z.string(),
+        status: z.string(),
+        lateInMinutes: z.number(),
+        earlyOutMinutes: z.number(),
+      })
+    ),
+  })
+)
+export type GetEmployeeLateAndEarlyOutSummary = z.infer<
+  typeof employeeLateAndEarlyOutSummarySchema
+>
 
 //attendance policy
 export type GetAttendancePolicyType = {
@@ -1685,11 +1732,47 @@ export const NoticeSchema = z.object({
   description: z.string().nullable().optional(),
   pdfUrl: z.string().nullable().optional(),
   noticeDate: z.date(),
+  showTill: z.date(),
   tenantId: z.number(),
   createdBy: z.number(),
   createdAt: z.date().optional(),
   updatedBy: z.number().nullable().optional(),
   updatedAt: z.date().optional(),
-});
-export type CreateNoticeType = z.infer<typeof NoticeSchema>;
-export type GetNoticeType = z.infer<typeof NoticeSchema>;
+})
+export type CreateNoticeType = z.infer<typeof NoticeSchema>
+export type GetNoticeType = z.infer<typeof NoticeSchema>
+
+export const companyPolicySchema = z.object({
+  companyPolicyId: z.number().int().positive().optional(),
+  name: z.string().min(1).max(100),
+  pdfUrl: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  companyId: z.number().int().positive(),
+  tenantId: z.number().int().positive(),
+  year: z.number().int(),
+  active: z.boolean(),
+  createdBy: z.number().int().positive(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().int().positive().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateCompanyPolicyType = z.infer<typeof companyPolicySchema>
+export type GetCompanyPolicyType = z.infer<typeof companyPolicySchema>
+
+export const officeLocationsSchema = z.object({
+  officeLocationId: z.number().optional(),
+  companyId: z.number(),
+  address: z.string(),
+  latitude: z.number(),
+  longitude: z.number(),
+  radiusMeters: z.number(),
+  tenantId: z.number().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+})
+export type CreateOfficeLocationType = z.infer<typeof officeLocationsSchema>
+export type GetOfficeLocationType = z.infer<typeof officeLocationsSchema> & {
+  companyName: string
+}

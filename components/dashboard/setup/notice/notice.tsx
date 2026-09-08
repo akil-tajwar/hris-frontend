@@ -54,6 +54,7 @@ const DEFAULT_FORM: CreateNoticeType = {
   description: '',
   pdfUrl: '',
   noticeDate: new Date(),
+  showTill: new Date(),
   tenantId: 0,
   createdBy: 0,
 }
@@ -257,6 +258,7 @@ const Notice = () => {
       description: notice.description || '',
       pdfUrl: notice.pdfUrl || '',
       noticeDate: notice.noticeDate ? new Date(notice.noticeDate) : new Date(),
+      showTill: notice.showTill ? new Date(notice.showTill) : new Date(),
       tenantId: notice.tenantId,
       createdBy: notice.createdBy || 0,
       updatedBy: userData?.userId || 0,
@@ -319,6 +321,12 @@ const Notice = () => {
               >
                 Notice Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
+              <TableHead
+                onClick={() => handleSort('noticeDate')}
+                className="cursor-pointer"
+              >
+                Show Till <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead>Description</TableHead>
               <TableHead>PDF</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -353,6 +361,11 @@ const Notice = () => {
                   <TableCell>
                     {notice.noticeDate
                       ? new Date(notice.noticeDate).toLocaleDateString()
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {notice.showTill
+                      ? new Date(notice.showTill).toLocaleDateString()
                       : '—'}
                   </TableCell>
                   <TableCell className="max-w-[240px] truncate">
@@ -466,10 +479,6 @@ const Notice = () => {
         size="sm:max-w-2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* ── Section: Basic Info ── */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Basic Information
-          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">
@@ -498,24 +507,20 @@ const Notice = () => {
               />
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="description">Description</Label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description ?? ''}
+            <div className="space-y-2">
+              <Label htmlFor="showTill">
+                Show Till <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="showTill"
+                name="showTill"
+                type="date"
+                value={formatDateForInput(formData.showTill)}
                 onChange={handleInputChange}
-                rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                required
               />
             </div>
-          </div>
 
-          {/* ── Section: Attachment ── */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 pt-2">
-            Attachment
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="pdfUrl">PDF</Label>
               <Input
@@ -532,6 +537,18 @@ const Notice = () => {
                   {pdfPreviewName || formData.pdfUrl}
                 </div>
               )}
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description ?? ''}
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+              />
             </div>
           </div>
 

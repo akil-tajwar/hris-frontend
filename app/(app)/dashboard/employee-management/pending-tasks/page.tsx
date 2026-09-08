@@ -1,4 +1,4 @@
-import PendingTasks from '@/components/dashboard/setup/pending-tasks/pending-tasks';
+import PendingTasks from '@/components/dashboard/employee-management/pending-tasks/pending-tasks';
 import React from 'react';
 
 const PendingTasksPage = () => {
