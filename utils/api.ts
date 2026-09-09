@@ -114,6 +114,8 @@ import {
   GetEmployeeHeadCountSummary,
   GetOfficeLocationType,
   CreateOfficeLocationType,
+  GetEmployeeOfficeLocationType,
+  CreateEmployeeOfficeLocationType,
 } from '@/utils/type'
 
 export async function getAllRoles() {
@@ -1926,7 +1928,10 @@ export async function createOfficeLocation(data: CreateOfficeLocationType) {
   })
 }
 
-export async function editOfficeLocation(id: number, data: GetOfficeLocationType) {
+export async function editOfficeLocation(
+  id: number,
+  data: GetOfficeLocationType
+) {
   return fetchApi<GetOfficeLocationType>({
     url: `api/officeLocations/edit/${id}`,
     method: 'PATCH',
@@ -1937,6 +1942,41 @@ export async function editOfficeLocation(id: number, data: GetOfficeLocationType
 export async function deleteOfficeLocations(id: number) {
   return fetchApi<{ id: number }>({
     url: `api/officeLocations/delete/${id}`,
+    method: 'DELETE',
+  })
+}
+
+export async function getAllEmployeeOfficeLocations() {
+  return fetchApi<GetEmployeeOfficeLocationType[]>({
+    url: 'api/employeeOfficeLocations/getall',
+    method: 'GET',
+  })
+}
+
+export async function createEmployeeOfficeLocation(
+  data: CreateEmployeeOfficeLocationType[]
+) {
+  return fetchApi<CreateEmployeeOfficeLocationType[]>({
+    url: 'api/employeeOfficeLocations/create',
+    method: 'POST',
+    body: data,
+  })
+}
+
+export async function editEmployeeOfficeLocation(
+  id: number,
+  data: GetEmployeeOfficeLocationType
+) {
+  return fetchApi<GetEmployeeOfficeLocationType>({
+    url: `api/employeeOfficeLocations/edit/${id}`,
+    method: 'PATCH',
+    body: data,
+  })
+}
+
+export async function deleteEmployeeOfficeLocations(id: number) {
+  return fetchApi<{ id: number }>({
+    url: `api/employeeOfficeLocations/delete/${id}`,
     method: 'DELETE',
   })
 }

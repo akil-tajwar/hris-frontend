@@ -214,6 +214,10 @@ import {
   createOfficeLocation,
   editOfficeLocation,
   deleteOfficeLocations,
+  getAllEmployeeOfficeLocations,
+  createEmployeeOfficeLocation,
+  editEmployeeOfficeLocation,
+  deleteEmployeeOfficeLocations,
 } from '@/utils/api'
 import {
   AssignLeaveTypeType,
@@ -233,7 +237,6 @@ import {
   GetEmployeeLeaveType,
   GetEmployeeLoneType,
   GetShiftsType,
-  CreateCompanyType,
   CreateWorkStationType,
   CreateDivisionType,
   CreateCostCenterType,
@@ -261,13 +264,11 @@ import {
   CreateAssetType,
   GetAssetType,
   CreateAssetTransactionType,
-  GetAssetTransactionType,
   CreateAttendancePolicyType,
   GetAttendancePolicyType,
   CreateShiftAllocationType,
   CreateBulkShiftAllocationType,
   UpdateRecurrenceType,
-  DailyAttendanceType,
   CreateHolidayCalendarType,
   CreateNewHolidayType,
   ProcessAttendanceRangeType,
@@ -277,12 +278,13 @@ import {
   CreateEmployeeLeaveApply,
   GetEmployeeLeaveApply,
   GetTenantType,
-  UploadAttendanceType,
   CreateAttendanceDailyApplyType,
   GetAttendanceDailyApplyType,
   CreateEmployeeLeaveEncashment,
   CreateOfficeLocationType,
   GetOfficeLocationType,
+  CreateEmployeeOfficeLocationType,
+  GetEmployeeOfficeLocationType,
 } from '@/utils/type'
 
 //roles
@@ -6928,6 +6930,186 @@ export const useDeleteOfficeLocation = ({
 
     onError: (error: any) => {
       console.error('Delete error:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: 'This data is needed elsewhere',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useGetEmployeeOfficeLocations = () => {
+  useInitializeUser()
+  const userData = useAtomValue(userDataAtom)
+
+  return useQuery({
+    queryKey: ['employeeOfficeLocations'],
+    queryFn: () => getAllEmployeeOfficeLocations(),
+    enabled: !!userData,
+    select: (data) => data,
+  })
+}
+
+export const useAddEmployeeOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async (data: CreateEmployeeOfficeLocationType[]) => {
+      const res = await createEmployeeOfficeLocation(data)
+      return res
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to create employee office location',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Employee office location created successfully!',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeOfficeLocations'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Error adding employee office location:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useUpdateEmployeeOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: GetEmployeeOfficeLocationType
+    }) => {
+      return editEmployeeOfficeLocation(id, data)
+    },
+
+    onSuccess: (res) => {
+      if (res?.error) {
+        toast({
+          title: 'Error',
+          variant: 'destructive',
+          description:
+            res.error.message || 'Failed to edit employee office location',
+        })
+        return
+      }
+
+      toast({
+        title: 'Success!',
+        description: 'Employee office location edited successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeOfficeLocations'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Error editing employee office location:', error)
+
+      toast({
+        title: 'Error',
+        variant: 'destructive',
+        description: error?.message || 'Unexpected error occurred',
+      })
+    },
+  })
+
+  return mutation
+}
+
+export const useDeleteEmployeeOfficeLocation = ({
+  onClose,
+  reset,
+}: {
+  onClose: () => void
+  reset: () => void
+}) => {
+  useInitializeUser()
+  const queryClient = useQueryClient()
+
+  const mutation = useMutation({
+    mutationFn: async ({ id }: { id: number }) => {
+      const res = await deleteEmployeeOfficeLocations(id)
+
+      console.log('DELETE RESPONSE:', res)
+
+      const apiError = res?.error || (res?.data === null && res?.error?.message)
+
+      const successFlag = (res?.error?.details as any)?.success
+
+      if (apiError || successFlag === false) {
+        throw new Error('Failed to delete employee office location')
+      }
+
+      return res
+    },
+
+    onSuccess: () => {
+      toast({
+        title: 'Success!',
+        description: 'Employee office location is deleted successfully.',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['employeeOfficeLocations'],
+      })
+
+      reset()
+      onClose()
+    },
+
+    onError: (error: any) => {
+      console.error('Delete employee office location error:', error)
 
       toast({
         title: 'Error',

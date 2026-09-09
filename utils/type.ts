@@ -1776,3 +1776,25 @@ export type CreateOfficeLocationType = z.infer<typeof officeLocationsSchema>
 export type GetOfficeLocationType = z.infer<typeof officeLocationsSchema> & {
   companyName: string
 }
+
+export const employeeOfficeLocationSchema = z.object({
+  employeeOfficeLocationId: z.number().optional(),
+  fromDate: z.date(),
+  toDate: z.date().nullable().optional(),
+  officeLocationId: z.number(),
+  employeeId: z.number(),
+  tenantId: z.number().nullable().optional(),
+  createdBy: z.number(),
+  createdAt: z.date().optional(),
+  updatedBy: z.number().nullable().optional(),
+  updatedAt: z.date().optional(),
+});
+export type CreateEmployeeOfficeLocationType = z.infer<typeof employeeOfficeLocationSchema>
+export type GetEmployeeOfficeLocationType = z.infer<typeof employeeOfficeLocationSchema> & {
+  empFullName: string
+  empCode: string
+  designationName: string
+  departmentName: string
+  companyName: string
+  address: string
+}
