@@ -115,6 +115,10 @@ export function DashboardSidebar() {
           title: 'Employees',
           href: '/dashboard/employee-management/employees',
         },
+        {
+          title: 'Employee Office Locations',
+          href: '/dashboard/employee-management/employee-office-locations',
+        },
         // {
         //   title: 'Employee Leaves',
         //   href: '/dashboard/employee-management/employee-leaves',
