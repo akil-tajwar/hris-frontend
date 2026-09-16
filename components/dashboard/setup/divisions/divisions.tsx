@@ -6,13 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -482,7 +475,7 @@ const Divisions = () => {
 
             <div className="space-y-2 col-span-2">
               <Label htmlFor="responsibleEmployeeId">
-                Responsible Employee <span className="text-red-500">*</span>
+                Responsible Employee
               </Label>
               <CustomCombobox
                 items={
