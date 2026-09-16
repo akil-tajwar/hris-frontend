@@ -1312,9 +1312,9 @@ const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="h-80 overflow-y-auto space-y-3">
-              {notice?.data && notice.data.length > 0 ? (
-                notice.data
-                  .filter((item: any) => {
+              {(() => {
+                const activeNotices = (notice?.data ?? []).filter(
+                  (item: any) => {
                     // Only show notices where current date <= showTill
                     if (!item.showTill) return false
                     const currentDate = new Date()
@@ -1323,46 +1323,52 @@ const DashboardOverview = () => {
                     currentDate.setHours(0, 0, 0, 0)
                     showTillDate.setHours(0, 0, 0, 0)
                     return currentDate <= showTillDate
-                  })
-                  .map((item: any) => (
-                    <div
-                      key={item.noticeId}
-                      className="border border-gray-200 bg-slate-100 rounded-md p-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {item.title}
-                        </p>
-                        {item.pdfUrl && (
-                          <a
-                            href={item.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:underline"
-                          >
-                            View PDF
-                          </a>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(item.noticeDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      {item.description && (
-                        <p className="text-xs text-gray-600 mt-3">
-                          {item.description}
-                        </p>
+                  }
+                )
+
+                if (activeNotices.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center h-full text-gray-500 text-sm border border-dashed border-gray-300 rounded-md p-4 text-center">
+                      No notices available at the moment.
+                    </div>
+                  )
+                }
+
+                return activeNotices.map((item: any) => (
+                  <div
+                    key={item.noticeId}
+                    className="border border-gray-200 bg-slate-100 rounded-md p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {item.title}
+                      </p>
+                      {item.pdfUrl && (
+                        <a
+                          href={item.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          View PDF
+                        </a>
                       )}
                     </div>
-                  ))
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  No notices available
-                </div>
-              )}
+                    <span className="text-xs text-gray-400">
+                      {new Date(item.noticeDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    {item.description && (
+                      <p className="text-xs text-gray-600 mt-3">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                ))
+              })()}
             </div>
           </CardContent>
         </Card>
