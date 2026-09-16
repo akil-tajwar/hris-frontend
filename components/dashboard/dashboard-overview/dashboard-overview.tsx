@@ -142,10 +142,14 @@ const DashboardOverview = () => {
   const { data: companies } = useGetCompanies()
   const { data: departments } = useGetDepartments()
   const { data: departmentHeadStatus } = useGetDepartmentHeadStatus(userId ?? 0)
-  console.log("🚀 ~ DashboardOverview ~ departmentHeadStatus:", departmentHeadStatus)
 
-  const isDeptHead = !!departmentHeadStatus?.data?.deptHead
+  const isDeptHead = userId ? !!departmentHeadStatus?.data?.deptHead : false
   const headDepartmentId = departmentHeadStatus?.data?.departmentId
+
+  // Reset viewMode whenever the user changes (login/logout/switch)
+  useEffect(() => {
+    setViewMode(null)
+  }, [userId])
 
   useEffect(() => {
     if (viewMode !== null) return
@@ -293,9 +297,35 @@ const DashboardOverview = () => {
   const isThisMonth = (dateStr?: string) => {
     if (!dateStr) return false
     const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return false
     const now = new Date()
     return (
       d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    )
+  }
+
+  // Headcount and salary rows don't have createdAt — they're one row per
+  // (month, year). "This month" must match against the row's own month/year
+  // fields rather than assuming the last item in the array is the current
+  // month (the API can return the rows in any order, e.g. Jan..Dec, and
+  // slicing the last entry silently returns December instead of today).
+  const isCurrentMonthRow = (row: any) => {
+    if (!row) return false
+    const monthValue = row.month ?? row.monthName
+    const yearValue = row.year
+    if (!monthValue || yearValue == null) return false
+
+    const now = new Date()
+    if (Number(yearValue) !== now.getFullYear()) return false
+
+    const longName = now.toLocaleString('en-US', { month: 'long' })
+    const shortName = now.toLocaleString('en-US', { month: 'short' })
+    const monthNumber = now.getMonth() + 1 // 1-12
+
+    return (
+      monthValue === longName ||
+      monthValue === shortName ||
+      Number(monthValue) === monthNumber
     )
   }
 
@@ -314,11 +344,10 @@ const DashboardOverview = () => {
   const lateEarlyOutSummaryModalData = applyMonthFilter(
     lateEarlyOutSummaryModal?.data
   )
-  // Headcount rows are one-per-month already (no createdAt) — "this month"
-  // just means the most recent entry in the series.
+
   const headCountSummaryModalData =
     modalFilters.dateFilter === 'month'
-      ? (headCountSummaryModal?.data ?? []).slice(-1)
+      ? (headCountSummaryModal?.data ?? []).filter(isCurrentMonthRow)
       : (headCountSummaryModal?.data ?? [])
 
   const handleSelectChange = (field: 'companyId', value: string) => {
@@ -326,6 +355,11 @@ const DashboardOverview = () => {
       ...prev,
       [field]: value,
     }))
+    // Company change invalidates department selections in every filter bar
+    setModalFilters(DEFAULT_MODAL_FILTERS)
+    setSalaryFilters(DEFAULT_MODAL_FILTERS)
+    setExpandedLeaveRows(new Set())
+    setExpandedLateEarlyRows(new Set())
   }
 
   const openModal = (type: Exclude<ModalType, null>) => {
@@ -405,10 +439,10 @@ const DashboardOverview = () => {
       0
     ) ?? 0
 
-  // Head count: current month is assumed to be the last entry in the series
+  // Head count: pick the row matching the actual current month/year,
+  // not simply the last element in the array.
   const headCountData = headCountSummary?.data ?? []
-  const currentHeadCount =
-    headCountData.length > 0 ? headCountData[headCountData.length - 1] : null
+  const currentHeadCount = headCountData.find(isCurrentMonthRow) ?? null
 
   const salaryChartDataAll = salaryStatus?.data
     ? salaryStatus.data.map((month: any) => ({
@@ -421,11 +455,11 @@ const DashboardOverview = () => {
       }))
     : []
 
-  // Salary rows are one-per-month already (no createdAt) — "this month"
-  // just means the most recent entry in the series.
+  // See isCurrentMonthRow above — salary rows are one-per-month with no
+  // createdAt, so "this month" is matched by month/year, not array position.
   const salaryChartData =
     salaryFilters.dateFilter === 'month'
-      ? salaryChartDataAll.slice(-1)
+      ? salaryChartDataAll.filter(isCurrentMonthRow)
       : salaryChartDataAll
 
   type MetricItem = {
@@ -853,7 +887,7 @@ const DashboardOverview = () => {
                                             <span
                                               className={
                                                 att.lateInMinutes > 0
-                                                  ? 'text-red-100'
+                                                  ? 'text-red-600'
                                                   : ''
                                               }
                                             >
@@ -863,7 +897,7 @@ const DashboardOverview = () => {
                                             <span
                                               className={
                                                 att.earlyOutMinutes > 0
-                                                  ? 'text-red-100'
+                                                  ? 'text-red-600'
                                                   : ''
                                               }
                                             >
@@ -962,7 +996,7 @@ const DashboardOverview = () => {
     }
   }
 
-  if (isLoading || viewMode === null) {
+  if (isLoading || (viewMode === null && !!userData)) {
     return (
       <div className="p-6 space-y-6 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-1/3"></div>
@@ -1278,9 +1312,9 @@ const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <div className="h-80 overflow-y-auto space-y-3">
-              {notice?.data && notice.data.length > 0 ? (
-                notice.data
-                  .filter((item: any) => {
+              {(() => {
+                const activeNotices = (notice?.data ?? []).filter(
+                  (item: any) => {
                     // Only show notices where current date <= showTill
                     if (!item.showTill) return false
                     const currentDate = new Date()
@@ -1289,46 +1323,52 @@ const DashboardOverview = () => {
                     currentDate.setHours(0, 0, 0, 0)
                     showTillDate.setHours(0, 0, 0, 0)
                     return currentDate <= showTillDate
-                  })
-                  .map((item: any) => (
-                    <div
-                      key={item.noticeId}
-                      className="border border-gray-200 bg-slate-100 rounded-md p-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {item.title}
-                        </p>
-                        {item.pdfUrl && (
-                          <a
-                            href={item.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:underline"
-                          >
-                            View PDF
-                          </a>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(item.noticeDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      {item.description && (
-                        <p className="text-xs text-gray-600 mt-3">
-                          {item.description}
-                        </p>
+                  }
+                )
+
+                if (activeNotices.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center h-full text-gray-500 text-sm border border-dashed border-gray-300 rounded-md p-4 text-center">
+                      No notices available at the moment.
+                    </div>
+                  )
+                }
+
+                return activeNotices.map((item: any) => (
+                  <div
+                    key={item.noticeId}
+                    className="border border-gray-200 bg-slate-100 rounded-md p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {item.title}
+                      </p>
+                      {item.pdfUrl && (
+                        <a
+                          href={item.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline"
+                        >
+                          View PDF
+                        </a>
                       )}
                     </div>
-                  ))
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                  No notices available
-                </div>
-              )}
+                    <span className="text-xs text-gray-400">
+                      {new Date(item.noticeDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    {item.description && (
+                      <p className="text-xs text-gray-600 mt-3">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                ))
+              })()}
             </div>
           </CardContent>
         </Card>
