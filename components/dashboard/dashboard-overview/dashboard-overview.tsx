@@ -139,6 +139,7 @@ const DashboardOverview = () => {
   const [viewMode, setViewMode] = useState<ViewMode | null>(null)
 
   const { data: notice } = useGetNotice()
+  console.log("🚀 ~ DashboardOverview ~ notice:", notice)
   const { data: companies } = useGetCompanies()
   const { data: departments } = useGetDepartments()
   const { data: departmentHeadStatus } = useGetDepartmentHeadStatus(userId ?? 0)
