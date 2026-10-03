@@ -59,14 +59,17 @@ const DEFAULT_FORM: CreateNoticeType = {
   createdBy: 0,
 }
 
+// Format a Date as YYYY-MM-DD using LOCAL time (avoids timezone shifts)
 const formatDateForInput = (date: Date | string | undefined) => {
   if (!date) return ''
   const d = new Date(date)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toISOString().split('T')[0]
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// Extend GetNoticeType but keep noticeId optional
 interface NoticeItem extends GetNoticeType {
   noticeId?: number
   tenantId: number
@@ -109,7 +112,8 @@ const Notice = () => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'noticeDate' ? new Date(value) : value,
+      [name]:
+        name === 'noticeDate' || name === 'showTill' ? new Date(value) : value,
     }))
   }
 
@@ -160,7 +164,6 @@ const Notice = () => {
     }
   }
 
-  // Type guard to check if notice has noticeId
   const hasNoticeId = (
     notice: any
   ): notice is NoticeItem & { noticeId: number } => {
@@ -214,6 +217,13 @@ const Notice = () => {
           'noticeDate',
           formData.noticeDate
             ? new Date(formData.noticeDate).toISOString()
+            : new Date().toISOString()
+        )
+        // 👇 THIS was missing before — backend needs showTill
+        submitData.append(
+          'showTill',
+          formData.showTill
+            ? new Date(formData.showTill).toISOString()
             : new Date().toISOString()
         )
         if (isEditMode) {
@@ -322,7 +332,7 @@ const Notice = () => {
                 Notice Date <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead
-                onClick={() => handleSort('noticeDate')}
+                onClick={() => handleSort('showTill')}
                 className="cursor-pointer"
               >
                 Show Till <ArrowUpDown className="ml-2 h-4 w-4 inline" />
@@ -335,19 +345,19 @@ const Notice = () => {
           <TableBody>
             {!notices || notices.data === undefined ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   Loading notices...
                 </TableCell>
               </TableRow>
             ) : !notices.data || notices.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No notices found
                 </TableCell>
               </TableRow>
             ) : paginatedNotices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4">
+                <TableCell colSpan={7} className="text-center py-4">
                   No notices match your search
                 </TableCell>
               </TableRow>
